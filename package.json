@@ -1,0 +1,35 @@
+{
+  "name": "machimangosystem",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Modern 2026 Company Full-Stack Application",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd apps/frontend && npm run dev",
+    "dev:backend": "cd apps/backend && npm run start:dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd apps/frontend && npm run build",
+    "build:backend": "cd apps/backend && npm run build",
+    "start:frontend": "cd apps/frontend && npm run start",
+    "start:backend": "cd apps/backend && npm run start:prod",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd apps/frontend && npm run lint",
+    "lint:backend": "cd apps/backend && npm run lint",
+    "clean": "rimraf apps/*/node_modules apps/*/.next apps/*/dist node_modules",
+    "install:all": "npm install && npm run install:frontend && npm run install:backend",
+    "install:frontend": "cd apps/frontend && npm install",
+    "install:backend": "cd apps/backend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "rimraf": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

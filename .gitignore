@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
+
+# Build outputs
+apps/*/.next/
+apps/*/dist/
+apps/*/build/
+.turbo/
+
+# Environment variables
+.env
+.env.local
+.env*.local
+apps/*/.env
+apps/*/.env.local
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+.temp/
