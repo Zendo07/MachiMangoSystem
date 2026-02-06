@@ -1,6 +1,77 @@
+/* ============================================================================
+   IMPORTS - MUST BE FIRST!
+   ============================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Righteous&family=Outfit:wght@300;400;500;600;700;800;900&family=Caveat:wght@700&display=swap');
 @import "tailwindcss";
 
+/* ============================================================================
+   MACHI MANGO THEME - Color Palette & Variables
+   ============================================================================ */
+
 :root {
+  /* Primary Colors - Mango Inspired */
+  --mango-sun: #FFB84D;
+  --mango-flesh: #FFAA33;
+  --mango-gold: #FF9500;
+  --mango-sunset: #FF6B35;
+  
+  /* Cream & Graham Colors */
+  --cream-white: #FFF8E7;
+  --cream-vanilla: #FFEFD5;
+  --graham-tan: #D4A574;
+  --graham-brown: #B8956A;
+  --graham-dark: #8B7355;
+  
+  /* Accent Colors */
+  --tropical-green: #7CB342;
+  --mint-fresh: #4ECDC4;
+  --sky-light: #87CEEB;
+  
+  /* Neutral Colors */
+  --neutral-50: #FAFAF9;
+  --neutral-100: #F5F5F4;
+  --neutral-200: #E7E5E4;
+  --neutral-300: #D6D3D1;
+  --neutral-700: #44403C;
+  --neutral-800: #292524;
+  --neutral-900: #1C1917;
+  
+  /* Gradients */
+  --gradient-mango: linear-gradient(135deg, #FFB84D 0%, #FF9500 50%, #FF6B35 100%);
+  --gradient-cream: linear-gradient(180deg, #FFF8E7 0%, #FFEFD5 100%);
+  --gradient-tropical: linear-gradient(120deg, #7CB342 0%, #4ECDC4 100%);
+  --gradient-sunset: linear-gradient(90deg, #FF6B35 0%, #FFB84D 50%, #87CEEB 100%);
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(255, 107, 53, 0.1);
+  --shadow-md: 0 4px 16px rgba(255, 107, 53, 0.15);
+  --shadow-lg: 0 12px 32px rgba(255, 107, 53, 0.2);
+  --shadow-xl: 0 20px 48px rgba(255, 107, 53, 0.25);
+  --shadow-glow: 0 0 24px rgba(255, 184, 77, 0.5);
+  
+  /* Spacing Scale */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-full: 9999px;
+  
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* Original Variables */
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,6 +81,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Mango Theme Colors */
+  --color-mango-sun: var(--mango-sun);
+  --color-mango-gold: var(--mango-gold);
+  --color-mango-sunset: var(--mango-sunset);
+  --color-cream-white: var(--cream-white);
+  --color-cream-vanilla: var(--cream-vanilla);
+  --color-graham-tan: var(--graham-tan);
+  --color-graham-brown: var(--graham-brown);
+  --color-tropical-green: var(--tropical-green);
+  --color-mint-fresh: var(--mint-fresh);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,8 +101,828 @@
   }
 }
 
+/* ============================================================================
+   GLOBAL STYLES
+   ============================================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cream-white);
+  color: var(--neutral-800);
+  font-family: 'Outfit', var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cream-vanilla);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-mango);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--cream-vanilla);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mango-sunset);
+}
+
+/* Selection */
+::selection {
+  background: var(--mango-sun);
+  color: white;
+}
+
+/* ============================================================================
+   TYPOGRAPHY - Machi Mango Graham Shake
+   ============================================================================ */
+
+/* Display Text - Hero Headlines */
+.text-display-xl {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(3rem, 8vw, 7rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+.text-display-lg {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+}
+
+.text-display-md {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+}
+
+/* Headings */
+h1, .text-h1 {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 400;
+  margin-bottom: var(--space-md);
+}
+
+h2, .text-h2 {
+  font-family: 'Righteous', cursive;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+  margin-bottom: var(--space-md);
+}
+
+h3, .text-h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+
+h4, .text-h4 {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  margin-bottom: var(--space-sm);
+}
+
+h5, .text-h5 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+h6, .text-h6 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+/* Body Text */
+.text-body-xl {
+  font-size: 1.25rem;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+.text-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+.text-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.text-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.text-body-xs {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Handwritten Accent */
+.text-handwritten {
+  font-family: 'Caveat', cursive;
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+}
+
+/* Special Text Styles */
+.text-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.text-caption {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--neutral-700);
+}
+
+.text-overline {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+
+/* Paragraph Styles */
+p {
+  margin-bottom: var(--space-md);
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+.text-lead {
+  font-size: 1.25rem;
+  line-height: 1.7;
+  font-weight: 300;
+  color: var(--neutral-700);
+}
+
+/* Text Colors */
+.text-mango {
+  color: var(--mango-gold);
+}
+
+.text-cream {
+  color: var(--cream-vanilla);
+}
+
+.text-graham {
+  color: var(--graham-brown);
+}
+
+.text-neutral {
+  color: var(--neutral-700);
+}
+
+.text-dark {
+  color: var(--neutral-900);
+}
+
+.text-white {
+  color: white;
+}
+
+/* Text Effects */
+.text-shadow-sm {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-md {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.text-shadow-lg {
+  text-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(255, 184, 77, 0.6);
+}
+
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
+
+/* Base Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 1rem 2rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn:focus-visible {
+  outline: 3px solid rgba(255, 184, 77, 0.4);
+  outline-offset: 2px;
+}
+
+/* Primary Button - Mango Gradient */
+.btn-primary {
+  background: var(--gradient-mango);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-md);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: white;
+  color: var(--mango-gold);
+  border: 2px solid var(--mango-gold);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: var(--mango-gold);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Outline Button */
+.btn-outline {
+  background: transparent;
+  color: var(--mango-gold);
+  border: 2px solid var(--mango-gold);
+}
+
+.btn-outline:hover {
+  background: var(--mango-gold);
+  color: white;
+  border-color: var(--mango-gold);
+  transform: translateY(-2px);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--mango-gold);
+  box-shadow: none;
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 184, 77, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 3D Button Effect */
+.btn-3d {
+  background: var(--gradient-mango);
+  color: white;
+  box-shadow: 
+    0 4px 0 var(--mango-sunset),
+    0 8px 16px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+}
+
+.btn-3d:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 0 var(--mango-sunset),
+    0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+.btn-3d:active {
+  transform: translateY(2px);
+  box-shadow: 
+    0 2px 0 var(--mango-sunset),
+    0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Button Sizes */
+.btn-xs {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+.btn-sm {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+.btn-lg {
+  padding: 1.25rem 2.5rem;
+  font-size: 1.125rem;
+}
+
+.btn-xl {
+  padding: 1.5rem 3rem;
+  font-size: 1.25rem;
+}
+
+/* Button with Icon */
+.btn-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.btn-with-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Pill Button */
+.btn-pill {
+  border-radius: var(--radius-full);
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--cream-vanilla);
+  color: var(--graham-dark);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: inline-block;
+}
+
+.btn-pill:hover {
+  background: var(--graham-tan);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Floating Action Button */
+.btn-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 4rem;
+  height: 4rem;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: var(--gradient-mango);
+  color: white;
+  box-shadow: var(--shadow-xl);
+  z-index: 1000;
+  animation: bounce-slow 3s ease-in-out infinite;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.btn-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 20px 40px rgba(255, 107, 53, 0.4);
+  animation: none;
+}
+
+.btn-fab svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Social Button Styles */
+.btn-social {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-base);
+  cursor: pointer;
+  border: none;
+}
+
+.btn-facebook {
+  background: #1877F2;
+  color: white;
+}
+
+.btn-facebook:hover {
+  background: #145dbf;
+  transform: translateY(-2px);
+}
+
+.btn-instagram {
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  color: white;
+}
+
+.btn-instagram:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.btn-twitter {
+  background: #1DA1F2;
+  color: white;
+}
+
+.btn-twitter:hover {
+  background: #1a8cd8;
+  transform: translateY(-2px);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.gradient-mango {
+  background: var(--gradient-mango);
+}
+
+.gradient-cream {
+  background: var(--gradient-cream);
+}
+
+.bg-gradient-mango {
+  background: var(--gradient-mango);
+}
+
+.bg-gradient-cream {
+  background: var(--gradient-cream);
+}
+
+.bg-mango-gold {
+  background: var(--mango-gold);
+}
+
+.bg-tropical-green {
+  background: var(--tropical-green);
+}
+
+.bg-cream-white {
+  background: var(--cream-white);
+}
+
+.bg-cream-vanilla {
+  background: var(--cream-vanilla);
+}
+
+.bg-mint-fresh {
+  background: var(--mint-fresh);
+}
+
+.bg-graham-tan {
+  background: var(--graham-tan);
+}
+
+.bg-graham-brown {
+  background: var(--graham-brown);
+}
+
+.text-gradient-mango {
+  background: var(--gradient-mango);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-mango-sun {
+  color: var(--mango-sun);
+}
+
+.text-mango-gold {
+  color: var(--mango-gold);
+}
+
+.text-tropical-green {
+  color: var(--tropical-green);
+}
+
+.text-graham-brown {
+  color: var(--graham-brown);
+}
+
+.text-cream-vanilla {
+  color: var(--cream-vanilla);
+}
+
+.text-neutral-900 {
+  color: var(--neutral-900);
+}
+
+.text-neutral-700 {
+  color: var(--neutral-700);
+}
+
+.text-neutral-400 {
+  color: var(--neutral-300);
+}
+
+.text-neutral-300 {
+  color: var(--neutral-200);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 184, 77, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 184, 77, 0.8);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s ease-in-out infinite;
+}
+
+.animate-rotate {
+  animation: rotate 20s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-in forwards;
+  opacity: 0;
+}
+
+/* Animation Delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+
+/* ============================================================================
+   LAYOUT UTILITIES
+   ============================================================================ */
+
+.landing-page {
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Section spacing */
+section {
+  position: relative;
+  width: 100%;
+}
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+  /* Hide scroll indicator on tablets and mobile to prevent overlap */
+  #home .animate-bounce-slow {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+  
+  .text-lead {
+    font-size: 1.125rem;
+  }
+  
+  .btn {
+    padding: 0.875rem 1.75rem;
+    font-size: 0.9375rem;
+  }
+  
+  .btn-lg {
+    padding: 1.125rem 2.25rem;
+    font-size: 1.0625rem;
+  }
+  
+  .btn-xl {
+    padding: 1.25rem 2.5rem;
+    font-size: 1.125rem;
+  }
+  
+  .btn-fab {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+  
+  .btn-fab svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .btn-fab {
+    bottom: 1rem;
+    right: 1rem;
+    width: 3rem;
+    height: 3rem;
+  }
+  
+  .btn-fab svg {
+    width: 1rem;
+    height: 1rem;
+  }
+  
+  .btn-xl {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
 }
