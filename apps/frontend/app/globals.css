@@ -25,16 +25,6 @@
   --neutral-800: #292524;
   --neutral-900: #1C1917;
   
-  --gradient-mango: linear-gradient(135deg, #FFB84D 0%, #FF9500 50%, #FF6B35 100%);
-  --gradient-cream: linear-gradient(180deg, #FFF8E7 0%, #FFEFD5 100%);
-  --gradient-tropical: linear-gradient(120deg, #7CB342 0%, #4ECDC4 100%);
-  
-  --shadow-sm: 0 2px 8px rgba(255, 107, 53, 0.1);
-  --shadow-md: 0 4px 16px rgba(255, 107, 53, 0.15);
-  --shadow-lg: 0 12px 32px rgba(255, 107, 53, 0.2);
-  --shadow-xl: 0 20px 48px rgba(255, 107, 53, 0.25);
-  --shadow-glow: 0 0 24px rgba(255, 184, 77, 0.5);
-  
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -42,7 +32,6 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  
   --color-mango-sun: var(--mango-sun);
   --color-mango-gold: var(--mango-gold);
   --color-mango-sunset: var(--mango-sunset);
@@ -76,6 +65,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  position: relative;
 }
 
 ::-webkit-scrollbar {
@@ -87,7 +77,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gradient-mango);
+  background: linear-gradient(135deg, #FFB84D 0%, #FF9500 50%, #FF6B35 100%);
   border-radius: 9999px;
   border: 2px solid var(--cream-vanilla);
 }
@@ -110,41 +100,12 @@ body {
   }
 }
 
-@keyframes bounce-slow {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 184, 77, 0.4);
+    opacity: 0.3;
   }
   50% {
-    box-shadow: 0 0 40px rgba(255, 184, 77, 0.8);
-  }
-}
-
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+    opacity: 0.5;
   }
 }
 
@@ -152,29 +113,9 @@ body {
   animation: float 6s ease-in-out infinite;
 }
 
-.animate-bounce-slow {
-  animation: bounce-slow 3s ease-in-out infinite;
-}
-
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
-
-.animate-slide-up {
-  animation: slide-up 0.8s ease-out forwards;
-  opacity: 0;
-}
-
-.animate-fade-in {
-  animation: fade-in 1s ease-in forwards;
-  opacity: 0;
-}
-
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
 
 .landing-page {
   width: 100%;

@@ -29,6 +29,26 @@ export const theme = {
     },
   },
 
+  spacing: {
+    section: {
+      mobile: '3rem',
+      tablet: '4rem',
+      desktop: '5rem',
+    },
+    container: {
+      mobile: '1rem',
+      tablet: '1.5rem',
+      desktop: '2rem',
+    },
+  },
+
+  zIndex: {
+    background: 0,
+    content: 10,
+    navbar: 1000,
+    modal: 2000,
+  },
+
   gradients: {
     mango: 'linear-gradient(135deg, #FFB84D 0%, #FF9500 50%, #FF6B35 100%)',
     cream: 'linear-gradient(180deg, #FFF8E7 0%, #FFEFD5 100%)',
@@ -36,45 +56,10 @@ export const theme = {
     sunset: 'linear-gradient(90deg, #FF6B35 0%, #FFB84D 50%, #87CEEB 100%)',
   },
 
-  shadows: {
-    sm: '0 2px 8px rgba(255, 107, 53, 0.1)',
-    md: '0 4px 16px rgba(255, 107, 53, 0.15)',
-    lg: '0 12px 32px rgba(255, 107, 53, 0.2)',
-    xl: '0 20px 48px rgba(255, 107, 53, 0.25)',
-    glow: '0 0 24px rgba(255, 184, 77, 0.5)',
-  },
-
-  spacing: {
-    xs: '0.5rem',
-    sm: '1rem',
-    md: '1.5rem',
-    lg: '2rem',
-    xl: '3rem',
-    '2xl': '4rem',
-    '3xl': '6rem',
-  },
-
-  borderRadius: {
-    sm: '0.5rem',
-    md: '1rem',
-    lg: '1.5rem',
-    xl: '2rem',
-    full: '9999px',
-  },
-
   transitions: {
     fast: '150ms cubic-bezier(0.4, 0, 0.2, 1)',
     base: '300ms cubic-bezier(0.4, 0, 0.2, 1)',
     slow: '500ms cubic-bezier(0.4, 0, 0.2, 1)',
-    bounce: '600ms cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-  },
-
-  typography: {
-    fonts: {
-      heading: "'Righteous', cursive",
-      body: "'Outfit', sans-serif",
-      handwritten: "'Caveat', cursive",
-    },
   },
 };
 

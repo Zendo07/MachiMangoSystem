@@ -72,14 +72,14 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-neutral-900 text-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5">
+    <footer className="relative bg-neutral-900 text-white overflow-hidden" style={{ zIndex: 10 }}>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0, opacity: 0.05 }}>
         <div className="absolute top-10 right-20 w-64 h-64 rounded-full bg-gradient-to-br from-mango-sun to-mango-gold blur-3xl" />
         <div className="absolute bottom-10 left-20 w-80 h-80 rounded-full bg-tropical-green blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 mb-12">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16" style={{ zIndex: 10 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8 md:gap-12 mb-8 md:mb-12">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-6 group cursor-pointer">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-mango-sun via-mango-gold to-mango-sunset flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -133,7 +133,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-neutral-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-neutral-400">
+          <p className="text-sm text-neutral-400 text-center md:text-left">
             © {currentYear} Machi Mango Inventory System. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-sm text-neutral-400">

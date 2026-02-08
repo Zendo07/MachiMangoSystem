@@ -17,50 +17,49 @@ export default function Navbar() {
 
   const navLinks = [
     { label: 'Home', href: '#home' },
-    { label: 'Menu', href: '#menu' },
-    { label: 'About', href: '#about' },
-    { label: 'Locations', href: '#locations' },
-    { label: 'Contact', href: '#contact' },
+    { label: 'Features', href: '#features' },
+    { label: 'Roles', href: '#roles' },
+    { label: 'Contact', href: '#cta' },
   ];
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg'
-          : 'bg-transparent'
+          ? 'bg-white/98 backdrop-blur-md shadow-lg'
+          : 'bg-white/80 backdrop-blur-sm'
       }`}
+      style={{ zIndex: 1000 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-mango-sun via-mango-gold to-mango-sunset flex items-center justify-center shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-110">
+          <a href="#home" className="flex items-center gap-3 group cursor-pointer flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-mango-sun via-mango-gold to-mango-sunset flex items-center justify-center shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
               <span className="text-2xl">🥭</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-bold bg-gradient-to-r from-mango-sun via-mango-gold to-mango-sunset bg-clip-text text-transparent leading-none">
+              <span className="text-xl font-bold bg-gradient-to-r from-mango-sun via-mango-gold to-mango-sunset bg-clip-text text-transparent leading-tight">
                 Machi
               </span>
-              <span className="text-xs font-semibold text-graham-brown -mt-1">
-                Mango Inventory
+              <span className="text-xs font-semibold text-graham-brown leading-tight">
+                Inventory System
               </span>
             </div>
-          </div>
+          </a>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-sm font-semibold text-neutral-700 hover:text-mango-gold transition-colors duration-200 relative group"
+                className="text-sm font-semibold text-neutral-700 hover:text-mango-gold transition-colors duration-200"
               >
                 {link.label}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-mango-sun to-mango-gold group-hover:w-full transition-all duration-300" />
               </a>
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
@@ -77,8 +76,9 @@ export default function Navbar() {
           </div>
 
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-mango-gold/10 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-mango-gold/10 transition-colors flex-shrink-0"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
           >
             <svg
               className="w-6 h-6 text-neutral-700"
@@ -100,8 +100,8 @@ export default function Navbar() {
       </div>
 
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-neutral-200 shadow-lg">
-          <div className="px-4 py-6 space-y-4">
+        <div className="lg:hidden bg-white border-t border-neutral-200 shadow-lg">
+          <div className="px-4 py-6 space-y-4 max-w-7xl mx-auto">
             {navLinks.map((link) => (
               <a
                 key={link.label}
