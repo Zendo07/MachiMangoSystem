@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Machi Mango Graham Shake - Tropical Bliss in Every Sip",
-  description: "Experience the perfect blend of sweet Philippine mangoes, rich cream, and crunchy graham crackers. Order your favorite shake today!",
+  title: "Machi Mango - Smart Inventory & Ordering System",
+  description: "Streamline your mango business operations with comprehensive inventory management, real-time reporting, and role-based access control.",
 };
 
 export default function RootLayout({
