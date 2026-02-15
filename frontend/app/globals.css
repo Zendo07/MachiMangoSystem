@@ -1,8 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  /* Custom Colors */
+  --color-primaryYellow: #ffe135;
+  --color-primaryGreen: #7cb342;
+  --color-primaryOrange: #ff8c00;
+  --color-darkBg: #8b4513;
+  --color-darkGreen: #228b22;
+  --color-lightGreen: #90ee90;
+  --color-skyBlue: #87ceeb;
+  --color-sunYellow: #ffd700;
+  --color-brownDark: #654321;
+  --color-brownDarker: #4a2511;
+
+  /* Font Families */
+  --font-family-heading: 'Fredoka', sans-serif;
+  --font-family-body: 'Poppins', sans-serif;
+}
 
 :root {
   /* Primary Colors */
