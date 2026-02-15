@@ -1,0 +1,183 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Primary Colors */
+  --primary-yellow: #ffe135;
+  --primary-green: #7cb342;
+  --primary-orange: #ff8c00;
+
+  /* Background Colors */
+  --dark-bg: #8b4513;
+  --dark-green: #228b22;
+  --light-green: #90ee90;
+  --sky-blue: #87ceeb;
+
+  /* Accent Colors */
+  --white: #ffffff;
+  --sun-yellow: #ffd700;
+  --brown-dark: #654321;
+  --brown-darker: #4a2511;
+
+  /* Typography */
+  --font-heading: 'Fredoka', sans-serif;
+  --font-body: 'Poppins', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  background: linear-gradient(
+    180deg,
+    #87ceeb 0%,
+    #98d8e8 15%,
+    #ffd700 15%,
+    #ffa500 30%,
+    #90ee90 30%,
+    #7cb342 100%
+  );
+  min-height: 100vh;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(10deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+/* Animation Utility Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.8s ease;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.8s ease;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-bounce {
+  animation: bounce 3s ease-in-out infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 2.5s ease-in-out infinite;
+}
+
+.section {
+  padding: 80px 5%;
+}
+
+.section-white {
+  background: white;
+}
+
+.section-green {
+  background: linear-gradient(135deg, #32cd32 0%, #90ee90 100%);
+}
+
+.section-yellow {
+  background: linear-gradient(135deg, #ffe135 0%, #ffd700 50%, #ffa500 100%);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  .section {
+    padding: 60px 5%;
+  }
+}
