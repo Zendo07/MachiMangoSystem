@@ -3,8 +3,12 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
+
   return (
     <nav className="fixed top-0 w-full bg-gradient-to-r from-darkBg to-brownDark z-50 shadow-xl border-b-4 border-primaryYellow">
       <div className="max-w-7xl mx-auto px-[5%] py-4 flex items-center justify-between">
@@ -30,31 +34,61 @@ export default function Navbar() {
 
         <ul className="hidden md:flex gap-8 list-none">
           <li>
-            <Link
-              href="#features"
-              className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
-            >
-              Features
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
-            </Link>
+            {isHomePage ? (
+              <a
+                href="#features"
+                className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
+              >
+                Features
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
+              </a>
+            ) : (
+              <Link
+                href="/#features"
+                className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
+              >
+                Features
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
+              </Link>
+            )}
           </li>
           <li>
-            <Link
-              href="#benefits"
-              className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
-            >
-              Benefits
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
-            </Link>
+            {isHomePage ? (
+              <a
+                href="#benefits"
+                className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
+              >
+                Benefits
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
+              </a>
+            ) : (
+              <Link
+                href="/#benefits"
+                className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
+              >
+                Benefits
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
+              </Link>
+            )}
           </li>
           <li>
-            <Link
-              href="#contact"
-              className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
-            >
-              Get Started
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
-            </Link>
+            {isHomePage ? (
+              <a
+                href="#contact"
+                className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
+              >
+                Get Started
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
+              </a>
+            ) : (
+              <Link
+                href="/#contact"
+                className="text-white font-medium hover:text-primaryYellow transition-colors relative group"
+              >
+                Get Started
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primaryYellow transition-all group-hover:w-full"></span>
+              </Link>
+            )}
           </li>
         </ul>
       </div>

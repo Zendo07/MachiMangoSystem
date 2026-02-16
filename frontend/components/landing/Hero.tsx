@@ -63,28 +63,27 @@ export default function Hero() {
           <div className="animate-float relative w-full h-96 bg-gradient-to-br from-skyBlue to-blue-300 rounded-3xl p-8 shadow-2xl border-4 border-white/60 overflow-hidden">
             <Badge
               variant="primary"
-              className="absolute top-4 left-4 z-10 animate-wiggle"
+              className="absolute top-4 left-4 z-30 animate-wiggle"
             >
               100% Pure & Fresh
             </Badge>
 
-            <div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-primaryGreen via-primaryGreen to-transparent rounded-b-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-full h-28 bg-gradient-to-t from-primaryGreen via-primaryGreen to-transparent rounded-b-3xl z-20"></div>
 
-            {/* Mango decorations */}
-            <div className="animate-bounce absolute w-12 h-12 bg-gradient-to-br from-sunYellow to-primaryOrange rounded-[50%_40%_50%_40%] shadow-lg z-10 top-12 right-8"></div>
+            <div className="animate-bounce absolute w-12 h-12 bg-gradient-to-br from-sunYellow to-primaryOrange rounded-[50%_40%_50%_40%] shadow-lg z-30 top-12 right-8"></div>
             <div
-              className="animate-bounce absolute w-10 h-10 bg-gradient-to-br from-sunYellow to-primaryOrange rounded-[50%_40%_50%_40%] shadow-lg z-10 bottom-32 left-6"
+              className="animate-bounce absolute w-10 h-10 bg-gradient-to-br from-sunYellow to-primaryOrange rounded-[50%_40%_50%_40%] shadow-lg z-30 bottom-32 left-6"
               style={{ animationDelay: '1s' }}
             ></div>
             <div
-              className="animate-bounce absolute w-8 h-8 bg-gradient-to-br from-sunYellow to-primaryOrange rounded-[50%_40%_50%_40%] shadow-lg z-10 top-1/2 right-10"
+              className="animate-bounce absolute w-8 h-8 bg-gradient-to-br from-sunYellow to-primaryOrange rounded-[50%_40%_50%_40%] shadow-lg z-30 top-1/2 right-10"
               style={{ animationDelay: '2s' }}
             ></div>
 
-            <div className="relative w-full h-full flex items-center justify-center z-20">
+            <div className="relative w-full h-full flex items-center justify-center z-10">
               <div className="relative w-full h-full">
                 <Image
-                  src="/images/machi.webp"
+                  src="/images/machibg.webp"
                   alt="Machi Mango Products"
                   fill
                   className="object-contain drop-shadow-2xl"
