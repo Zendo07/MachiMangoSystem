@@ -17,6 +17,8 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = useState('');
+  const [serverError, setServerError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -25,10 +27,11 @@ export default function SignupPage() {
       [name]: value,
     });
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
+
+    setServerError('');
 
     if (name === 'password') {
       calculatePasswordStrength(value);
@@ -61,17 +64,67 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSuccessMessage('');
+    setServerError('');
 
     if (!validateForm()) {
       return;
     }
 
     setIsLoading(true);
-    console.log('Signup attempt:', formData);
 
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          invitationCode: formData.invitationCode,
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+      console.log('Response:', data);
+
+      if (response.ok && data.success) {
+        setSuccessMessage('Admin account created! Redirecting to dashboard...');
+        setFormData({
+          invitationCode: '',
+          fullName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+        });
+        setPasswordStrength(0);
+
+        setTimeout(() => {
+          window.location.href = '/admin/dashboard';
+        }, 2000);
+      } else {
+        if (data.message && Array.isArray(data.message)) {
+          setServerError(data.message.join(', '));
+        } else if (data.message) {
+          setServerError(data.message);
+        } else if (data.error) {
+          setServerError(data.error);
+        } else {
+          setServerError('Something went wrong. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      setServerError(
+        'Cannot connect to backend server. Make sure it is running on port 3000.',
+      );
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const getPasswordStrengthColor = () => {
@@ -125,9 +178,6 @@ export default function SignupPage() {
               >
                 Welcome to Machi Mango!
               </h2>
-              <p className="text-2xl font-bold bg-gradient-to-r from-primaryGreen to-darkGreen bg-clip-text text-transparent">
-                This registration page is for the Machi Mango Admin only.
-              </p>
             </div>
 
             {/* Feature cards */}
@@ -225,6 +275,53 @@ export default function SignupPage() {
           <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-skyBlue/20 to-transparent lg:hidden"></div>
 
           <div className="w-full max-w-md relative z-10 mt-20 lg:mt-0">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="mb-4 bg-primaryGreen/10 border-l-4 border-primaryGreen p-4 rounded-lg animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="text-primaryGreen flex-shrink-0"
+                  >
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <p className="text-sm font-semibold text-primaryGreen">
+                    {successMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Server Error */}
+            {serverError && (
+              <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg animate-fadeIn">
+                <div className="flex items-center gap-3">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="text-red-500 flex-shrink-0"
+                  >
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <p className="text-sm font-semibold text-red-700">
+                    {serverError}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Form card */}
             <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-10 border-4 border-primaryYellow/40 animate-fadeIn">
               {/* Header */}
@@ -632,7 +729,7 @@ export default function SignupPage() {
               </div>
 
               {/* Public Registration Notice */}
-              <div className="mt-6 pt-4 border-t border-brownDark/10">
+              <div className="mt-4 pt-4 border-t border-brownDark/10">
                 <p className="text-center text-xs text-brownDark/60 flex items-center justify-center gap-2">
                   <svg
                     width="16"

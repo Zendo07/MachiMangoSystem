@@ -9,17 +9,60 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError('');
+    setSuccessMessage('');
     setIsLoading(true);
 
-    // TODO: Add login logic here later
-    console.log('Login attempt:', { email, password });
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    setTimeout(() => {
+      const data = await response.json();
+      console.log('Login response:', data);
+
+      if (response.ok && data.success) {
+        // Save token to localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.data));
+
+        setSuccessMessage('Login successful! Redirecting to dashboard...');
+
+        // Redirect based on role
+        setTimeout(() => {
+          if (data.data.role === 'hq_admin') {
+            window.location.href = '/admin/dashboard';
+          } else {
+            window.location.href = '/dashboard';
+          }
+        }, 1500);
+      } else {
+        if (data.message && Array.isArray(data.message)) {
+          setServerError(data.message.join(', '));
+        } else if (data.message) {
+          setServerError(data.message);
+        } else {
+          setServerError('Invalid email or password. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setServerError(
+        'Cannot connect to backend server. Make sure it is running on port 3000.',
+      );
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -31,6 +74,53 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-primaryYellow via-primaryOrange to-primaryGreen opacity-20"></div>
 
         <div className="relative z-10 w-full max-w-md animate-fadeIn">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="mb-4 bg-primaryGreen/10 border-l-4 border-primaryGreen p-4 rounded-lg animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-primaryGreen flex-shrink-0"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <p className="text-sm font-semibold text-primaryGreen">
+                  {successMessage}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Server Error */}
+          {serverError && (
+            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="text-red-500 flex-shrink-0"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <p className="text-sm font-semibold text-red-700">
+                  {serverError}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white rounded-3xl shadow-2xl p-8 border-4 border-primaryYellow">
             <div className="text-center mb-8">
               <div className="inline-block bg-gradient-to-br from-primaryYellow to-sunYellow px-6 py-3 rounded-full mb-4">
@@ -70,7 +160,10 @@ export default function LoginPage() {
                     type="email"
                     id="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setServerError('');
+                    }}
                     className="w-full pl-12 pr-4 py-3.5 rounded-xl border-3 border-primaryGreen/40 focus:border-primaryGreen focus:outline-none focus:ring-4 focus:ring-primaryGreen/20 transition-all"
                     placeholder="you@example.com"
                     required
@@ -111,7 +204,10 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     id="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setServerError('');
+                    }}
                     className="w-full pl-12 pr-12 py-3.5 rounded-xl border-3 border-primaryOrange/40 focus:border-primaryOrange focus:outline-none focus:ring-4 focus:ring-primaryOrange/20 transition-all"
                     placeholder="Enter your password"
                     required
