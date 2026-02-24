@@ -19,6 +19,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // ─── SIGNUP ───────────────────────────────────────────────────────────────
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RateLimitGuard)
@@ -34,6 +35,23 @@ export class AuthController {
     );
   }
 
+  // ─── LOGIN ────────────────────────────────────────────────────────────────
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() loginDto: { email: string; password: string },
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.login(
+      loginDto.email,
+      loginDto.password,
+      ipAddress,
+      userAgent || 'unknown',
+    );
+  }
+
+  // ─── VALIDATE INVITATION CODE ─────────────────────────────────────────────
   @Get('invitation-code/validate')
   async validateInvitationCode(@Query('code') code: string) {
     if (!code) {
