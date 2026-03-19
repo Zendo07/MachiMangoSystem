@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -31,7 +32,8 @@ ChartJS.register(
   Filler,
 );
 
-const colors = {
+// ─── SHARED COLORS ────────────────────────────────────────────────────────────
+export const C = {
   brownDarker: '#3E1A00',
   brownDark: '#6B3A2A',
   brown: '#8B4513',
@@ -39,17 +41,380 @@ const colors = {
   orange: '#FF8C00',
   green: '#5A9E3A',
   darkGreen: '#3D6E27',
-  skyBlue: '#4A9ECA',
   bg: '#F2EAD8',
 };
 
+// ─── SHARED NAV ITEMS ─────────────────────────────────────────────────────────
+export const NAV_ITEMS = [
+  {
+    name: 'Dashboard',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Branches',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Analytics',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Products',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Settings',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    ),
+  },
+];
+
+// ─── SHARED SIDEBAR ───────────────────────────────────────────────────────────
+export function AdminSidebar({
+  sidebarOpen,
+  activeNav,
+  onNav,
+  adminName,
+  onCreateAccount,
+}: {
+  sidebarOpen: boolean;
+  activeNav: string;
+  onNav: (name: string) => void;
+  adminName: string;
+  onCreateAccount: () => void;
+}) {
+  return (
+    <aside
+      style={{
+        width: sidebarOpen ? 256 : 72,
+        background: `linear-gradient(180deg,${C.brownDarker} 0%,${C.brownDark} 100%)`,
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'width 0.28s cubic-bezier(.4,0,.2,1)',
+        flexShrink: 0,
+        boxShadow: '4px 0 24px rgba(62,26,0,0.18)',
+        zIndex: 10,
+      }}
+    >
+      {/* Logo */}
+      <div
+        style={{
+          padding: '24px 16px 20px',
+          borderBottom: '1px solid rgba(245,200,66,0.2)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              borderRadius: 14,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 22,
+              boxShadow: '0 4px 12px rgba(255,140,0,0.4)',
+            }}
+          >
+            🥭
+          </div>
+          {sidebarOpen && (
+            <div style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  fontWeight: 800,
+                  fontSize: 17,
+                  color: C.yellow,
+                  letterSpacing: '-0.3px',
+                  lineHeight: 1.2,
+                }}
+              >
+                Machi Mango
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(245,200,66,0.7)',
+                  fontWeight: 600,
+                  marginTop: 2,
+                }}
+              >
+                HQ Control Center
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: '16px 10px', overflowY: 'auto' }}>
+        {sidebarOpen && (
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'rgba(245,200,66,0.35)',
+              padding: '8px 14px 6px',
+            }}
+          >
+            Main Menu
+          </div>
+        )}
+        {NAV_ITEMS.map((item) => {
+          const active = activeNav === item.name;
+          return (
+            <button
+              key={item.name}
+              onClick={() => onNav(item.name)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: sidebarOpen ? '11px 14px' : '11px 0',
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                borderRadius: 12,
+                marginBottom: 3,
+                border: 'none',
+                cursor: 'pointer',
+                background: active
+                  ? `linear-gradient(90deg,${C.yellow},${C.orange})`
+                  : 'transparent',
+                color: active ? C.brownDarker : 'rgba(245,200,66,0.65)',
+                fontWeight: active ? 700 : 500,
+                fontSize: 13.5,
+                boxShadow: active ? '0 4px 14px rgba(255,140,0,0.3)' : 'none',
+                transition: 'all 0.18s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = 'rgba(245,200,66,0.1)';
+                  e.currentTarget.style.color = C.yellow;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'rgba(245,200,66,0.65)';
+                }
+              }}
+            >
+              <span
+                style={{
+                  flexShrink: 0,
+                  color: active ? C.brownDarker : 'inherit',
+                }}
+              >
+                {item.icon}
+              </span>
+              {sidebarOpen && <span>{item.name}</span>}
+            </button>
+          );
+        })}
+
+        {sidebarOpen && (
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'rgba(245,200,66,0.35)',
+              padding: '14px 14px 6px',
+            }}
+          >
+            Administration
+          </div>
+        )}
+        <button
+          onClick={onCreateAccount}
+          style={{
+            width: sidebarOpen ? '100%' : 42,
+            margin: sidebarOpen ? '4px 0 8px' : '4px auto 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarOpen ? 'flex-start' : 'center',
+            gap: 10,
+            padding: sidebarOpen ? '12px 14px' : '11px 0',
+            borderRadius: 13,
+            border: '2px dashed rgba(245,200,66,0.4)',
+            background: 'rgba(245,200,66,0.07)',
+            color: C.yellow,
+            fontWeight: 700,
+            fontSize: 13.5,
+            cursor: 'pointer',
+            transition: 'all .2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(245,200,66,0.15)';
+            e.currentTarget.style.borderColor = C.yellow;
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(245,200,66,0.07)';
+            e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+          title="Create Account"
+        >
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              flexShrink: 0,
+              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: C.brownDarker,
+              fontSize: 17,
+              fontWeight: 800,
+              boxShadow: '0 2px 8px rgba(255,140,0,0.35)',
+            }}
+          >
+            +
+          </div>
+          {sidebarOpen && <span>Create Account</span>}
+        </button>
+      </nav>
+
+      {/* User card */}
+      <div
+        style={{
+          padding: '14px 10px',
+          borderTop: '1px solid rgba(245,200,66,0.2)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 12px',
+            borderRadius: 12,
+            background: 'rgba(255,255,255,0.06)',
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              flexShrink: 0,
+              background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 15,
+            }}
+          >
+            {adminName.charAt(0).toUpperCase()}
+          </div>
+          {sidebarOpen && (
+            <div style={{ overflow: 'hidden' }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: C.yellow,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {adminName}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'rgba(245,200,66,0.6)',
+                  marginTop: 1,
+                }}
+              >
+                HQ Administrator
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  const router = useRouter();
   const [adminName, setAdminName] = useState('Admin');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dateRange, setDateRange] = useState('Last 30 Days');
-  const [activeNav, setActiveNav] = useState('Dashboard');
-
-  // ── Modal state ──
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [createdAccount, setCreatedAccount] =
@@ -57,13 +422,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        const user = JSON.parse(userStr) as { fullName?: string };
-        setAdminName(user.fullName ?? 'Admin');
-      }
+      const u = localStorage.getItem('user');
+      if (u)
+        setAdminName(
+          (JSON.parse(u) as { fullName?: string }).fullName ?? 'Admin',
+        );
     } catch {
-      // ignore
+      /* ignore */
     }
   }, []);
 
@@ -72,63 +437,64 @@ export default function AdminDashboard() {
     localStorage.removeItem('user');
     window.location.href = '/login';
   };
-
-  // Called when CreateAccountModal submits successfully
   const handleAccountCreated = (data: CreatedAccountData) => {
     setCreatedAccount(data);
     setCreateModalOpen(false);
-    // slight delay so create modal finishes closing before success opens
     setTimeout(() => setSuccessModalOpen(true), 320);
   };
-
-  // "Create Another" from success modal
   const handleCreateAnother = () => {
     setSuccessModalOpen(false);
     setTimeout(() => setCreateModalOpen(true), 320);
   };
 
-  // ── Chart data ──
+  const handleNav = (name: string) => {
+    if (name === 'Products') router.push('/admin/products');
+    // Add other routes here as the project grows:
+    // if (name === 'Branches') router.push('/admin/branches');
+    // if (name === 'Analytics') router.push('/admin/analytics');
+    // if (name === 'Settings') router.push('/admin/settings');
+  };
+
+  // Chart data
   const salesData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
         label: 'Sales',
         data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
-        borderColor: colors.green,
+        borderColor: C.green,
         backgroundColor: 'rgba(90,158,58,0.12)',
         fill: true,
         tension: 0.4,
         borderWidth: 2.5,
         pointRadius: 5,
-        pointBackgroundColor: colors.green,
+        pointBackgroundColor: C.green,
         pointBorderColor: '#fff',
         pointBorderWidth: 2,
         pointHoverRadius: 7,
       },
     ],
   };
-
-  const branchPerformanceData = {
+  const branchData = {
     labels: ['Fla. Blanca', 'Porac', 'Sta. Rita', 'Angeles', 'San Fernando'],
     datasets: [
       {
         label: 'Orders',
         data: [450, 380, 520, 290, 410],
-        backgroundColor: colors.orange,
+        backgroundColor: C.orange,
         borderRadius: 6,
         barThickness: 36,
       },
     ],
   };
-
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: colors.brownDarker,
-        titleColor: colors.yellow,
+        backgroundColor: C.brownDarker,
+        titleColor: C.yellow,
         bodyColor: '#fff',
         padding: 12,
         cornerRadius: 8,
@@ -140,20 +506,110 @@ export default function AdminDashboard() {
       y: {
         beginAtZero: true,
         grid: { color: 'rgba(0,0,0,0.06)' },
-        ticks: {
-          color: colors.brown,
-          font: { size: 11, weight: 'bold' as const },
-        },
+        ticks: { color: C.brown, font: { size: 11, weight: 'bold' as const } },
       },
       x: {
         grid: { display: false },
-        ticks: {
-          color: colors.brown,
-          font: { size: 11, weight: 'bold' as const },
-        },
+        ticks: { color: C.brown, font: { size: 11, weight: 'bold' as const } },
       },
     },
   };
+
+  const statCards = [
+    {
+      label: 'Total Sales',
+      value: '₱0.00',
+      subtext: 'Sample: ₱548,920',
+      badge: '0%',
+      grad: 'linear-gradient(135deg,#5A9E3A,#3D6E27)',
+      badgeBg: '#E8F5E1',
+      badgeColor: '#3D6E27',
+      subtextColor: '#3D6E27',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+        >
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Total Orders',
+      value: '0',
+      subtext: 'Sample: 2,050',
+      badge: '0%',
+      grad: 'linear-gradient(135deg,#FF8C00,#CC7000)',
+      badgeBg: '#FFF0D9',
+      badgeColor: '#CC7000',
+      subtextColor: '#CC7000',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+        >
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Active Users',
+      value: '1',
+      subtext: 'Admin only',
+      badge: '1',
+      grad: 'linear-gradient(135deg,#F5C842,#E0A800)',
+      badgeBg: '#FFFAE0',
+      badgeColor: '#6B3A2A',
+      subtextColor: '#6B3A2A',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#6B3A2A"
+          strokeWidth="2.5"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Net Revenue',
+      value: '₱0.00',
+      subtext: 'Sample: ₱428,340',
+      badge: '0%',
+      grad: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
+      badgeBg: '#E0F2FA',
+      badgeColor: '#2E7BAD',
+      subtextColor: '#2E7BAD',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+        >
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      ),
+    },
+  ];
 
   const branches = [
     {
@@ -198,191 +654,8 @@ export default function AdminDashboard() {
     },
   ];
 
-  const navItems = [
-    {
-      name: 'Dashboard',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Branches',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Analytics',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Reports',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-          <line x1="16" y1="13" x2="8" y2="13" />
-          <line x1="16" y1="17" x2="8" y2="17" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Settings',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v6m0 6v6M17 12h6M1 12h6" />
-        </svg>
-      ),
-    },
-  ];
-
-  const statCards = [
-    {
-      label: 'Total Sales',
-      value: '₱0.00',
-      subtext: 'Sample: ₱548,920',
-      badge: '0%',
-      bgGrad: 'linear-gradient(135deg,#5A9E3A,#3D6E27)',
-      badgeBg: '#E8F5E1',
-      badgeColor: '#3D6E27',
-      subtextColor: '#3D6E27',
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.5"
-        >
-          <line x1="12" y1="1" x2="12" y2="23" />
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Total Orders',
-      value: '0',
-      subtext: 'Sample: 2,050',
-      badge: '0%',
-      bgGrad: 'linear-gradient(135deg,#FF8C00,#CC7000)',
-      badgeBg: '#FFF0D9',
-      badgeColor: '#CC7000',
-      subtextColor: '#CC7000',
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.5"
-        >
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Active Users',
-      value: '1',
-      subtext: 'Admin only',
-      badge: '1',
-      bgGrad: 'linear-gradient(135deg,#F5C842,#E0A800)',
-      badgeBg: '#FFFAE0',
-      badgeColor: '#6B3A2A',
-      subtextColor: '#6B3A2A',
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#6B3A2A"
-          strokeWidth="2.5"
-        >
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      ),
-    },
-    {
-      label: 'Net Revenue',
-      value: '₱0.00',
-      subtext: 'Sample: ₱428,340',
-      badge: '0%',
-      bgGrad: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
-      badgeBg: '#E0F2FA',
-      badgeColor: '#2E7BAD',
-      subtextColor: '#2E7BAD',
-      icon: (
-        <svg
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2.5"
-        >
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      ),
-    },
-  ];
-
   return (
     <>
-      {/* ── MODALS ── */}
       <CreateAccountModal
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
@@ -395,292 +668,23 @@ export default function AdminDashboard() {
         onCreateAnother={handleCreateAnother}
       />
 
-      {/* ── DASHBOARD SHELL ── */}
       <div
         style={{
           display: 'flex',
           height: '100vh',
-          background: colors.bg,
+          background: C.bg,
           overflow: 'hidden',
           fontFamily: "'Segoe UI', system-ui, sans-serif",
         }}
       >
-        {/* ── SIDEBAR ── */}
-        <aside
-          style={{
-            width: sidebarOpen ? 256 : 72,
-            background: `linear-gradient(180deg, ${colors.brownDarker} 0%, ${colors.brownDark} 100%)`,
-            display: 'flex',
-            flexDirection: 'column',
-            transition: 'width 0.28s cubic-bezier(.4,0,.2,1)',
-            flexShrink: 0,
-            boxShadow: '4px 0 24px rgba(62,26,0,0.18)',
-            position: 'relative',
-            zIndex: 10,
-          }}
-        >
-          {/* Logo */}
-          <div
-            style={{
-              padding: '24px 16px 20px',
-              borderBottom: `1px solid rgba(245,200,66,0.2)`,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  flexShrink: 0,
-                  background: `linear-gradient(135deg, ${colors.yellow}, ${colors.orange})`,
-                  borderRadius: 14,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 22,
-                  boxShadow: '0 4px 12px rgba(255,140,0,0.4)',
-                }}
-              >
-                🥭
-              </div>
-              {sidebarOpen && (
-                <div style={{ overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 17,
-                      color: colors.yellow,
-                      letterSpacing: '-0.3px',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Machi Mango
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: 'rgba(245,200,66,0.7)',
-                      fontWeight: 600,
-                      marginTop: 2,
-                    }}
-                  >
-                    HQ Control Center
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+        <AdminSidebar
+          sidebarOpen={sidebarOpen}
+          activeNav="Dashboard"
+          onNav={handleNav}
+          adminName={adminName}
+          onCreateAccount={() => setCreateModalOpen(true)}
+        />
 
-          {/* Nav */}
-          <nav style={{ flex: 1, padding: '16px 10px', overflowY: 'auto' }}>
-            {/* Section label */}
-            {sidebarOpen && (
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: 'rgba(245,200,66,0.35)',
-                  padding: '8px 14px 6px',
-                }}
-              >
-                Main Menu
-              </div>
-            )}
-
-            {navItems.map((item) => {
-              const active = activeNav === item.name;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => setActiveNav(item.name)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: sidebarOpen ? '11px 14px' : '11px 0',
-                    justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                    borderRadius: 12,
-                    marginBottom: 3,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: active
-                      ? `linear-gradient(90deg, ${colors.yellow}, ${colors.orange})`
-                      : 'transparent',
-                    color: active
-                      ? colors.brownDarker
-                      : 'rgba(245,200,66,0.65)',
-                    fontWeight: active ? 700 : 500,
-                    fontSize: 13.5,
-                    boxShadow: active
-                      ? '0 4px 14px rgba(255,140,0,0.3)'
-                      : 'none',
-                    transition: 'all 0.18s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!active) {
-                      e.currentTarget.style.background = 'rgba(245,200,66,0.1)';
-                      e.currentTarget.style.color = colors.yellow;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'rgba(245,200,66,0.65)';
-                    }
-                  }}
-                >
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      color: active ? colors.brownDarker : 'inherit',
-                    }}
-                  >
-                    {item.icon}
-                  </span>
-                  {sidebarOpen && <span>{item.name}</span>}
-                </button>
-              );
-            })}
-
-            {/* ── ADMINISTRATION SECTION ── */}
-            {sidebarOpen && (
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: 'rgba(245,200,66,0.35)',
-                  padding: '14px 14px 6px',
-                }}
-              >
-                Administration
-              </div>
-            )}
-
-            {/* Create Account Button */}
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              style={{
-                width: sidebarOpen ? 'calc(100% - 0px)' : 42,
-                margin: sidebarOpen ? '4px 0 8px' : '4px auto 8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                gap: 10,
-                padding: sidebarOpen ? '12px 14px' : '11px 0',
-                borderRadius: 13,
-                border: `2px dashed rgba(245,200,66,0.4)`,
-                background: 'rgba(245,200,66,0.07)',
-                color: colors.yellow,
-                fontWeight: 700,
-                fontSize: 13.5,
-                cursor: 'pointer',
-                transition:
-                  'background 0.2s, border-color 0.2s, transform 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(245,200,66,0.15)';
-                e.currentTarget.style.borderColor = colors.yellow;
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(245,200,66,0.07)';
-                e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-              title="Create Account"
-            >
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  flexShrink: 0,
-                  background: `linear-gradient(135deg, ${colors.yellow}, ${colors.orange})`,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: colors.brownDarker,
-                  fontSize: 17,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  boxShadow: '0 2px 8px rgba(255,140,0,0.35)',
-                }}
-              >
-                +
-              </div>
-              {sidebarOpen && <span>Create Account</span>}
-            </button>
-          </nav>
-
-          {/* User card */}
-          <div
-            style={{
-              padding: '14px 10px',
-              borderTop: `1px solid rgba(245,200,66,0.2)`,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                borderRadius: 12,
-                background: 'rgba(255,255,255,0.06)',
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  flexShrink: 0,
-                  background: `linear-gradient(135deg, ${colors.green}, ${colors.darkGreen})`,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: 15,
-                }}
-              >
-                {adminName.charAt(0).toUpperCase()}
-              </div>
-              {sidebarOpen && (
-                <div style={{ overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 13,
-                      color: colors.yellow,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {adminName}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: 'rgba(245,200,66,0.6)',
-                      marginTop: 1,
-                    }}
-                  >
-                    HQ Administrator
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </aside>
-
-        {/* ── MAIN ── */}
         <div
           style={{
             flex: 1,
@@ -694,7 +698,7 @@ export default function AdminDashboard() {
           <header
             style={{
               background: '#fff',
-              borderBottom: `3px solid ${colors.yellow}`,
+              borderBottom: `3px solid ${C.yellow}`,
               padding: '0 28px',
               height: 70,
               display: 'flex',
@@ -706,9 +710,9 @@ export default function AdminDashboard() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
+                onClick={() => setSidebarOpen((v) => !v)}
                 style={{
-                  border: `2px solid transparent`,
+                  border: '2px solid transparent',
                   borderRadius: 10,
                   padding: '7px 9px',
                   background: 'transparent',
@@ -716,11 +720,10 @@ export default function AdminDashboard() {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 4,
-                  transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${colors.yellow}22`;
-                  e.currentTarget.style.borderColor = colors.yellow;
+                  e.currentTarget.style.background = `${C.yellow}22`;
+                  e.currentTarget.style.borderColor = C.yellow;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
@@ -734,7 +737,7 @@ export default function AdminDashboard() {
                       display: 'block',
                       width: 20,
                       height: 2.5,
-                      background: colors.brown,
+                      background: C.brown,
                       borderRadius: 2,
                     }}
                   />
@@ -745,7 +748,7 @@ export default function AdminDashboard() {
                   style={{
                     fontWeight: 800,
                     fontSize: 19,
-                    color: colors.brownDark,
+                    color: C.brownDark,
                     letterSpacing: '-0.4px',
                   }}
                 >
@@ -754,7 +757,7 @@ export default function AdminDashboard() {
                 <div
                   style={{
                     fontSize: 12,
-                    color: colors.green,
+                    color: C.green,
                     fontWeight: 600,
                     marginTop: 1,
                   }}
@@ -771,8 +774,8 @@ export default function AdminDashboard() {
                   gap: 8,
                   padding: '8px 14px',
                   borderRadius: 10,
-                  background: `${colors.yellow}22`,
-                  border: `2px solid ${colors.yellow}`,
+                  background: `${C.yellow}22`,
+                  border: `2px solid ${C.yellow}`,
                 }}
               >
                 <svg
@@ -780,7 +783,7 @@ export default function AdminDashboard() {
                   height="15"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke={colors.brown}
+                  stroke={C.brown}
                   strokeWidth="2.5"
                 >
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -797,7 +800,7 @@ export default function AdminDashboard() {
                     outline: 'none',
                     fontSize: 13,
                     fontWeight: 700,
-                    color: colors.brownDark,
+                    color: C.brownDark,
                     cursor: 'pointer',
                   }}
                 >
@@ -811,15 +814,14 @@ export default function AdminDashboard() {
                 style={{
                   position: 'relative',
                   padding: '9px 10px',
-                  border: `2px solid transparent`,
+                  border: '2px solid transparent',
                   borderRadius: 10,
                   background: 'transparent',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${colors.yellow}22`;
-                  e.currentTarget.style.borderColor = colors.yellow;
+                  e.currentTarget.style.background = `${C.yellow}22`;
+                  e.currentTarget.style.borderColor = C.yellow;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'transparent';
@@ -831,7 +833,7 @@ export default function AdminDashboard() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke={colors.brown}
+                  stroke={C.brown}
                   strokeWidth="2.5"
                 >
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -844,7 +846,7 @@ export default function AdminDashboard() {
                     right: 8,
                     width: 8,
                     height: 8,
-                    background: colors.orange,
+                    background: C.orange,
                     borderRadius: '50%',
                     border: '2px solid #fff',
                   }}
@@ -854,18 +856,17 @@ export default function AdminDashboard() {
                 onClick={handleLogout}
                 style={{
                   padding: '9px 20px',
-                  background: `linear-gradient(135deg, ${colors.brownDark}, ${colors.brownDarker})`,
-                  color: colors.yellow,
-                  border: `2px solid rgba(245,200,66,0.4)`,
+                  background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
+                  color: C.yellow,
+                  border: '2px solid rgba(245,200,66,0.4)',
                   borderRadius: 10,
                   fontWeight: 700,
                   fontSize: 13,
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
                   boxShadow: '0 2px 8px rgba(62,26,0,0.2)',
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.borderColor = colors.yellow)
+                  (e.currentTarget.style.borderColor = C.yellow)
                 }
                 onMouseLeave={(e) =>
                   (e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)')
@@ -882,7 +883,7 @@ export default function AdminDashboard() {
               flex: 1,
               overflowY: 'auto',
               padding: 28,
-              background: '#F2EAD8',
+              background: C.bg,
             }}
           >
             {/* Stat cards */}
@@ -928,7 +929,7 @@ export default function AdminDashboard() {
                         width: 46,
                         height: 46,
                         borderRadius: 13,
-                        background: card.bgGrad,
+                        background: card.grad,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -954,7 +955,7 @@ export default function AdminDashboard() {
                     style={{
                       fontSize: 12,
                       fontWeight: 700,
-                      color: colors.brownDark,
+                      color: C.brownDark,
                       marginBottom: 4,
                     }}
                   >
@@ -964,7 +965,7 @@ export default function AdminDashboard() {
                     style={{
                       fontSize: 26,
                       fontWeight: 800,
-                      color: colors.brownDarker,
+                      color: C.brownDarker,
                       letterSpacing: '-0.5px',
                       lineHeight: 1.1,
                     }}
@@ -1015,7 +1016,7 @@ export default function AdminDashboard() {
                       style={{
                         fontWeight: 800,
                         fontSize: 16,
-                        color: colors.brownDark,
+                        color: C.brownDark,
                       }}
                     >
                       Sales Performance
@@ -1023,7 +1024,7 @@ export default function AdminDashboard() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: colors.green,
+                        color: C.green,
                         fontWeight: 600,
                         marginTop: 2,
                       }}
@@ -1035,11 +1036,11 @@ export default function AdminDashboard() {
                     style={{
                       padding: '5px 12px',
                       background: '#E8F5E1',
-                      color: colors.darkGreen,
+                      color: C.darkGreen,
                       borderRadius: 8,
                       fontSize: 11,
                       fontWeight: 700,
-                      border: `1.5px solid ${colors.green}`,
+                      border: `1.5px solid ${C.green}`,
                     }}
                   >
                     LIVE SAMPLE
@@ -1070,7 +1071,7 @@ export default function AdminDashboard() {
                       style={{
                         fontWeight: 800,
                         fontSize: 16,
-                        color: colors.brownDark,
+                        color: C.brownDark,
                       }}
                     >
                       Branch Performance
@@ -1078,7 +1079,7 @@ export default function AdminDashboard() {
                     <div
                       style={{
                         fontSize: 12,
-                        color: colors.orange,
+                        color: C.orange,
                         fontWeight: 600,
                         marginTop: 2,
                       }}
@@ -1090,18 +1091,18 @@ export default function AdminDashboard() {
                     style={{
                       padding: '5px 12px',
                       background: '#FFF0D9',
-                      color: colors.orange,
+                      color: C.orange,
                       borderRadius: 8,
                       fontSize: 11,
                       fontWeight: 700,
-                      border: `1.5px solid ${colors.orange}`,
+                      border: `1.5px solid ${C.orange}`,
                     }}
                   >
                     TOP 5
                   </span>
                 </div>
                 <div style={{ height: 250 }}>
-                  <Bar data={branchPerformanceData} options={chartOptions} />
+                  <Bar data={branchData} options={chartOptions} />
                 </div>
               </div>
             </div>
@@ -1113,7 +1114,7 @@ export default function AdminDashboard() {
                 borderRadius: 18,
                 boxShadow: '0 2px 16px rgba(0,0,0,0.09)',
                 overflow: 'hidden',
-                border: `3px solid ${colors.yellow}`,
+                border: `3px solid ${C.yellow}`,
               }}
             >
               <div
@@ -1122,8 +1123,8 @@ export default function AdminDashboard() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '18px 24px',
-                  background: `linear-gradient(90deg, ${colors.yellow}28, ${colors.orange}18)`,
-                  borderBottom: `2px solid ${colors.yellow}`,
+                  background: `linear-gradient(90deg,${C.yellow}28,${C.orange}18)`,
+                  borderBottom: `2px solid ${C.yellow}`,
                 }}
               >
                 <div>
@@ -1131,7 +1132,7 @@ export default function AdminDashboard() {
                     style={{
                       fontWeight: 800,
                       fontSize: 16,
-                      color: colors.brownDark,
+                      color: C.brownDark,
                     }}
                   >
                     Pampanga Branch Analytics
@@ -1139,7 +1140,7 @@ export default function AdminDashboard() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: colors.brownDark,
+                      color: C.brownDark,
                       fontWeight: 600,
                       opacity: 0.7,
                       marginTop: 2,
@@ -1152,7 +1153,7 @@ export default function AdminDashboard() {
                 <button
                   style={{
                     padding: '9px 20px',
-                    background: `linear-gradient(135deg, ${colors.green}, ${colors.darkGreen})`,
+                    background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
                     color: '#fff',
                     border: 'none',
                     borderRadius: 10,
@@ -1173,7 +1174,7 @@ export default function AdminDashboard() {
                   <thead>
                     <tr
                       style={{
-                        background: `linear-gradient(90deg, ${colors.brownDarker}, ${colors.brownDark})`,
+                        background: `linear-gradient(90deg,${C.brownDarker},${C.brownDark})`,
                       }}
                     >
                       {[
@@ -1190,7 +1191,7 @@ export default function AdminDashboard() {
                             textAlign: 'left',
                             fontSize: 11,
                             fontWeight: 800,
-                            color: colors.yellow,
+                            color: C.yellow,
                             textTransform: 'uppercase',
                             letterSpacing: '0.07em',
                             whiteSpace: 'nowrap',
@@ -1202,15 +1203,15 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {branches.map((branch, idx) => (
+                    {branches.map((b, idx) => (
                       <tr
                         key={idx}
                         style={{
-                          borderBottom: `1.5px solid ${colors.yellow}30`,
+                          borderBottom: `1.5px solid ${C.yellow}30`,
                           transition: 'background 0.15s',
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = `${colors.yellow}12`)
+                          (e.currentTarget.style.background = `${C.yellow}12`)
                         }
                         onMouseLeave={(e) =>
                           (e.currentTarget.style.background = 'transparent')
@@ -1229,14 +1230,14 @@ export default function AdminDashboard() {
                                 width: 38,
                                 height: 38,
                                 flexShrink: 0,
-                                background: `linear-gradient(135deg, ${colors.yellow}, ${colors.orange})`,
+                                background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
                                 borderRadius: 10,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 800,
                                 fontSize: 15,
-                                color: colors.brownDarker,
+                                color: C.brownDarker,
                                 boxShadow: '0 2px 6px rgba(255,140,0,0.25)',
                               }}
                             >
@@ -1247,20 +1248,20 @@ export default function AdminDashboard() {
                                 style={{
                                   fontWeight: 700,
                                   fontSize: 13.5,
-                                  color: colors.brownDark,
+                                  color: C.brownDark,
                                 }}
                               >
-                                {branch.name}
+                                {b.name}
                               </div>
                               <div
                                 style={{
                                   fontSize: 11,
-                                  color: colors.green,
+                                  color: C.green,
                                   fontWeight: 600,
                                   marginTop: 1,
                                 }}
                               >
-                                {branch.location}
+                                {b.location}
                               </div>
                             </div>
                           </div>
@@ -1270,36 +1271,35 @@ export default function AdminDashboard() {
                             padding: '14px 22px',
                             fontWeight: 800,
                             fontSize: 14,
-                            color: colors.brownDarker,
+                            color: C.brownDarker,
                           }}
                         >
-                          {branch.sales}
+                          {b.sales}
                         </td>
                         <td
                           style={{
                             padding: '14px 22px',
                             fontWeight: 700,
                             fontSize: 14,
-                            color: colors.brownDark,
+                            color: C.brownDark,
                           }}
                         >
-                          {branch.orders}
+                          {b.orders}
                         </td>
                         <td style={{ padding: '14px 22px' }}>
                           <span
                             style={{
                               fontWeight: 800,
                               fontSize: 13.5,
-                              color: branch.trend.startsWith('+')
-                                ? colors.green
+                              color: b.trend.startsWith('+')
+                                ? C.green
                                 : '#D32F2F',
                               display: 'flex',
                               alignItems: 'center',
                               gap: 4,
                             }}
                           >
-                            {branch.trend.startsWith('+') ? '↗' : '↘'}{' '}
-                            {branch.trend}
+                            {b.trend.startsWith('+') ? '↗' : '↘'} {b.trend}
                           </span>
                         </td>
                         <td style={{ padding: '14px 22px' }}>
@@ -1309,17 +1309,17 @@ export default function AdminDashboard() {
                               borderRadius: 8,
                               fontSize: 11,
                               fontWeight: 800,
-                              ...(branch.status === 'High'
+                              ...(b.status === 'High'
                                 ? {
                                     background: '#E8F5E1',
-                                    color: colors.darkGreen,
-                                    border: `1.5px solid ${colors.green}`,
+                                    color: C.darkGreen,
+                                    border: `1.5px solid ${C.green}`,
                                   }
-                                : branch.status === 'Average'
+                                : b.status === 'Average'
                                   ? {
                                       background: '#FFFAE0',
-                                      color: colors.brownDark,
-                                      border: `1.5px solid ${colors.yellow}`,
+                                      color: C.brownDark,
+                                      border: `1.5px solid ${C.yellow}`,
                                     }
                                   : {
                                       background: '#FFEBEE',
@@ -1328,7 +1328,7 @@ export default function AdminDashboard() {
                                     }),
                             }}
                           >
-                            {branch.status}
+                            {b.status}
                           </span>
                         </td>
                       </tr>

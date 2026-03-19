@@ -41,10 +41,8 @@ export default function CreateAccountModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [visible, setVisible] = useState(false);
 
-  // Animate in/out
   useEffect(() => {
     if (isOpen) {
-      // slight delay so the overlay renders first
       requestAnimationFrame(() => setVisible(true));
     } else {
       setVisible(false);
