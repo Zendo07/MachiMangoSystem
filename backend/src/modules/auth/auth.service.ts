@@ -1,4 +1,4 @@
-// src/modules/auth/auth.service.ts
+// backend/src/modules/auth/auth.service.ts
 import {
   Injectable,
   ConflictException,
@@ -14,6 +14,7 @@ import { User } from '../users/entities/user.entity';
 import { InvitationCode } from './entities/invitation-code.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { SignupDto } from './dto/signup.dto';
+import { CreateAccountDto } from './dto/create-account.dto';
 
 @Injectable()
 export class AuthService {
@@ -82,7 +83,7 @@ export class AuthService {
       fullName,
       email: email.toLowerCase(),
       password: passwordHash,
-      role: 'hq_admin', // HARDCODED TO ADMIN ONLY
+      role: 'hq_admin',
       invitationCodeId: codeValidation.code?.id,
       emailVerificationToken,
       emailVerificationExpires,
@@ -112,7 +113,8 @@ export class AuthService {
       userAgent,
     );
 
-    const { password: _, ...userWithoutPassword } = savedUser;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _pw, ...userWithoutPassword } = savedUser;
 
     return {
       success: true,
@@ -168,12 +170,10 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      // Increment login attempts
       user.loginAttempts = (user.loginAttempts || 0) + 1;
 
-      // Lock account after 5 failed attempts
       if (user.loginAttempts >= 5) {
-        user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+        user.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
         user.loginAttempts = 0;
       }
 
@@ -193,8 +193,8 @@ export class AuthService {
     }
 
     // 5. Reset login attempts on success
-    user.loginAttempts = 0;
-    user.lockedUntil = undefined as any;
+    user.loginAttempts = 0 as User['loginAttempts'];
+    user.lockedUntil = null as unknown as Date;
     user.lastLogin = new Date();
     await this.userRepository.save(user);
 
@@ -218,12 +218,68 @@ export class AuthService {
       userAgent,
     );
 
-    const { password: _, ...userWithoutPassword } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _pw, ...userWithoutPassword } = user;
 
     return {
       success: true,
       message: 'Login successful! Redirecting to dashboard...',
       token,
+      data: userWithoutPassword,
+    };
+  }
+
+  // ─── CREATE ACCOUNT (hq_admin creates franchise_owner / franchisee / crew) ─
+  async createAccount(
+    dto: CreateAccountDto,
+    adminId: string,
+    ipAddress: string,
+    userAgent: string,
+  ): Promise<any> {
+    const { fullName, email, password, role, branch } = dto;
+
+    // 1. Check email uniqueness
+    const existing = await this.userRepository.findOne({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existing) {
+      throw new ConflictException('An account with this email already exists');
+    }
+
+    // 2. Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // 3. Create user — admin-created accounts skip email verification
+    const user = this.userRepository.create({
+      fullName,
+      email: email.toLowerCase(),
+      password: passwordHash,
+      role,
+      branchId: branch,
+      isEmailVerified: true,
+      isActive: true,
+    });
+
+    const saved = await this.userRepository.save(user);
+
+    // 4. Audit log
+    await this.logAudit(
+      adminId,
+      'ADMIN_CREATE_ACCOUNT',
+      'user',
+      saved.id,
+      { email: saved.email, role: saved.role, branch },
+      ipAddress,
+      userAgent,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _pw, ...userWithoutPassword } = saved;
+
+    return {
+      success: true,
+      message: `${role} account created successfully`,
       data: userWithoutPassword,
     };
   }
@@ -264,6 +320,7 @@ export class AuthService {
     return { isValid: true, code: invitationCode };
   }
 
+  // ─── HELPERS ──────────────────────────────────────────────────────────────
   async incrementInvitationCodeUsage(codeId: string): Promise<void> {
     await this.invitationCodeRepository.increment(
       { id: codeId },
@@ -277,16 +334,16 @@ export class AuthService {
     action: string,
     entityType: string | null,
     entityId: string | null,
-    newValues: any,
+    newValues: Record<string, unknown>,
     ipAddress: string,
     userAgent: string,
   ): Promise<void> {
     try {
       const auditLog = this.auditLogRepository.create({
-        userId: userId || undefined,
+        userId: userId ?? undefined,
         action,
-        entityType: entityType || undefined,
-        entityId: entityId || undefined,
+        entityType: entityType ?? undefined,
+        entityId: entityId ?? undefined,
         newValues,
         ipAddress,
         userAgent,

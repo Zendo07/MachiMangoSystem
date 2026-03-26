@@ -1,9 +1,11 @@
+// backend/src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { AuthModule } from './modules/auth/auth.module';
       logging: true,
     }),
     AuthModule,
+    OrdersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

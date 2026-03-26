@@ -1,4 +1,4 @@
-// src/modules/auth/auth.module.ts
+// backend/src/modules/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
@@ -8,6 +8,8 @@ import { AuthService } from './auth.service';
 import { User } from '../users/entities/user.entity';
 import { InvitationCode } from './entities/invitation-code.entity';
 import { AuditLog } from './entities/audit-log.entity';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -22,7 +24,11 @@ import { AuditLog } from './entities/audit-log.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    JwtAuthGuard, // ← needed so JwtService can be injected into the guard
+    RolesGuard, // ← needed so Reflector can be injected into the guard
+  ],
+  exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}
