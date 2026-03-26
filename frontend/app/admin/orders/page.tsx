@@ -122,6 +122,7 @@ function UpdateStatusModal({
   const [status, setStatus] = useState<OrderStatus>(order.status);
   const [note, setNote] = useState(order.adminNote ?? '');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -135,26 +136,38 @@ function UpdateStatusModal({
 
   const save = async () => {
     setSaving(true);
+    setError('');
     try {
       const token = getStoredToken();
+      if (!token) {
+        setError('Session expired. Please log in again.');
+        setSaving(false);
+        return;
+      }
       const res = await fetch(
         `http://localhost:3000/api/orders/${order.id}/status`,
         {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token ?? ''}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ status, adminNote: note }),
         },
       );
-      const data = (await res.json()) as { success: boolean; data: Order };
+      const data = (await res.json()) as {
+        success: boolean;
+        data: Order;
+        message?: string;
+      };
       if (res.ok && data.success) {
         onUpdated(data.data);
         close();
+      } else {
+        setError(data.message ?? 'Failed to update status');
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setError('Network error. Is the backend running?');
     } finally {
       setSaving(false);
     }
@@ -189,7 +202,6 @@ function UpdateStatusModal({
           boxShadow: '0 32px 80px rgba(62,26,0,.3)',
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: '20px 26px',
@@ -246,7 +258,6 @@ function UpdateStatusModal({
           </button>
         </div>
 
-        {/* Body */}
         <div
           style={{
             padding: '22px 26px',
@@ -255,7 +266,21 @@ function UpdateStatusModal({
             gap: 16,
           }}
         >
-          {/* Status buttons */}
+          {error && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: '#FFEBEE',
+                border: '1.5px solid #EF9A9A',
+                color: '#C62828',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              ⚠️ {error}
+            </div>
+          )}
           <div>
             <div
               style={{
@@ -306,7 +331,6 @@ function UpdateStatusModal({
             </div>
           </div>
 
-          {/* Note */}
           <div>
             <div
               style={{
@@ -354,7 +378,6 @@ function UpdateStatusModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div
           style={{
             padding: '14px 26px 22px',
@@ -407,44 +430,84 @@ function UpdateStatusModal({
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function AdminOrdersPage() {
   const router = useRouter();
-  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+  const [ready, setReady] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [filter, setFilter] = useState<'all' | OrderStatus>('all');
   const [selected, setSelected] = useState<Order | null>(null);
   const [sidebarOpen, setSidebar] = useState(true);
+  const [userName, setUserName] = useState('Admin');
 
+  // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const u = getStoredUser();
     const t = getStoredToken();
-    if (!u || !t || u.role !== 'hq_admin') {
+    if (!u || !t) {
       router.replace('/login');
       return;
     }
-    setUser(u);
+    if (u.role !== 'hq_admin') {
+      router.replace('/login');
+      return;
+    }
+    setUserName(u.fullName ?? 'Admin');
+    setReady(true);
   }, [router]);
 
+  // ── Fetch orders — only after auth confirmed ───────────────────────────────
   const fetchOrders = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) return;
+
     setLoading(true);
+    setFetchError('');
+
     try {
-      const token = getStoredToken();
       const res = await fetch('http://localhost:3000/api/orders', {
-        headers: { Authorization: `Bearer ${token ?? ''}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const data = (await res.json()) as { success: boolean; data: Order[] };
-      if (data.success) setOrders(data.data);
-    } catch {
-      /* ignore */
+
+      if (res.status === 401) {
+        setFetchError('Session expired. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      if (!res.ok) {
+        setFetchError(`Server error: ${res.status} ${res.statusText}`);
+        setLoading(false);
+        return;
+      }
+
+      const data = (await res.json()) as {
+        success: boolean;
+        data: Order[];
+        message?: string;
+      };
+
+      if (data.success) {
+        setOrders(data.data);
+      } else {
+        setFetchError(data.message ?? 'Failed to load orders');
+      }
+    } catch (err) {
+      setFetchError(
+        'Cannot reach backend. Make sure it is running on port 3000.',
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // ── Trigger fetch once auth is confirmed ───────────────────────────────────
   useEffect(() => {
-    void fetchOrders();
-  }, [fetchOrders]);
+    if (ready) {
+      void fetchOrders();
+    }
+  }, [ready, fetchOrders]);
 
-  if (!user) return null;
+  if (!ready) return null;
 
   const handleUpdated = (updated: Order) => {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -463,9 +526,11 @@ export default function AdminOrdersPage() {
     cancelled: orders.filter((o) => o.status === 'cancelled').length,
   };
 
+  // ─── NAV: Dashboard · Franchisee Orders · Products ───────────────────────
   const NAV_ITEMS = [
     {
       name: 'Dashboard',
+      label: 'Dashboard',
       icon: (
         <svg
           width="18"
@@ -482,9 +547,11 @@ export default function AdminOrdersPage() {
         </svg>
       ),
       route: '/admin/dashboard',
+      badge: 0,
     },
     {
-      name: 'Orders',
+      name: 'Franchisee Orders',
+      label: 'Franchisee Orders',
       icon: (
         <svg
           width="18"
@@ -500,9 +567,11 @@ export default function AdminOrdersPage() {
         </svg>
       ),
       route: '/admin/orders',
+      badge: counts.pending,
     },
     {
       name: 'Products',
+      label: 'Products',
       icon: (
         <svg
           width="18"
@@ -516,6 +585,7 @@ export default function AdminOrdersPage() {
         </svg>
       ),
       route: '/admin/products',
+      badge: 0,
     },
   ];
 
@@ -538,7 +608,7 @@ export default function AdminOrdersPage() {
           fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
       >
-        {/* Sidebar */}
+        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside
           style={{
             width: sidebarOpen ? 240 : 72,
@@ -551,6 +621,7 @@ export default function AdminOrdersPage() {
             zIndex: 10,
           }}
         >
+          {/* Logo */}
           <div
             style={{
               padding: '24px 16px 20px',
@@ -592,9 +663,11 @@ export default function AdminOrdersPage() {
               </div>
             )}
           </div>
+
+          {/* Nav links */}
           <nav style={{ flex: 1, padding: '16px 10px' }}>
             {NAV_ITEMS.map((item) => {
-              const active = item.name === 'Orders';
+              const active = item.name === 'Franchisee Orders';
               return (
                 <button
                   key={item.name}
@@ -639,28 +712,47 @@ export default function AdminOrdersPage() {
                   >
                     {item.icon}
                   </span>
-                  {sidebarOpen && <span>{item.name}</span>}
-                  {sidebarOpen &&
-                    item.name === 'Orders' &&
-                    counts.pending > 0 && (
-                      <span
-                        style={{
-                          marginLeft: 'auto',
-                          background: C.orange,
-                          color: '#fff',
-                          borderRadius: 20,
-                          padding: '1px 8px',
-                          fontSize: 10,
-                          fontWeight: 800,
-                        }}
-                      >
-                        {counts.pending}
-                      </span>
-                    )}
+                  {sidebarOpen && (
+                    <span style={{ flex: 1, textAlign: 'left' }}>
+                      {item.label}
+                    </span>
+                  )}
+                  {sidebarOpen && item.badge > 0 && (
+                    <span
+                      style={{
+                        background: C.orange,
+                        color: '#fff',
+                        borderRadius: 20,
+                        padding: '1px 8px',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                  {/* collapsed badge dot */}
+                  {!sidebarOpen && item.badge > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 8,
+                        right: 10,
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: C.orange,
+                        border: `2px solid ${C.brownDarker}`,
+                      }}
+                    />
+                  )}
                 </button>
               );
             })}
           </nav>
+
+          {/* User footer */}
           <div
             style={{
               padding: '14px 10px',
@@ -684,7 +776,7 @@ export default function AdminOrdersPage() {
                 fontWeight: 700,
               }}
             >
-              {user.fullName?.charAt(0).toUpperCase()}
+              {userName.charAt(0).toUpperCase()}
             </div>
             {sidebarOpen && (
               <div style={{ overflow: 'hidden' }}>
@@ -698,7 +790,7 @@ export default function AdminOrdersPage() {
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  {user.fullName}
+                  {userName}
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(245,200,66,.6)' }}>
                   HQ Administrator
@@ -708,6 +800,7 @@ export default function AdminOrdersPage() {
           </div>
         </aside>
 
+        {/* ── Main content ─────────────────────────────────────────────────── */}
         <div
           style={{
             flex: 1,
@@ -770,7 +863,7 @@ export default function AdminOrdersPage() {
                 <div
                   style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
                 >
-                  Orders Management
+                  Franchisee Orders
                 </div>
                 <div
                   style={{
@@ -907,22 +1000,30 @@ export default function AdminOrdersPage() {
                   justifyContent: 'space-between',
                 }}
               >
-                <div
-                  style={{ fontWeight: 800, fontSize: 16, color: C.brownDark }}
-                >
-                  {filter === 'all'
-                    ? 'All Orders'
-                    : `${STATUS_META[filter as OrderStatus]?.label} Orders`}
-                  <span
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {/* Franchisee Orders icon */}
+                  <span style={{ fontSize: 18 }}>🏪</span>
+                  <div
                     style={{
-                      marginLeft: 8,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: '#AAA',
+                      fontWeight: 800,
+                      fontSize: 16,
+                      color: C.brownDark,
                     }}
                   >
-                    ({filtered.length})
-                  </span>
+                    {filter === 'all'
+                      ? 'All Franchisee Orders'
+                      : `${STATUS_META[filter as OrderStatus]?.label} Orders`}
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#AAA',
+                      }}
+                    >
+                      ({filtered.length})
+                    </span>
+                  </div>
                 </div>
                 {filter !== 'all' && (
                   <button
@@ -941,7 +1042,44 @@ export default function AdminOrdersPage() {
                 )}
               </div>
 
-              {loading ? (
+              {/* Error state */}
+              {fetchError && !loading && (
+                <div
+                  style={{
+                    padding: '32px 24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ fontSize: 36 }}>⚠️</div>
+                  <div
+                    style={{ fontWeight: 700, fontSize: 14, color: '#C62828' }}
+                  >
+                    {fetchError}
+                  </div>
+                  <button
+                    onClick={() => void fetchOrders()}
+                    style={{
+                      marginTop: 8,
+                      padding: '10px 24px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                      color: C.brownDarker,
+                      fontWeight: 700,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
+              {/* Loading state */}
+              {loading && (
                 <div
                   style={{
                     padding: 60,
@@ -950,22 +1088,36 @@ export default function AdminOrdersPage() {
                     fontSize: 14,
                   }}
                 >
-                  Loading orders…
+                  Loading franchisee orders…
                 </div>
-              ) : filtered.length === 0 ? (
+              )}
+
+              {/* Empty state */}
+              {!loading && !fetchError && filtered.length === 0 && (
                 <div style={{ padding: 60, textAlign: 'center' }}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
+                  <div style={{ fontSize: 40, marginBottom: 10 }}>🏪</div>
                   <div
                     style={{
                       fontWeight: 700,
                       fontSize: 14,
                       color: C.brownDark,
+                      marginBottom: 6,
                     }}
                   >
-                    No orders found
+                    {orders.length === 0
+                      ? 'No franchisee orders yet'
+                      : 'No orders match this filter'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#AAA' }}>
+                    {orders.length === 0
+                      ? 'Orders placed by franchisees will appear here'
+                      : 'Try selecting a different status filter'}
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {/* Table */}
+              {!loading && !fetchError && filtered.length > 0 && (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
@@ -1033,12 +1185,38 @@ export default function AdminOrdersPage() {
                           <td style={{ padding: '14px 18px' }}>
                             <div
                               style={{
-                                fontWeight: 700,
-                                fontSize: 13,
-                                color: C.brownDarker,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
                               }}
                             >
-                              {order.franchiseeName}
+                              {/* Franchisee avatar */}
+                              <div
+                                style={{
+                                  width: 30,
+                                  height: 30,
+                                  borderRadius: '50%',
+                                  background: `linear-gradient(135deg,${C.brown},${C.brownDark})`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: C.yellow,
+                                  fontWeight: 800,
+                                  fontSize: 12,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {order.franchiseeName.charAt(0).toUpperCase()}
+                              </div>
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: 13,
+                                  color: C.brownDarker,
+                                }}
+                              >
+                                {order.franchiseeName}
+                              </div>
                             </div>
                           </td>
                           <td

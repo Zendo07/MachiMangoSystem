@@ -27,7 +27,7 @@ export default function CTA() {
           <p className="text-lg text-brownDark leading-relaxed font-medium">
             Access the Machi Mango Inventory & Ordering System with your
             franchise credentials. All accounts are securely managed by
-            headquarters.
+            MachiMango Admin.
           </p>
         </div>
 
@@ -70,7 +70,7 @@ export default function CTA() {
               </svg>
             }
           >
-            Contact HQ
+            Contact Admin
           </Button>
         </div>
 
@@ -88,7 +88,7 @@ export default function CTA() {
               <line x1="12" y1="16" x2="12" y2="12"></line>
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
-            New franchise owner? Contact headquarters for account setup
+            New franchise owner? Contact Admin for account setup
           </p>
         </div>
       </div>

@@ -15,7 +15,7 @@ export interface CreatedAccountData {
   fullName: string;
   email: string;
   tempPassword: string;
-  role: 'franchisee' | 'crew';
+  role: 'franchise_owner' | 'franchisee' | 'crew';
   branch: string;
 }
 
@@ -25,22 +25,31 @@ interface Props {
   onSuccess: (data: CreatedAccountData) => void;
 }
 
-type Role = 'franchisee' | 'crew';
+type Role = 'franchise_owner' | 'franchisee' | 'crew';
 
-// Only 2 roles the admin can create — Owner signs up via invitation code
 const ROLES: {
   value: Role;
   label: string;
   sub: string;
   emoji: string;
   grad: string;
+  color: string;
 }[] = [
+  {
+    value: 'franchise_owner',
+    label: 'Franchise Owner',
+    sub: 'Full branch access + analytics',
+    emoji: '🏪',
+    grad: 'from-purple-400 to-purple-600',
+    color: '#7B3FA0',
+  },
   {
     value: 'franchisee',
     label: 'Franchisee',
-    sub: 'View + analytics access',
+    sub: 'Can place orders + view products',
     emoji: '🤝',
     grad: 'from-blue-300 to-blue-500',
+    color: '#2E7BAD',
   },
   {
     value: 'crew',
@@ -48,6 +57,7 @@ const ROLES: {
     sub: 'View-only access',
     emoji: '👷',
     grad: 'from-green-300 to-green-600',
+    color: '#3D6E27',
   },
 ];
 
@@ -78,7 +88,7 @@ export default function CreateAccountModal({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [role, setRole] = useState<Role>('franchisee');
+  const [role, setRole] = useState<Role>('franchise_owner');
   const [branch, setBranch] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverErr, setServerErr] = useState('');
@@ -99,7 +109,7 @@ export default function CreateAccountModal({
     setEmail('');
     setPassword(genPassword());
     setShowPw(false);
-    setRole('franchisee');
+    setRole('franchise_owner');
     setBranch('');
     setErrors({});
     setServerErr('');
@@ -128,7 +138,8 @@ export default function CreateAccountModal({
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       e.email = 'Valid email required';
     if (password.length < 8) e.password = 'Min 8 characters';
-    if (!branch) e.branch = 'Select a branch';
+    // Branch is required for franchisee and crew, optional for franchise_owner
+    if (role !== 'franchise_owner' && !branch) e.branch = 'Select a branch';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -146,7 +157,13 @@ export default function CreateAccountModal({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token ?? ''}`,
         },
-        body: JSON.stringify({ fullName, email, password, role, branch }),
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          role,
+          branch: branch || undefined,
+        }),
       });
       const data = (await res.json()) as {
         success?: boolean;
@@ -160,7 +177,7 @@ export default function CreateAccountModal({
           email: email.trim(),
           tempPassword: password,
           role,
-          branch,
+          branch: branch || 'HQ / All Branches',
         });
         reset();
       } else {
@@ -224,7 +241,7 @@ export default function CreateAccountModal({
               Create Account
             </h2>
             <p className="text-xs text-primaryYellow/60 mt-0.5 font-body">
-              Add a Franchisee or Crew member to the system
+              Add a Franchise Owner, Franchisee, or Crew member
             </p>
           </div>
           <button
@@ -236,7 +253,7 @@ export default function CreateAccountModal({
         </div>
 
         {/* ── BODY ── */}
-        <div className="px-7 py-5 flex flex-col gap-4 max-h-[68vh] overflow-y-auto">
+        <div className="px-7 py-5 flex flex-col gap-4 max-h-[72vh] overflow-y-auto">
           {/* Server error */}
           {serverErr && (
             <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-300">
@@ -366,33 +383,39 @@ export default function CreateAccountModal({
 
           <div className="h-px bg-gradient-to-r from-transparent via-[#E5D9C8] to-transparent" />
 
-          {/* Role — only Franchisee and Crew */}
+          {/* Role — all 3 roles */}
           <div className="flex flex-col gap-2">
             <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark">
               Role <span className="text-primaryOrange">*</span>
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {ROLES.map((r) => (
                 <button
                   key={r.value}
                   type="button"
-                  onClick={() => setRole(r.value)}
-                  className={`flex flex-col items-center gap-2 px-4 py-4 rounded-xl border-2 text-center transition-all ${
+                  onClick={() => {
+                    setRole(r.value);
+                    // Clear branch error when switching to franchise_owner
+                    if (r.value === 'franchise_owner') {
+                      setErrors((prev) => ({ ...prev, branch: '' }));
+                    }
+                  }}
+                  className={`flex flex-col items-center gap-2 px-3 py-4 rounded-xl border-2 text-center transition-all ${
                     role === r.value
                       ? 'border-primaryOrange bg-orange-50 shadow-sm'
                       : 'border-[#E5D9C8] bg-[#FDFAF4] hover:border-primaryYellow hover:bg-yellow-50/40'
                   }`}
                 >
                   <div
-                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${r.grad} flex items-center justify-center text-2xl shadow-sm`}
+                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${r.grad} flex items-center justify-center text-2xl shadow-sm`}
                   >
                     {r.emoji}
                   </div>
                   <div>
-                    <div className="font-bold text-sm text-brownDark leading-tight">
+                    <div className="font-bold text-xs text-brownDark leading-tight">
                       {r.label}
                     </div>
-                    <div className="text-[10px] text-brownDark/55 mt-0.5">
+                    <div className="text-[9px] text-brownDark/55 mt-0.5 leading-tight">
                       {r.sub}
                     </div>
                   </div>
@@ -420,32 +443,34 @@ export default function CreateAccountModal({
               ))}
             </div>
 
-            {/* Info note */}
+            {/* Permission summary for selected role */}
             <div className="flex items-start gap-2 p-3 rounded-xl bg-[#FDFAF4] border border-[#E5D9C8]">
-              <svg
-                width="13"
-                height="13"
-                fill="none"
-                stroke="#BBA98A"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-                className="flex-shrink-0 mt-0.5"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <p className="text-[10px] text-brownDark/60 leading-relaxed">
-                The <strong className="text-brownDark">Owner</strong> account is
-                created separately via invitation code on the signup page.
-              </p>
+              <span className="text-base flex-shrink-0">
+                {ROLES.find((r) => r.value === role)?.emoji}
+              </span>
+              <div>
+                <p className="text-[10px] font-bold text-brownDark">
+                  {role === 'franchise_owner' &&
+                    'Full access: Dashboard, Products (edit), Orders, Analytics'}
+                  {role === 'franchisee' &&
+                    'Can place ingredient orders and view products'}
+                  {role === 'crew' && 'View-only: Dashboard and Products only'}
+                </p>
+              </div>
             </div>
           </div>
 
-          {/* Branch */}
+          {/* Branch — required for franchisee/crew, optional for franchise_owner */}
           <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark flex items-center gap-1">
-              Assign Branch <span className="text-primaryOrange">*</span>
+              Assign Branch{' '}
+              {role === 'franchise_owner' ? (
+                <span className="text-brownDark/40 font-normal normal-case tracking-normal">
+                  (optional)
+                </span>
+              ) : (
+                <span className="text-primaryOrange">*</span>
+              )}
             </label>
             <div className="relative">
               <select
@@ -456,8 +481,10 @@ export default function CreateAccountModal({
                 }}
                 className={`${base} pr-10 appearance-none cursor-pointer ${errors.branch ? errCls : ok}`}
               >
-                <option value="" disabled>
-                  Select a branch…
+                <option value="">
+                  {role === 'franchise_owner'
+                    ? 'All branches (no restriction)…'
+                    : 'Select a branch…'}
                 </option>
                 {BRANCHES.map((b) => (
                   <option key={b} value={b}>

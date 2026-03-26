@@ -17,11 +17,17 @@ const ROLE_LABEL: Record<string, string> = {
   franchisee: 'Franchisee',
   crew: 'Crew Member',
 };
+
 const ROLE_BADGE: Record<string, string> = {
-  franchise_owner:
-    'bg-gradient-to-r from-primaryYellow to-primaryOrange text-brownDarker',
+  franchise_owner: 'bg-gradient-to-r from-purple-400 to-purple-600 text-white',
   franchisee: 'bg-gradient-to-r from-blue-400 to-blue-600 text-white',
-  crew: 'bg-gradient-to-r from-primaryGreen to-darkGreen text-white',
+  crew: 'bg-gradient-to-r from-green-400 to-green-600 text-white',
+};
+
+const ROLE_PERMS: Record<string, string> = {
+  franchise_owner: '🏪 Full branch access · Products, Orders & Analytics',
+  franchisee: '🤝 Can place ingredient orders · View products',
+  crew: '👷 View-only · Dashboard & Products',
 };
 
 export default function SuccessCredentialModal({
@@ -57,6 +63,7 @@ export default function SuccessCredentialModal({
     setVisible(false);
     setTimeout(onClose, 260);
   }, [onClose]);
+
   const another = useCallback(() => {
     setVisible(false);
     setTimeout(onCreateAnother, 260);
@@ -269,7 +276,7 @@ export default function SuccessCredentialModal({
                 {data.fullName}
               </div>
               <div className="text-xs text-brownDark/60 mt-0.5 truncate">
-                {ROLE_LABEL[data.role]} · {data.branch.split('—')[0].trim()}
+                {ROLE_LABEL[data.role]} · {data.branch}
               </div>
             </div>
             <span
@@ -277,6 +284,16 @@ export default function SuccessCredentialModal({
             >
               {ROLE_LABEL[data.role]}
             </span>
+          </div>
+
+          {/* Permissions preview */}
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-[#FDFAF4] border border-[#E5D9C8]">
+            <span className="text-sm">
+              {ROLE_PERMS[data.role]?.split(' ')[0]}
+            </span>
+            <p className="text-[11px] font-semibold text-brownDark">
+              {ROLE_PERMS[data.role]?.slice(2)}
+            </p>
           </div>
 
           <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brownDark/50">

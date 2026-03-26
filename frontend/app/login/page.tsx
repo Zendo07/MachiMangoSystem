@@ -278,18 +278,13 @@ export default function LoginPage() {
               </p>
               <div className="grid grid-cols-2 gap-1.5 text-xs text-brownDark/70">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">👑</span> HQ Admin — Full access
+                  <span className="text-base">🏪</span> Admin
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">🏪</span> Franchise Owner — Branch
-                  mgmt
+                  <span className="text-base">🤝</span> Franchisee
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">🤝</span> Franchisee — View +
-                  analytics
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-base">👷</span> Crew — View only
+                  <span className="text-base">👷</span> Crew
                 </div>
               </div>
             </div>

@@ -51,12 +51,35 @@ export function getDashboardRoute(role: UserRole): string {
 
 // ─── PERMISSIONS ──────────────────────────────────────────────────────────────
 export const PERMISSIONS = {
+  // Only HQ admin can manage global accounts
   canManageAccounts: (role: UserRole) => role === 'hq_admin',
+
+  // HQ admin + franchise owner can edit products/stock
   canEditProducts: (role: UserRole) =>
     role === 'hq_admin' || role === 'franchise_owner',
+
+  // Everyone except crew can view analytics
   canViewAnalytics: (role: UserRole) => role !== 'crew',
+
+  // Only HQ admin can manage branches globally
   canManageBranches: (role: UserRole) => role === 'hq_admin',
+
+  // Everyone can view products
   canViewProducts: (_role: UserRole) => true,
+
+  // Franchise owner + franchisee + crew can place orders (franchisee & crew via their own portal)
+  canPlaceOrders: (role: UserRole) =>
+    role === 'franchise_owner' || role === 'franchisee' || role === 'crew',
+
+  // Franchise owner has full access to their branch (same as admin but scoped)
+  isFranchiseOwner: (role: UserRole) => role === 'franchise_owner',
+
+  // Crew is view-only
+  isViewOnly: (role: UserRole) => role === 'crew',
+
+  // Can access the orders page (place + track)
+  canAccessOrders: (role: UserRole) =>
+    role === 'franchise_owner' || role === 'franchisee',
 } as const;
 
 // ─── ROLE METADATA ────────────────────────────────────────────────────────────
@@ -67,6 +90,7 @@ export const ROLE_META: Record<
     badgeBg: string;
     badgeColor: string;
     emoji: string;
+    description: string;
   }
 > = {
   hq_admin: {
@@ -74,23 +98,27 @@ export const ROLE_META: Record<
     badgeBg: '#FFF0D9',
     badgeColor: '#CC7000',
     emoji: '👑',
+    description: 'Full system access — all branches & accounts',
   },
   franchise_owner: {
     label: 'Franchise Owner',
-    badgeBg: '#FFF0D9',
-    badgeColor: '#CC7000',
+    badgeBg: '#F3E5FF',
+    badgeColor: '#7B3FA0',
     emoji: '🏪',
+    description: 'Full branch access — products, orders & analytics',
   },
   franchisee: {
     label: 'Franchisee',
     badgeBg: '#E0F2FA',
     badgeColor: '#2E7BAD',
     emoji: '🤝',
+    description: 'Can place orders & view products',
   },
   crew: {
     label: 'Crew Member',
     badgeBg: '#E8F5E1',
     badgeColor: '#3D6E27',
     emoji: '👷',
+    description: 'View-only access',
   },
 };

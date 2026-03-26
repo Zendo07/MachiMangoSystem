@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsNotEmpty,
   IsIn,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateAccountDto {
@@ -25,14 +26,14 @@ export class CreateAccountDto {
   @MinLength(8, { message: 'Password must be at least 8 characters' })
   password: string;
 
-  // Only franchisee and crew — owner signs up via invitation code
+  // Admin can create franchise_owner, franchisee, or crew
   @IsNotEmpty({ message: 'Role is required' })
-  @IsIn(['franchisee', 'crew'], {
-    message: 'Role must be franchisee or crew',
+  @IsIn(['franchise_owner', 'franchisee', 'crew'], {
+    message: 'Role must be franchise_owner, franchisee, or crew',
   })
   role: string;
 
-  @IsNotEmpty({ message: 'Branch is required' })
+  @IsOptional()
   @IsString()
-  branch: string;
+  branch?: string;
 }

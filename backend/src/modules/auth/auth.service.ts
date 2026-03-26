@@ -251,12 +251,13 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(password, 12);
 
     // 3. Create user — admin-created accounts skip email verification
+    //    branch is optional for franchise_owner (they oversee all branches)
     const user = this.userRepository.create({
       fullName,
       email: email.toLowerCase(),
       password: passwordHash,
       role,
-      branchId: branch,
+      branchId: branch || undefined,
       isEmailVerified: true,
       isActive: true,
     });
@@ -269,7 +270,7 @@ export class AuthService {
       'ADMIN_CREATE_ACCOUNT',
       'user',
       saved.id,
-      { email: saved.email, role: saved.role, branch },
+      { email: saved.email, role: saved.role, branch: branch || 'all' },
       ipAddress,
       userAgent,
     );

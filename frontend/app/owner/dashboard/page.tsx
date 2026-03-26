@@ -2,39 +2,38 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
-import {
-  getStoredUser,
-  getStoredToken,
-  clearAuth,
-  PERMISSIONS,
-  ROLE_META,
-  type UserRole,
-} from '@/lib/auth';
+import CreateAccountModal, {
+  type CreatedAccountData,
+} from '@/components/admin/CreateAccountModal';
+import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
   Filler,
 );
 
-const C = {
+// ─── SHARED COLORS ────────────────────────────────────────────────────────────
+export const C = {
   brownDarker: '#3E1A00',
   brownDark: '#6B3A2A',
   brown: '#8B4513',
@@ -45,100 +44,97 @@ const C = {
   bg: '#F2EAD8',
 };
 
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-function Sidebar({
-  open,
-  role,
-  userName,
-  branchName,
+// ─── SHARED NAV ITEMS — Dashboard · Franchisee Orders · Products ──────────────
+export const NAV_ITEMS = [
+  {
+    name: 'Dashboard',
+    route: '/admin/dashboard',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Franchisee Orders',
+    route: '/admin/orders',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <circle cx="9" cy="21" r="1" />
+        <circle cx="20" cy="21" r="1" />
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Products',
+    route: '/admin/products',
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+  },
+];
+
+// ─── SHARED SIDEBAR ───────────────────────────────────────────────────────────
+export function AdminSidebar({
+  sidebarOpen,
   activeNav,
   onNav,
+  adminName,
+  onCreateAccount,
 }: {
-  open: boolean;
-  role: UserRole;
-  userName: string;
-  branchName: string;
+  sidebarOpen: boolean;
   activeNav: string;
-  onNav: (n: string) => void;
+  onNav: (name: string) => void;
+  adminName: string;
+  onCreateAccount: () => void;
 }) {
-  const meta = ROLE_META[role];
-  const canAnalytics = PERMISSIONS.canViewAnalytics(role);
-
-  const navItems = [
-    {
-      name: 'Dashboard',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Products',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-      ),
-    },
-    ...(canAnalytics
-      ? [
-          {
-            name: 'Analytics',
-            icon: (
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            ),
-          },
-        ]
-      : []),
-  ];
-
   return (
     <aside
       style={{
-        width: open ? 256 : 72,
-        background: `linear-gradient(180deg,${C.brownDarker},${C.brownDark})`,
+        width: sidebarOpen ? 256 : 72,
+        background: `linear-gradient(180deg,${C.brownDarker} 0%,${C.brownDark} 100%)`,
         display: 'flex',
         flexDirection: 'column',
-        transition: 'width .28s cubic-bezier(.4,0,.2,1)',
+        transition: 'width 0.28s cubic-bezier(.4,0,.2,1)',
         flexShrink: 0,
-        boxShadow: '4px 0 24px rgba(62,26,0,.18)',
+        boxShadow: '4px 0 24px rgba(62,26,0,0.18)',
         zIndex: 10,
       }}
     >
       {/* Logo */}
       <div
         style={{
-          padding: '24px 16px 18px',
-          borderBottom: '1px solid rgba(245,200,66,.2)',
+          padding: '24px 16px 20px',
+          borderBottom: '1px solid rgba(245,200,66,0.2)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -153,19 +149,20 @@ function Sidebar({
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 22,
-              boxShadow: '0 4px 12px rgba(255,140,0,.4)',
+              boxShadow: '0 4px 12px rgba(255,140,0,0.4)',
             }}
           >
             🥭
           </div>
-          {open && (
-            <div>
+          {sidebarOpen && (
+            <div style={{ overflow: 'hidden' }}>
               <div
                 style={{
                   fontWeight: 800,
                   fontSize: 17,
                   color: C.yellow,
-                  letterSpacing: '-.3px',
+                  letterSpacing: '-0.3px',
+                  lineHeight: 1.2,
                 }}
               >
                 Machi Mango
@@ -173,58 +170,35 @@ function Sidebar({
               <div
                 style={{
                   fontSize: 11,
-                  color: 'rgba(245,200,66,.7)',
+                  color: 'rgba(245,200,66,0.7)',
                   fontWeight: 600,
                   marginTop: 2,
                 }}
               >
-                {branchName}
+                HQ Control Center
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Role chip */}
-      {open && (
-        <div style={{ padding: '10px 16px 0' }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '3px 10px',
-              borderRadius: 20,
-              background: meta.badgeBg,
-              color: meta.badgeColor,
-              fontSize: 10,
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              letterSpacing: '.05em',
-            }}
-          >
-            {meta.emoji} {meta.label}
-          </span>
-        </div>
-      )}
-
       {/* Nav */}
-      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
-        {open && (
+      <nav style={{ flex: 1, padding: '16px 10px', overflowY: 'auto' }}>
+        {sidebarOpen && (
           <div
             style={{
               fontSize: 10,
               fontWeight: 700,
               textTransform: 'uppercase',
-              letterSpacing: '.1em',
-              color: 'rgba(245,200,66,.35)',
+              letterSpacing: '0.1em',
+              color: 'rgba(245,200,66,0.35)',
               padding: '8px 14px 6px',
             }}
           >
-            Menu
+            Main Menu
           </div>
         )}
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const active = activeNav === item.name;
           return (
             <button
@@ -235,8 +209,8 @@ function Sidebar({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: open ? '11px 14px' : '11px 0',
-                justifyContent: open ? 'flex-start' : 'center',
+                padding: sidebarOpen ? '11px 14px' : '11px 0',
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
                 borderRadius: 12,
                 marginBottom: 3,
                 border: 'none',
@@ -244,22 +218,22 @@ function Sidebar({
                 background: active
                   ? `linear-gradient(90deg,${C.yellow},${C.orange})`
                   : 'transparent',
-                color: active ? C.brownDarker : 'rgba(245,200,66,.65)',
+                color: active ? C.brownDarker : 'rgba(245,200,66,0.65)',
                 fontWeight: active ? 700 : 500,
                 fontSize: 13.5,
-                boxShadow: active ? '0 4px 14px rgba(255,140,0,.3)' : 'none',
-                transition: 'all .18s',
+                boxShadow: active ? '0 4px 14px rgba(255,140,0,0.3)' : 'none',
+                transition: 'all 0.18s ease',
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  e.currentTarget.style.background = 'rgba(245,200,66,.1)';
+                  e.currentTarget.style.background = 'rgba(245,200,66,0.1)';
                   e.currentTarget.style.color = C.yellow;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(245,200,66,.65)';
+                  e.currentTarget.style.color = 'rgba(245,200,66,0.65)';
                 }
               }}
             >
@@ -271,17 +245,85 @@ function Sidebar({
               >
                 {item.icon}
               </span>
-              {open && <span>{item.name}</span>}
+              {sidebarOpen && (
+                <span style={{ flex: 1, textAlign: 'left' }}>{item.name}</span>
+              )}
             </button>
           );
         })}
+
+        {sidebarOpen && (
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              color: 'rgba(245,200,66,0.35)',
+              padding: '14px 14px 6px',
+            }}
+          >
+            Administration
+          </div>
+        )}
+        <button
+          onClick={onCreateAccount}
+          style={{
+            width: sidebarOpen ? '100%' : 42,
+            margin: sidebarOpen ? '4px 0 8px' : '4px auto 8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarOpen ? 'flex-start' : 'center',
+            gap: 10,
+            padding: sidebarOpen ? '12px 14px' : '11px 0',
+            borderRadius: 13,
+            border: '2px dashed rgba(245,200,66,0.4)',
+            background: 'rgba(245,200,66,0.07)',
+            color: C.yellow,
+            fontWeight: 700,
+            fontSize: 13.5,
+            cursor: 'pointer',
+            transition: 'all .2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(245,200,66,0.15)';
+            e.currentTarget.style.borderColor = C.yellow;
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(245,200,66,0.07)';
+            e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+          title="Create Account"
+        >
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              flexShrink: 0,
+              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: C.brownDarker,
+              fontSize: 17,
+              fontWeight: 800,
+              boxShadow: '0 2px 8px rgba(255,140,0,0.35)',
+            }}
+          >
+            +
+          </div>
+          {sidebarOpen && <span>Create Account</span>}
+        </button>
       </nav>
 
       {/* User card */}
       <div
         style={{
           padding: '14px 10px',
-          borderTop: '1px solid rgba(245,200,66,.2)',
+          borderTop: '1px solid rgba(245,200,66,0.2)',
         }}
       >
         <div
@@ -291,7 +333,7 @@ function Sidebar({
             gap: 10,
             padding: '10px 12px',
             borderRadius: 12,
-            background: 'rgba(255,255,255,.06)',
+            background: 'rgba(255,255,255,0.06)',
           }}
         >
           <div
@@ -299,7 +341,7 @@ function Sidebar({
               width: 36,
               height: 36,
               flexShrink: 0,
-              background: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
+              background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -309,9 +351,9 @@ function Sidebar({
               fontSize: 15,
             }}
           >
-            {userName.charAt(0).toUpperCase()}
+            {adminName.charAt(0).toUpperCase()}
           </div>
-          {open && (
+          {sidebarOpen && (
             <div style={{ overflow: 'hidden' }}>
               <div
                 style={{
@@ -323,16 +365,16 @@ function Sidebar({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {userName}
+                {adminName}
               </div>
               <div
                 style={{
                   fontSize: 11,
-                  color: 'rgba(245,200,66,.6)',
+                  color: 'rgba(245,200,66,0.6)',
                   marginTop: 1,
                 }}
               >
-                {meta.label}
+                HQ Administrator
               </div>
             </div>
           )}
@@ -342,54 +384,61 @@ function Sidebar({
   );
 }
 
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
-export default function OwnerDashboard() {
+// ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
+export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
-  const [open, setOpen] = useState(true);
-  const [activeNav, setActive] = useState('Dashboard');
-  const [loaded, setLoaded] = useState(false);
+  const [adminName, setAdminName] = useState('Admin');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [dateRange, setDateRange] = useState('Last 30 Days');
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [createdAccount, setCreatedAccount] =
+    useState<CreatedAccountData | null>(null);
 
   useEffect(() => {
-    const u = getStoredUser();
-    const t = getStoredToken();
-    if (!u || !t) {
-      router.replace('/login');
-      return;
+    try {
+      const u = localStorage.getItem('user');
+      if (u)
+        setAdminName(
+          (JSON.parse(u) as { fullName?: string }).fullName ?? 'Admin',
+        );
+    } catch {
+      /* ignore */
     }
-    if (u.role === 'hq_admin') {
-      router.replace('/admin/dashboard');
-      return;
-    }
-    if (u.role === 'crew') {
-      router.replace('/crew/dashboard');
-      return;
-    }
-    setUser(u);
-    setTimeout(() => setLoaded(true), 80);
-  }, [router]);
+  }, []);
 
-  const handleNav = (name: string) => {
-    setActive(name);
-    if (name === 'Products') router.push('/owner/products');
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   };
 
-  if (!user) return null;
+  const handleAccountCreated = (data: CreatedAccountData) => {
+    setCreatedAccount(data);
+    setCreateModalOpen(false);
+    setTimeout(() => setSuccessModalOpen(true), 320);
+  };
 
-  const role = user.role as UserRole;
-  const meta = ROLE_META[role];
-  const canEdit = PERMISSIONS.canEditProducts(role);
-  const canAnalyze = PERMISSIONS.canViewAnalytics(role);
-  const branchName = user.branchId ?? 'Your Branch';
+  const handleCreateAnother = () => {
+    setSuccessModalOpen(false);
+    setTimeout(() => setCreateModalOpen(true), 320);
+  };
 
+  // ── Nav handler — routes to the correct page for each item ─────────────────
+  const handleNav = (name: string) => {
+    const item = NAV_ITEMS.find((n) => n.name === name);
+    if (item) router.push(item.route);
+  };
+
+  // Chart data
   const salesData = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
         label: 'Sales',
-        data: [8000, 12000, 9500, 15000, 13000, 18000, 16000],
+        data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
         borderColor: C.green,
-        backgroundColor: 'rgba(90,158,58,.12)',
+        backgroundColor: 'rgba(90,158,58,0.12)',
         fill: true,
         tension: 0.4,
         borderWidth: 2.5,
@@ -397,10 +446,25 @@ export default function OwnerDashboard() {
         pointBackgroundColor: C.green,
         pointBorderColor: '#fff',
         pointBorderWidth: 2,
+        pointHoverRadius: 7,
       },
     ],
   };
-  const chartOpts = {
+
+  const branchData = {
+    labels: ['Fla. Blanca', 'Porac', 'Sta. Rita', 'Angeles', 'San Fernando'],
+    datasets: [
+      {
+        label: 'Orders',
+        data: [450, 380, 520, 290, 410],
+        backgroundColor: C.orange,
+        borderRadius: 6,
+        barThickness: 36,
+      },
+    ],
+  };
+
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -411,12 +475,14 @@ export default function OwnerDashboard() {
         bodyColor: '#fff',
         padding: 12,
         cornerRadius: 8,
+        titleFont: { size: 13, weight: 'bold' as const },
+        bodyFont: { size: 12 },
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        grid: { color: 'rgba(0,0,0,.06)' },
+        grid: { color: 'rgba(0,0,0,0.06)' },
         ticks: { color: C.brown, font: { size: 11, weight: 'bold' as const } },
       },
       x: {
@@ -426,346 +492,492 @@ export default function OwnerDashboard() {
     },
   };
 
-  const stats = [
+  const statCards = [
     {
-      label: "Today's Sales",
+      label: 'Total Sales',
       value: '₱0.00',
-      sub: 'No data yet',
-      grad: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-      icon: '💰',
+      subtext: 'Sample: ₱548,920',
+      badge: '0%',
+      grad: 'linear-gradient(135deg,#5A9E3A,#3D6E27)',
+      badgeBg: '#E8F5E1',
+      badgeColor: '#3D6E27',
+      subtextColor: '#3D6E27',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+        >
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      ),
     },
     {
-      label: "Today's Orders",
+      label: 'Total Orders',
       value: '0',
-      sub: 'No orders yet',
-      grad: `linear-gradient(135deg,${C.orange},#CC7000)`,
-      icon: '🛒',
+      subtext: 'Sample: 2,050',
+      badge: '0%',
+      grad: 'linear-gradient(135deg,#FF8C00,#CC7000)',
+      badgeBg: '#FFF0D9',
+      badgeColor: '#CC7000',
+      subtextColor: '#CC7000',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+        >
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+      ),
     },
     {
-      label: 'Products',
-      value: '12',
-      sub: 'Set by HQ',
-      grad: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-      icon: '📦',
+      label: 'Active Users',
+      value: '1',
+      subtext: 'Admin only',
+      badge: '1',
+      grad: 'linear-gradient(135deg,#F5C842,#E0A800)',
+      badgeBg: '#FFFAE0',
+      badgeColor: '#6B3A2A',
+      subtextColor: '#6B3A2A',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#6B3A2A"
+          strokeWidth="2.5"
+        >
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
     },
     {
-      label: 'Low Stock',
-      value: '3',
-      sub: 'Needs attention',
-      grad: 'linear-gradient(135deg,#C62828,#B71C1C)',
-      icon: '⚠️',
+      label: 'Net Revenue',
+      value: '₱0.00',
+      subtext: 'Sample: ₱428,340',
+      badge: '0%',
+      grad: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
+      badgeBg: '#E0F2FA',
+      badgeColor: '#2E7BAD',
+      subtextColor: '#2E7BAD',
+      icon: (
+        <svg
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.5"
+        >
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      ),
     },
   ];
 
-  const perms = [
-    { label: 'View Dashboard', ok: true },
-    { label: 'View Products', ok: true },
-    { label: 'Edit Products', ok: canEdit },
-    { label: 'View Analytics', ok: canAnalyze },
-    { label: 'Manage Branches', ok: false },
-    { label: 'Create Accounts', ok: false },
+  const branches = [
+    {
+      name: 'Florida Blanca',
+      location: 'Pampanga',
+      sales: '₱125,450',
+      orders: 450,
+      trend: '+12%',
+      status: 'High',
+    },
+    {
+      name: 'Porac',
+      location: 'Pampanga',
+      sales: '₱98,230',
+      orders: 380,
+      trend: '+8%',
+      status: 'High',
+    },
+    {
+      name: 'Sta. Rita',
+      location: 'Pampanga',
+      sales: '₱142,890',
+      orders: 520,
+      trend: '+15%',
+      status: 'High',
+    },
+    {
+      name: 'Angeles',
+      location: 'Pampanga',
+      sales: '₱76,120',
+      orders: 290,
+      trend: '-3%',
+      status: 'Low',
+    },
+    {
+      name: 'San Fernando',
+      location: 'Pampanga',
+      sales: '₱105,340',
+      orders: 410,
+      trend: '+9%',
+      status: 'Average',
+    },
   ];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        height: '100vh',
-        background: C.bg,
-        overflow: 'hidden',
-        fontFamily: "'Segoe UI',system-ui,sans-serif",
-      }}
-    >
-      <Sidebar
-        open={open}
-        role={role}
-        userName={user.fullName ?? 'User'}
-        branchName={branchName}
-        activeNav={activeNav}
-        onNav={handleNav}
+    <>
+      <CreateAccountModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={handleAccountCreated}
+      />
+      <SuccessCredentialModal
+        isOpen={successModalOpen}
+        data={createdAccount}
+        onClose={() => setSuccessModalOpen(false)}
+        onCreateAnother={handleCreateAnother}
       />
 
       <div
         style={{
-          flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          height: '100vh',
+          background: C.bg,
           overflow: 'hidden',
-          minWidth: 0,
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
         }}
       >
-        {/* Header */}
-        <header
+        <AdminSidebar
+          sidebarOpen={sidebarOpen}
+          activeNav="Dashboard"
+          onNav={handleNav}
+          adminName={adminName}
+          onCreateAccount={() => setCreateModalOpen(true)}
+        />
+
+        <div
           style={{
-            background: '#fff',
-            borderBottom: `3px solid ${C.yellow}`,
-            padding: '0 28px',
-            height: 70,
+            flex: 1,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexShrink: 0,
-            boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minWidth: 0,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button
-              onClick={() => setOpen((v) => !v)}
-              style={{
-                border: '2px solid transparent',
-                borderRadius: 10,
-                padding: '7px 9px',
-                background: 'transparent',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = `${C.yellow}22`;
-                e.currentTarget.style.borderColor = C.yellow;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.borderColor = 'transparent';
-              }}
-            >
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  style={{
-                    display: 'block',
-                    width: 20,
-                    height: 2.5,
-                    background: C.brown,
-                    borderRadius: 2,
-                  }}
-                />
-              ))}
-            </button>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
-                >
-                  Branch Dashboard
-                </div>
-                {/* Read-only badge */}
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '3px 10px',
-                    borderRadius: 20,
-                    background: '#FFEBEE',
-                    color: '#C62828',
-                    fontSize: 10,
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.05em',
-                    border: '1.5px solid #EF9A9A',
-                  }}
-                >
-                  <svg
-                    width="9"
-                    height="9"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    viewBox="0 0 24 24"
-                  >
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  View Only
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: C.green,
-                  fontWeight: 600,
-                  marginTop: 1,
-                }}
-              >
-                {branchName} · {meta.label}
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                padding: '7px 14px',
-                borderRadius: 10,
-                background: `${meta.badgeBg}`,
-                border: `1.5px solid ${meta.badgeColor}40`,
-                fontSize: 11,
-                fontWeight: 700,
-                color: meta.badgeColor,
-              }}
-            >
-              {meta.emoji} {canEdit ? 'Can Edit Products' : 'View Only Access'}
-            </div>
-            <button
-              onClick={() => {
-                clearAuth();
-                router.replace('/login');
-              }}
-              style={{
-                padding: '9px 20px',
-                background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
-                color: C.yellow,
-                border: '2px solid rgba(245,200,66,.4)',
-                borderRadius: 10,
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.borderColor = C.yellow)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor = 'rgba(245,200,66,.4)')
-              }
-            >
-              Sign Out
-            </button>
-          </div>
-        </header>
-
-        {/* Body */}
-        <main
-          style={{ flex: 1, overflowY: 'auto', padding: 28, background: C.bg }}
-        >
-          {/* Welcome banner */}
-          <div
+          {/* Header */}
+          <header
             style={{
-              background: `linear-gradient(135deg,${C.brownDarker},${C.brownDark})`,
-              borderRadius: 18,
-              padding: '20px 28px',
-              marginBottom: 24,
-              border: '2px solid rgba(245,200,66,.2)',
+              background: '#fff',
+              borderBottom: `3px solid ${C.yellow}`,
+              padding: '0 28px',
+              height: 70,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+              boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
             }}
           >
-            <div style={{ fontSize: 22, fontWeight: 800, color: C.yellow }}>
-              Welcome back, {user.fullName?.split(' ')[0]} 👋
-            </div>
-            <div
-              style={{
-                fontSize: 13,
-                color: 'rgba(245,200,66,.7)',
-                marginTop: 4,
-              }}
-            >
-              {branchName} ·{' '}
-              {new Date().toLocaleDateString('en-PH', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4,1fr)',
-              gap: 16,
-              marginBottom: 24,
-            }}
-          >
-            {stats.map((s, i) => (
-              <div
-                key={i}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <button
+                onClick={() => setSidebarOpen((v) => !v)}
                 style={{
-                  background: '#fff',
-                  borderRadius: 16,
-                  padding: '20px 20px 16px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,.07)',
-                  opacity: loaded ? 1 : 0,
-                  transform: loaded ? 'translateY(0)' : 'translateY(14px)',
-                  transition: `opacity .4s ${i * 0.07}s, transform .4s ${i * 0.07}s`,
+                  border: '2px solid transparent',
+                  borderRadius: 10,
+                  padding: '7px 9px',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
                 }}
                 onMouseEnter={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.transform = 'translateY(-3px)';
-                  el.style.boxShadow = '0 8px 24px rgba(0,0,0,.11)';
+                  e.currentTarget.style.background = `${C.yellow}22`;
+                  e.currentTarget.style.borderColor = C.yellow;
                 }}
                 onMouseLeave={(e) => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.transform = 'translateY(0)';
-                  el.style.boxShadow = '0 2px 12px rgba(0,0,0,.07)';
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
                 }}
               >
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: 'block',
+                      width: 20,
+                      height: 2.5,
+                      background: C.brown,
+                      borderRadius: 2,
+                    }}
+                  />
+                ))}
+              </button>
+              <div>
                 <div
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: s.grad,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 20,
-                    marginBottom: 14,
-                    boxShadow: '0 4px 10px rgba(0,0,0,.15)',
-                  }}
-                >
-                  {s.icon}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: C.brownDark,
-                    marginBottom: 4,
-                  }}
-                >
-                  {s.label}
-                </div>
-                <div
-                  style={{
-                    fontSize: 24,
                     fontWeight: 800,
-                    color: C.brownDarker,
-                    letterSpacing: '-.5px',
+                    fontSize: 19,
+                    color: C.brownDark,
+                    letterSpacing: '-0.4px',
                   }}
                 >
-                  {s.value}
+                  Dashboard Overview
                 </div>
                 <div
                   style={{
-                    fontSize: 11,
-                    color: '#AAA',
+                    fontSize: 12,
+                    color: C.green,
                     fontWeight: 600,
-                    marginTop: 4,
+                    marginTop: 1,
                   }}
                 >
-                  {s.sub}
+                  Real-time franchise analytics · Pampanga Region
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  background: `${C.yellow}22`,
+                  border: `2px solid ${C.yellow}`,
+                }}
+              >
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={C.brown}
+                  strokeWidth="2.5"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <select
+                  value={dateRange}
+                  onChange={(e) => setDateRange(e.target.value)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: C.brownDark,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option>Last 7 Days</option>
+                  <option>Last 30 Days</option>
+                  <option>Last 90 Days</option>
+                  <option>This Year</option>
+                </select>
+              </div>
+              <button
+                style={{
+                  position: 'relative',
+                  padding: '9px 10px',
+                  border: '2px solid transparent',
+                  borderRadius: 10,
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = `${C.yellow}22`;
+                  e.currentTarget.style.borderColor = C.yellow;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.borderColor = 'transparent';
+                }}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={C.brown}
+                  strokeWidth="2.5"
+                >
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                    width: 8,
+                    height: 8,
+                    background: C.orange,
+                    borderRadius: '50%',
+                    border: '2px solid #fff',
+                  }}
+                />
+              </button>
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: '9px 20px',
+                  background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
+                  color: C.yellow,
+                  border: '2px solid rgba(245,200,66,0.4)',
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(62,26,0,0.2)',
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.borderColor = C.yellow)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)')
+                }
+              >
+                Sign Out
+              </button>
+            </div>
+          </header>
 
-          {/* Chart + Permissions */}
-          <div
+          {/* Scrollable body */}
+          <main
             style={{
-              display: 'grid',
-              gridTemplateColumns: '1.6fr 1fr',
-              gap: 18,
+              flex: 1,
+              overflowY: 'auto',
+              padding: 28,
+              background: C.bg,
             }}
           >
-            {/* Chart */}
-            {canAnalyze ? (
+            {/* Stat cards */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4,1fr)',
+                gap: 18,
+                marginBottom: 24,
+              }}
+            >
+              {statCards.map((card, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: '#fff',
+                    borderRadius: 16,
+                    padding: '22px 22px 18px',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow =
+                      '0 8px 24px rgba(0,0,0,0.11)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow =
+                      '0 2px 12px rgba(0,0,0,0.07)';
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 46,
+                        height: 46,
+                        borderRadius: 13,
+                        background: card.grad,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+                      }}
+                    >
+                      {card.icon}
+                    </div>
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        background: card.badgeBg,
+                        color: card.badgeColor,
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {card.badge}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: C.brownDark,
+                      marginBottom: 4,
+                    }}
+                  >
+                    {card.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 800,
+                      color: C.brownDarker,
+                      letterSpacing: '-0.5px',
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {card.value}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: card.subtextColor,
+                      fontWeight: 600,
+                      marginTop: 5,
+                    }}
+                  >
+                    {card.subtext}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Charts */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 18,
+                marginBottom: 24,
+              }}
+            >
               <div
                 style={{
                   background: '#fff',
                   borderRadius: 16,
-                  padding: '22px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+                  padding: '22px 22px 18px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
                 }}
               >
                 <div
@@ -784,7 +996,7 @@ export default function OwnerDashboard() {
                         color: C.brownDark,
                       }}
                     >
-                      Branch Sales
+                      Sales Performance
                     </div>
                     <div
                       style={{
@@ -808,114 +1020,303 @@ export default function OwnerDashboard() {
                       border: `1.5px solid ${C.green}`,
                     }}
                   >
-                    THIS WEEK
+                    LIVE SAMPLE
                   </span>
                 </div>
-                <div style={{ height: 220 }}>
-                  <Line data={salesData} options={chartOpts} />
+                <div style={{ height: 250 }}>
+                  <Line data={salesData} options={chartOptions} />
                 </div>
               </div>
-            ) : (
               <div
                 style={{
                   background: '#fff',
                   borderRadius: 16,
-                  padding: '22px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,.07)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 12,
+                  padding: '22px 22px 18px',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
                 }}
               >
-                <div style={{ fontSize: 40 }}>🔒</div>
                 <div
-                  style={{ fontWeight: 700, fontSize: 14, color: C.brownDark }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 18,
+                  }}
                 >
-                  Analytics Restricted
+                  <div>
+                    <div
+                      style={{
+                        fontWeight: 800,
+                        fontSize: 16,
+                        color: C.brownDark,
+                      }}
+                    >
+                      Branch Performance
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: C.orange,
+                        fontWeight: 600,
+                        marginTop: 2,
+                      }}
+                    >
+                      Pampanga branches · Sample Data
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      padding: '5px 12px',
+                      background: '#FFF0D9',
+                      color: C.orange,
+                      borderRadius: 8,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      border: `1.5px solid ${C.orange}`,
+                    }}
+                  >
+                    TOP 5
+                  </span>
                 </div>
-                <div
-                  style={{ fontSize: 12, color: '#AAA', textAlign: 'center' }}
-                >
-                  Analytics access is available to Franchise Owners and above.
+                <div style={{ height: 250 }}>
+                  <Bar data={branchData} options={chartOptions} />
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Permissions */}
+            {/* Branch table */}
             <div
               style={{
                 background: '#fff',
-                borderRadius: 16,
-                padding: '22px',
-                boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+                borderRadius: 18,
+                boxShadow: '0 2px 16px rgba(0,0,0,0.09)',
+                overflow: 'hidden',
+                border: `3px solid ${C.yellow}`,
               }}
             >
               <div
                 style={{
-                  fontWeight: 800,
-                  fontSize: 16,
-                  color: C.brownDark,
-                  marginBottom: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '18px 24px',
+                  background: `linear-gradient(90deg,${C.yellow}28,${C.orange}18)`,
+                  borderBottom: `2px solid ${C.yellow}`,
                 }}
               >
-                Your Permissions
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {perms.map((p, i) => (
+                <div>
                   <div
-                    key={i}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '9px 12px',
-                      borderRadius: 9,
-                      background: p.ok ? '#E8F5E1' : '#FDFAF4',
-                      border: `1.5px solid ${p.ok ? C.green + '50' : '#E5D9C8'}`,
+                      fontWeight: 800,
+                      fontSize: 16,
+                      color: C.brownDark,
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: C.brownDark,
-                      }}
-                    >
-                      {p.label}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        color: p.ok ? C.darkGreen : '#C62828',
-                      }}
-                    >
-                      {p.ok ? '✓ Yes' : '✕ No'}
-                    </span>
+                    Pampanga Branch Analytics
                   </div>
-                ))}
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: C.brownDark,
+                      fontWeight: 600,
+                      opacity: 0.7,
+                      marginTop: 2,
+                    }}
+                  >
+                    Performance metrics across all franchise locations (Sample
+                    Data)
+                  </div>
+                </div>
+                <button
+                  style={{
+                    padding: '9px 20px',
+                    background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    boxShadow: '0 3px 10px rgba(61,110,39,0.3)',
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+                >
+                  Export Data
+                </button>
               </div>
-              <div
-                style={{
-                  marginTop: 14,
-                  padding: '10px 12px',
-                  borderRadius: 10,
-                  background: '#FFFAE0',
-                  border: `1.5px solid ${C.yellow}60`,
-                  fontSize: 11,
-                  color: C.brownDark,
-                  fontWeight: 600,
-                  textAlign: 'center',
-                }}
-              >
-                Contact HQ to change your access level
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr
+                      style={{
+                        background: `linear-gradient(90deg,${C.brownDarker},${C.brownDark})`,
+                      }}
+                    >
+                      {[
+                        'Branch Location',
+                        'Sales',
+                        'Orders',
+                        'Growth',
+                        'Status',
+                      ].map((col) => (
+                        <th
+                          key={col}
+                          style={{
+                            padding: '13px 22px',
+                            textAlign: 'left',
+                            fontSize: 11,
+                            fontWeight: 800,
+                            color: C.yellow,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.07em',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {branches.map((b, idx) => (
+                      <tr
+                        key={idx}
+                        style={{
+                          borderBottom: `1.5px solid ${C.yellow}30`,
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = `${C.yellow}12`)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = 'transparent')
+                        }
+                      >
+                        <td style={{ padding: '14px 22px' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 38,
+                                height: 38,
+                                flexShrink: 0,
+                                background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                                borderRadius: 10,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: 15,
+                                color: C.brownDarker,
+                                boxShadow: '0 2px 6px rgba(255,140,0,0.25)',
+                              }}
+                            >
+                              {idx + 1}
+                            </div>
+                            <div>
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: 13.5,
+                                  color: C.brownDark,
+                                }}
+                              >
+                                {b.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  color: C.green,
+                                  fontWeight: 600,
+                                  marginTop: 1,
+                                }}
+                              >
+                                {b.location}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 22px',
+                            fontWeight: 800,
+                            fontSize: 14,
+                            color: C.brownDarker,
+                          }}
+                        >
+                          {b.sales}
+                        </td>
+                        <td
+                          style={{
+                            padding: '14px 22px',
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: C.brownDark,
+                          }}
+                        >
+                          {b.orders}
+                        </td>
+                        <td style={{ padding: '14px 22px' }}>
+                          <span
+                            style={{
+                              fontWeight: 800,
+                              fontSize: 13.5,
+                              color: b.trend.startsWith('+')
+                                ? C.green
+                                : '#D32F2F',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            {b.trend.startsWith('+') ? '↗' : '↘'} {b.trend}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 22px' }}>
+                          <span
+                            style={{
+                              padding: '5px 13px',
+                              borderRadius: 8,
+                              fontSize: 11,
+                              fontWeight: 800,
+                              ...(b.status === 'High'
+                                ? {
+                                    background: '#E8F5E1',
+                                    color: C.darkGreen,
+                                    border: `1.5px solid ${C.green}`,
+                                  }
+                                : b.status === 'Average'
+                                  ? {
+                                      background: '#FFFAE0',
+                                      color: C.brownDark,
+                                      border: `1.5px solid ${C.yellow}`,
+                                    }
+                                  : {
+                                      background: '#FFEBEE',
+                                      color: '#C62828',
+                                      border: '1.5px solid #EF9A9A',
+                                    }),
+                            }}
+                          >
+                            {b.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
