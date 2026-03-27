@@ -1,9 +1,13 @@
 'use client';
 
-// frontend/app/admin/orders/page.tsx
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getStoredToken, clearAuth } from '@/lib/auth';
+import { AdminSidebar } from '@/app/admin/dashboard/page';
+import CreateAccountModal, {
+  type CreatedAccountData,
+} from '@/components/admin/CreateAccountModal';
+import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
 
 const C = {
   brownDarker: '#3E1A00',
@@ -109,7 +113,6 @@ function StatusBadge({ status }: { status: OrderStatus }) {
   );
 }
 
-// ─── UPDATE STATUS MODAL ──────────────────────────────────────────────────────
 function UpdateStatusModal({
   order,
   onClose,
@@ -166,7 +169,7 @@ function UpdateStatusModal({
       } else {
         setError(data.message ?? 'Failed to update status');
       }
-    } catch (err) {
+    } catch {
       setError('Network error. Is the backend running?');
     } finally {
       setSaving(false);
@@ -330,7 +333,6 @@ function UpdateStatusModal({
               })}
             </div>
           </div>
-
           <div>
             <div
               style={{
@@ -427,7 +429,6 @@ function UpdateStatusModal({
   );
 }
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function AdminOrdersPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -438,8 +439,11 @@ export default function AdminOrdersPage() {
   const [selected, setSelected] = useState<Order | null>(null);
   const [sidebarOpen, setSidebar] = useState(true);
   const [userName, setUserName] = useState('Admin');
+  const [createModal, setCreateModal] = useState(false);
+  const [successModal, setSuccessModal] = useState(false);
+  const [createdAccount, setCreatedAccount] =
+    useState<CreatedAccountData | null>(null);
 
-  // ── Auth guard ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const u = getStoredUser();
     const t = getStoredToken();
@@ -455,43 +459,36 @@ export default function AdminOrdersPage() {
     setReady(true);
   }, [router]);
 
-  // ── Fetch orders — only after auth confirmed ───────────────────────────────
   const fetchOrders = useCallback(async () => {
     const token = getStoredToken();
     if (!token) return;
-
     setLoading(true);
     setFetchError('');
-
     try {
       const res = await fetch('http://localhost:3000/api/orders', {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (res.status === 401) {
         setFetchError('Session expired. Please sign in again.');
         setLoading(false);
         return;
       }
-
       if (!res.ok) {
         setFetchError(`Server error: ${res.status} ${res.statusText}`);
         setLoading(false);
         return;
       }
-
       const data = (await res.json()) as {
         success: boolean;
         data: Order[];
         message?: string;
       };
-
       if (data.success) {
         setOrders(data.data);
       } else {
         setFetchError(data.message ?? 'Failed to load orders');
       }
-    } catch (err) {
+    } catch {
       setFetchError(
         'Cannot reach backend. Make sure it is running on port 3000.',
       );
@@ -500,7 +497,6 @@ export default function AdminOrdersPage() {
     }
   }, []);
 
-  // ── Trigger fetch once auth is confirmed ───────────────────────────────────
   useEffect(() => {
     if (ready) {
       void fetchOrders();
@@ -513,10 +509,19 @@ export default function AdminOrdersPage() {
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
     setSelected(null);
   };
+  const handleAccountCreated = (data: CreatedAccountData) => {
+    setCreatedAccount(data);
+    setCreateModal(false);
+    setTimeout(() => setSuccessModal(true), 320);
+  };
+  const handleCreateAnother = () => {
+    setSuccessModal(false);
+    setTimeout(() => setCreateModal(true), 320);
+  };
+  const handleNav = (route: string) => router.push(route);
 
   const filtered =
     filter === 'all' ? orders : orders.filter((o) => o.status === filter);
-
   const counts = {
     all: orders.length,
     pending: orders.filter((o) => o.status === 'pending').length,
@@ -526,71 +531,19 @@ export default function AdminOrdersPage() {
     cancelled: orders.filter((o) => o.status === 'cancelled').length,
   };
 
-  // ─── NAV: Dashboard · Franchisee Orders · Products ───────────────────────
-  const NAV_ITEMS = [
-    {
-      name: 'Dashboard',
-      label: 'Dashboard',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-      route: '/admin/dashboard',
-      badge: 0,
-    },
-    {
-      name: 'Franchisee Orders',
-      label: 'Franchisee Orders',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-      ),
-      route: '/admin/orders',
-      badge: counts.pending,
-    },
-    {
-      name: 'Products',
-      label: 'Products',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        </svg>
-      ),
-      route: '/admin/products',
-      badge: 0,
-    },
-  ];
-
   return (
     <>
+      <CreateAccountModal
+        isOpen={createModal}
+        onClose={() => setCreateModal(false)}
+        onSuccess={handleAccountCreated}
+      />
+      <SuccessCredentialModal
+        isOpen={successModal}
+        data={createdAccount}
+        onClose={() => setSuccessModal(false)}
+        onCreateAnother={handleCreateAnother}
+      />
       {selected && (
         <UpdateStatusModal
           order={selected}
@@ -608,199 +561,14 @@ export default function AdminOrdersPage() {
           fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
       >
-        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-        <aside
-          style={{
-            width: sidebarOpen ? 240 : 72,
-            background: `linear-gradient(180deg,${C.brownDarker},${C.brownDark})`,
-            display: 'flex',
-            flexDirection: 'column',
-            transition: 'width .28s cubic-bezier(.4,0,.2,1)',
-            flexShrink: 0,
-            boxShadow: '4px 0 24px rgba(62,26,0,.18)',
-            zIndex: 10,
-          }}
-        >
-          {/* Logo */}
-          <div
-            style={{
-              padding: '24px 16px 20px',
-              borderBottom: '1px solid rgba(245,200,66,.2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                flexShrink: 0,
-                background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                borderRadius: 14,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
-              }}
-            >
-              🥭
-            </div>
-            {sidebarOpen && (
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: C.yellow }}>
-                  Machi Mango
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'rgba(245,200,66,.7)',
-                    marginTop: 1,
-                  }}
-                >
-                  HQ Control Center
-                </div>
-              </div>
-            )}
-          </div>
+        <AdminSidebar
+          sidebarOpen={sidebarOpen}
+          activeNav="Franchisee Orders"
+          onNav={handleNav}
+          adminName={userName}
+          onCreateAccount={() => setCreateModal(true)}
+        />
 
-          {/* Nav links */}
-          <nav style={{ flex: 1, padding: '16px 10px' }}>
-            {NAV_ITEMS.map((item) => {
-              const active = item.name === 'Franchisee Orders';
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => router.push(item.route)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: sidebarOpen ? '11px 14px' : '11px 0',
-                    justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                    borderRadius: 12,
-                    marginBottom: 3,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: active
-                      ? `linear-gradient(90deg,${C.yellow},${C.orange})`
-                      : 'transparent',
-                    color: active ? C.brownDarker : 'rgba(245,200,66,.65)',
-                    fontWeight: active ? 700 : 500,
-                    fontSize: 13.5,
-                    transition: 'all .18s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!active) {
-                      e.currentTarget.style.background = 'rgba(245,200,66,.1)';
-                      e.currentTarget.style.color = C.yellow;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active) {
-                      e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'rgba(245,200,66,.65)';
-                    }
-                  }}
-                >
-                  <span
-                    style={{
-                      flexShrink: 0,
-                      color: active ? C.brownDarker : 'inherit',
-                    }}
-                  >
-                    {item.icon}
-                  </span>
-                  {sidebarOpen && (
-                    <span style={{ flex: 1, textAlign: 'left' }}>
-                      {item.label}
-                    </span>
-                  )}
-                  {sidebarOpen && item.badge > 0 && (
-                    <span
-                      style={{
-                        background: C.orange,
-                        color: '#fff',
-                        borderRadius: 20,
-                        padding: '1px 8px',
-                        fontSize: 10,
-                        fontWeight: 800,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
-                  {/* collapsed badge dot */}
-                  {!sidebarOpen && item.badge > 0 && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 10,
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        background: C.orange,
-                        border: `2px solid ${C.brownDarker}`,
-                      }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* User footer */}
-          <div
-            style={{
-              padding: '14px 10px',
-              borderTop: '1px solid rgba(245,200,66,.2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                flexShrink: 0,
-                background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 700,
-              }}
-            >
-              {userName.charAt(0).toUpperCase()}
-            </div>
-            {sidebarOpen && (
-              <div style={{ overflow: 'hidden' }}>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 13,
-                    color: C.yellow,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {userName}
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(245,200,66,.6)' }}>
-                  HQ Administrator
-                </div>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* ── Main content ─────────────────────────────────────────────────── */}
         <div
           style={{
             flex: 1,
@@ -810,7 +578,6 @@ export default function AdminOrdersPage() {
             minWidth: 0,
           }}
         >
-          {/* Header */}
           <header
             style={{
               background: '#fff',
@@ -1001,7 +768,6 @@ export default function AdminOrdersPage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {/* Franchisee Orders icon */}
                   <span style={{ fontSize: 18 }}>🏪</span>
                   <div
                     style={{
@@ -1042,7 +808,6 @@ export default function AdminOrdersPage() {
                 )}
               </div>
 
-              {/* Error state */}
               {fetchError && !loading && (
                 <div
                   style={{
@@ -1078,7 +843,6 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
-              {/* Loading state */}
               {loading && (
                 <div
                   style={{
@@ -1092,7 +856,6 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
-              {/* Empty state */}
               {!loading && !fetchError && filtered.length === 0 && (
                 <div style={{ padding: 60, textAlign: 'center' }}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>🏪</div>
@@ -1116,7 +879,6 @@ export default function AdminOrdersPage() {
                 </div>
               )}
 
-              {/* Table */}
               {!loading && !fetchError && filtered.length > 0 && (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -1190,7 +952,6 @@ export default function AdminOrdersPage() {
                                 gap: 8,
                               }}
                             >
-                              {/* Franchisee avatar */}
                               <div
                                 style={{
                                   width: 30,

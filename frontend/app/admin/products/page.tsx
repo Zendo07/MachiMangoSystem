@@ -6,8 +6,8 @@ import CreateAccountModal, {
   type CreatedAccountData,
 } from '@/components/admin/CreateAccountModal';
 import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
+import { AdminSidebar } from '@/app/admin/dashboard/page';
 
-// ─── COLORS ───────────────────────────────────────────────────────────────────
 const C = {
   brownDarker: '#3E1A00',
   brownDark: '#6B3A2A',
@@ -19,7 +19,6 @@ const C = {
   bg: '#F2EAD8',
 };
 
-// ─── TYPES ────────────────────────────────────────────────────────────────────
 interface Product {
   id: number;
   name: string;
@@ -33,7 +32,6 @@ interface Product {
 type SortKey = 'name' | 'price' | 'stock' | 'sales';
 type ViewMode = 'grid' | 'table';
 
-// ─── DATA ─────────────────────────────────────────────────────────────────────
 const INITIAL_PRODUCTS: Product[] = [
   {
     id: 1,
@@ -186,7 +184,6 @@ function autoStatus(qty: number): Product['status'] {
   return qty === 0 ? 'Out of Stock' : qty <= 10 ? 'Low Stock' : 'In Stock';
 }
 
-// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Product['status'] }) {
   const m = {
     'In Stock': { bg: '#E8F5E1', color: '#3D6E27', dot: '#5A9E3A' },
@@ -223,7 +220,6 @@ function StatusBadge({ status }: { status: Product['status'] }) {
   );
 }
 
-// ─── STOCK POPOVER ────────────────────────────────────────────────────────────
 function StockPopover({
   value,
   onSave,
@@ -270,7 +266,7 @@ function StockPopover({
             width: 30,
             height: 30,
             borderRadius: 8,
-            border: `1.5px solid #E5D9C8`,
+            border: '1.5px solid #E5D9C8',
             background: '#FDFAF4',
             color: C.brownDarker,
             fontWeight: 700,
@@ -303,7 +299,7 @@ function StockPopover({
             width: 30,
             height: 30,
             borderRadius: 8,
-            border: `1.5px solid #E5D9C8`,
+            border: '1.5px solid #E5D9C8',
             background: '#FDFAF4',
             color: C.brownDarker,
             fontWeight: 700,
@@ -322,7 +318,7 @@ function StockPopover({
             flex: 1,
             padding: '7px',
             borderRadius: 8,
-            border: `1.5px solid #E5D9C8`,
+            border: '1.5px solid #E5D9C8',
             background: 'transparent',
             color: C.brownDark,
             fontWeight: 600,
@@ -356,7 +352,6 @@ function StockPopover({
   );
 }
 
-// ─── ADD/EDIT MODAL ───────────────────────────────────────────────────────────
 function ProductModal({
   product,
   onClose,
@@ -390,7 +385,7 @@ function ProductModal({
     width: '100%',
     padding: '10px 14px',
     borderRadius: 11,
-    border: `2px solid #E5D9C8`,
+    border: '2px solid #E5D9C8',
     background: '#FDFAF4',
     color: C.brownDarker,
     fontSize: 13,
@@ -430,7 +425,6 @@ function ProductModal({
           boxShadow: '0 32px 80px rgba(62,26,0,.3)',
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: '20px 26px',
@@ -478,7 +472,7 @@ function ProductModal({
               width: 30,
               height: 30,
               borderRadius: '50%',
-              border: `2px solid rgba(245,200,66,.3)`,
+              border: '2px solid rgba(245,200,66,.3)',
               background: 'rgba(245,200,66,.1)',
               color: C.yellow,
               cursor: 'pointer',
@@ -492,7 +486,6 @@ function ProductModal({
             ✕
           </button>
         </div>
-        {/* Body */}
         <div
           style={{
             padding: '20px 26px',
@@ -503,7 +496,6 @@ function ProductModal({
             overflowY: 'auto',
           }}
         >
-          {/* Emoji picker */}
           <div>
             <div
               style={{
@@ -539,7 +531,6 @@ function ProductModal({
               ))}
             </div>
           </div>
-          {/* Name */}
           <div>
             <div
               style={{
@@ -568,7 +559,6 @@ function ProductModal({
               }
             />
           </div>
-          {/* Category + Price */}
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
           >
@@ -654,7 +644,6 @@ function ProductModal({
               />
             </div>
           </div>
-          {/* Stock */}
           <div>
             <div
               style={{
@@ -698,7 +687,6 @@ function ProductModal({
             </div>
           </div>
         </div>
-        {/* Footer */}
         <div
           style={{
             padding: '14px 26px 20px',
@@ -713,7 +701,7 @@ function ProductModal({
             style={{
               padding: '10px 20px',
               borderRadius: 11,
-              border: `2px solid #D0BFA8`,
+              border: '2px solid #D0BFA8',
               background: 'transparent',
               color: C.brownDark,
               fontWeight: 700,
@@ -749,7 +737,6 @@ function ProductModal({
   );
 }
 
-// ─── DELETE MODAL ─────────────────────────────────────────────────────────────
 function DeleteModal({
   product,
   onClose,
@@ -845,7 +832,7 @@ function DeleteModal({
               flex: 1,
               padding: 11,
               borderRadius: 12,
-              border: `2px solid #D0BFA8`,
+              border: '2px solid #D0BFA8',
               background: 'transparent',
               color: C.brownDark,
               fontWeight: 700,
@@ -880,7 +867,6 @@ function DeleteModal({
   );
 }
 
-// ─── PRODUCT CARD ─────────────────────────────────────────────────────────────
 function ProductCard({
   p,
   onEdit,
@@ -911,7 +897,6 @@ function ProductCard({
         position: 'relative',
       }}
     >
-      {/* Image band */}
       <div
         style={{
           height: 96,
@@ -956,7 +941,6 @@ function ProductCard({
           </div>
         )}
       </div>
-      {/* Body */}
       <div style={{ padding: '13px 15px' }}>
         <div
           style={{
@@ -1025,7 +1009,6 @@ function ProductCard({
             {p.sales} sold
           </span>
         </div>
-        {/* Stock bar */}
         <div style={{ marginBottom: 11 }}>
           <div
             style={{
@@ -1076,7 +1059,6 @@ function ProductCard({
             />
           </div>
         </div>
-        {/* Actions */}
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             onClick={onEdit}
@@ -1084,7 +1066,7 @@ function ProductCard({
               flex: 1,
               padding: '7px 0',
               borderRadius: 9,
-              border: `1.5px solid #E5D9C8`,
+              border: '1.5px solid #E5D9C8',
               background: '#FDFAF4',
               color: C.brownDark,
               fontWeight: 700,
@@ -1123,7 +1105,7 @@ function ProductCard({
               style={{
                 padding: '7px 10px',
                 borderRadius: 9,
-                border: `1.5px solid #E5D9C8`,
+                border: '1.5px solid #E5D9C8',
                 background: '#FDFAF4',
                 color: C.brownDark,
                 cursor: 'pointer',
@@ -1162,7 +1144,7 @@ function ProductCard({
             style={{
               padding: '7px 10px',
               borderRadius: 9,
-              border: `1.5px solid #FFCDD2`,
+              border: '1.5px solid #FFCDD2',
               background: '#FFEBEE',
               color: '#C62828',
               cursor: 'pointer',
@@ -1190,7 +1172,6 @@ function ProductCard({
   );
 }
 
-// ─── TABLE ROW ────────────────────────────────────────────────────────────────
 function TableRow({
   p,
   idx,
@@ -1212,7 +1193,7 @@ function TableRow({
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? `${C.yellow}12` : idx % 2 === 0 ? '#fff' : '#FDFAF4',
-        borderBottom: `1.5px solid #F0E8D8`,
+        borderBottom: '1.5px solid #F0E8D8',
         transition: 'background .15s',
       }}
     >
@@ -1338,7 +1319,7 @@ function TableRow({
             style={{
               padding: '6px 11px',
               borderRadius: 8,
-              border: `1.5px solid #E5D9C8`,
+              border: '1.5px solid #E5D9C8',
               background: '#FDFAF4',
               color: C.brownDark,
               fontWeight: 700,
@@ -1376,7 +1357,7 @@ function TableRow({
               style={{
                 padding: '6px 9px',
                 borderRadius: 8,
-                border: `1.5px solid #E5D9C8`,
+                border: '1.5px solid #E5D9C8',
                 background: '#FDFAF4',
                 cursor: 'pointer',
                 display: 'flex',
@@ -1414,7 +1395,7 @@ function TableRow({
             style={{
               padding: '6px 9px',
               borderRadius: 8,
-              border: `1.5px solid #FFCDD2`,
+              border: '1.5px solid #FFCDD2',
               background: '#FFEBEE',
               color: '#C62828',
               cursor: 'pointer',
@@ -1442,360 +1423,6 @@ function TableRow({
   );
 }
 
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-function Sidebar({
-  open,
-  adminName,
-  onNav,
-  onCreateAccount,
-}: {
-  open: boolean;
-  adminName: string;
-  onNav: (n: string) => void;
-  onCreateAccount: () => void;
-}) {
-  const items = [
-    {
-      name: 'Dashboard',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Branches',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Analytics',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Products',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Settings',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-        </svg>
-      ),
-    },
-  ];
-  return (
-    <aside
-      style={{
-        width: open ? 256 : 72,
-        background: `linear-gradient(180deg,${C.brownDarker} 0%,${C.brownDark} 100%)`,
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'width 0.28s cubic-bezier(.4,0,.2,1)',
-        flexShrink: 0,
-        boxShadow: '4px 0 24px rgba(62,26,0,0.18)',
-        zIndex: 10,
-      }}
-    >
-      <div
-        style={{
-          padding: '24px 16px 20px',
-          borderBottom: '1px solid rgba(245,200,66,0.2)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              flexShrink: 0,
-              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-              borderRadius: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-              boxShadow: '0 4px 12px rgba(255,140,0,0.4)',
-            }}
-          >
-            🥭
-          </div>
-          {open && (
-            <div>
-              <div
-                style={{
-                  fontWeight: 800,
-                  fontSize: 17,
-                  color: C.yellow,
-                  letterSpacing: '-0.3px',
-                }}
-              >
-                Machi Mango
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(245,200,66,0.7)',
-                  fontWeight: 600,
-                  marginTop: 2,
-                }}
-              >
-                HQ Control Center
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      <nav style={{ flex: 1, padding: '16px 10px', overflowY: 'auto' }}>
-        {open && (
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: 'rgba(245,200,66,0.35)',
-              padding: '8px 14px 6px',
-            }}
-          >
-            Main Menu
-          </div>
-        )}
-        {items.map((item) => {
-          const active = item.name === 'Products';
-          return (
-            <button
-              key={item.name}
-              onClick={() => onNav(item.name)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: open ? '11px 14px' : '11px 0',
-                justifyContent: open ? 'flex-start' : 'center',
-                borderRadius: 12,
-                marginBottom: 3,
-                border: 'none',
-                cursor: 'pointer',
-                background: active
-                  ? `linear-gradient(90deg,${C.yellow},${C.orange})`
-                  : 'transparent',
-                color: active ? C.brownDarker : 'rgba(245,200,66,0.65)',
-                fontWeight: active ? 700 : 500,
-                fontSize: 13.5,
-                boxShadow: active ? '0 4px 14px rgba(255,140,0,0.3)' : 'none',
-                transition: 'all 0.18s',
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'rgba(245,200,66,0.1)';
-                  e.currentTarget.style.color = C.yellow;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(245,200,66,0.65)';
-                }
-              }}
-            >
-              <span
-                style={{
-                  flexShrink: 0,
-                  color: active ? C.brownDarker : 'inherit',
-                }}
-              >
-                {item.icon}
-              </span>
-              {open && <span>{item.name}</span>}
-            </button>
-          );
-        })}
-        {open && (
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: 'rgba(245,200,66,0.35)',
-              padding: '14px 14px 6px',
-            }}
-          >
-            Administration
-          </div>
-        )}
-        <button
-          onClick={onCreateAccount}
-          style={{
-            width: open ? '100%' : 42,
-            margin: open ? '4px 0 8px' : '4px auto 8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: open ? 'flex-start' : 'center',
-            gap: 10,
-            padding: open ? '12px 14px' : '11px 0',
-            borderRadius: 13,
-            border: '2px dashed rgba(245,200,66,0.4)',
-            background: 'rgba(245,200,66,0.07)',
-            color: C.yellow,
-            fontWeight: 700,
-            fontSize: 13.5,
-            cursor: 'pointer',
-            transition: 'all .2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(245,200,66,0.15)';
-            e.currentTarget.style.borderColor = C.yellow;
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(245,200,66,0.07)';
-            e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              flexShrink: 0,
-              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: C.brownDarker,
-              fontSize: 17,
-              fontWeight: 800,
-              boxShadow: '0 2px 8px rgba(255,140,0,0.35)',
-            }}
-          >
-            +
-          </div>
-          {open && <span>Create Account</span>}
-        </button>
-      </nav>
-      <div
-        style={{
-          padding: '14px 10px',
-          borderTop: '1px solid rgba(245,200,66,0.2)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 12,
-            background: 'rgba(255,255,255,0.06)',
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              flexShrink: 0,
-              background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 15,
-            }}
-          >
-            {adminName.charAt(0).toUpperCase()}
-          </div>
-          {open && (
-            <div>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 13,
-                  color: C.yellow,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {adminName}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(245,200,66,0.6)',
-                  marginTop: 1,
-                }}
-              >
-                HQ Administrator
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const router = useRouter();
   const [adminName, setAdminName] = useState('Admin');
@@ -1829,9 +1456,7 @@ export default function ProductsPage() {
     setTimeout(() => setLoaded(true), 80);
   }, []);
 
-  const handleNav = (name: string) => {
-    if (name === 'Dashboard') router.push('/admin/dashboard');
-  };
+  const handleNav = (route: string) => router.push(route);
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -1847,14 +1472,12 @@ export default function ProductsPage() {
     setTimeout(() => setCreate(true), 320);
   };
 
-  // Stats
   const total = products.length;
   const inStock = products.filter((p) => p.status === 'In Stock').length;
   const lowStock = products.filter((p) => p.status === 'Low Stock').length;
   const outStock = products.filter((p) => p.status === 'Out of Stock').length;
   const sold = products.reduce((s, p) => s + p.sales, 0);
 
-  // Filter + sort
   const filtered = products
     .filter(
       (p) =>
@@ -1882,7 +1505,6 @@ export default function ProductsPage() {
       setSortAsc(true);
     }
   };
-
   const saveProduct = (data: Partial<Product>) => {
     if (data.id)
       setProducts((ps) =>
@@ -1973,10 +1595,11 @@ export default function ProductsPage() {
           fontFamily: "'Segoe UI', system-ui, sans-serif",
         }}
       >
-        <Sidebar
-          open={sidebarOpen}
-          adminName={adminName}
+        <AdminSidebar
+          sidebarOpen={sidebarOpen}
+          activeNav="Products"
           onNav={handleNav}
+          adminName={adminName}
           onCreateAccount={() => setCreate(true)}
         />
 
@@ -1989,7 +1612,6 @@ export default function ProductsPage() {
             minWidth: 0,
           }}
         >
-          {/* Header */}
           <header
             style={{
               background: '#fff',
@@ -2110,7 +1732,6 @@ export default function ProductsPage() {
                   fontWeight: 700,
                   fontSize: 13,
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(62,26,0,0.2)',
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.borderColor = C.yellow)
@@ -2124,7 +1745,6 @@ export default function ProductsPage() {
             </div>
           </header>
 
-          {/* Body */}
           <main
             style={{
               flex: 1,
@@ -2133,7 +1753,6 @@ export default function ProductsPage() {
               background: C.bg,
             }}
           >
-            {/* Stat cards */}
             <div
               style={{
                 display: 'grid',
@@ -2183,8 +1802,7 @@ export default function ProductsPage() {
                     boxShadow: '0 2px 10px rgba(0,0,0,.06)',
                     opacity: loaded ? 1 : 0,
                     transform: loaded ? 'translateY(0)' : 'translateY(14px)',
-                    transition: `opacity .4s ${i * 0.06}s, transform .4s ${i * 0.06}s, box-shadow .2s`,
-                    cursor: 'default',
+                    transition: `opacity .4s ${i * 0.06}s, transform .4s ${i * 0.06}s`,
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.boxShadow =
@@ -2240,7 +1858,6 @@ export default function ProductsPage() {
               ))}
             </div>
 
-            {/* Filter bar */}
             <div
               style={{
                 background: '#fff',
@@ -2254,7 +1871,6 @@ export default function ProductsPage() {
                 alignItems: 'center',
               }}
             >
-              {/* Search */}
               <div
                 style={{
                   position: 'relative',
@@ -2293,7 +1909,7 @@ export default function ProductsPage() {
                     paddingTop: 9,
                     paddingBottom: 9,
                     borderRadius: 10,
-                    border: `1.5px solid #E5D9C8`,
+                    border: '1.5px solid #E5D9C8',
                     background: '#FDFAF4',
                     color: C.brownDarker,
                     fontSize: 13,
@@ -2304,7 +1920,6 @@ export default function ProductsPage() {
                   onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
                 />
               </div>
-              {/* Category tabs */}
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 {CATEGORIES.map((cat) => (
                   <button
@@ -2327,7 +1942,6 @@ export default function ProductsPage() {
                   </button>
                 ))}
               </div>
-              {/* Status */}
               <div style={{ position: 'relative' }}>
                 <select
                   value={statusFilter}
@@ -2335,7 +1949,7 @@ export default function ProductsPage() {
                   style={{
                     padding: '8px 28px 8px 11px',
                     borderRadius: 10,
-                    border: `1.5px solid #E5D9C8`,
+                    border: '1.5px solid #E5D9C8',
                     background: '#FDFAF4',
                     color: C.brownDark,
                     fontSize: 12,
@@ -2368,7 +1982,6 @@ export default function ProductsPage() {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
-              {/* Sort */}
               <div
                 style={{
                   display: 'flex',
@@ -2394,13 +2007,12 @@ export default function ProductsPage() {
                 <SBtn label="Stock" k="stock" />
                 <SBtn label="Sales" k="sales" />
               </div>
-              {/* View toggle */}
               <div
                 style={{
                   display: 'flex',
                   borderRadius: 9,
                   overflow: 'hidden',
-                  border: `1.5px solid #E5D9C8`,
+                  border: '1.5px solid #E5D9C8',
                   flexShrink: 0,
                   marginLeft: 'auto',
                 }}
@@ -2463,7 +2075,6 @@ export default function ProductsPage() {
               </div>
             </div>
 
-            {/* Results count */}
             <div
               style={{
                 fontSize: 13,
@@ -2486,7 +2097,6 @@ export default function ProductsPage() {
               )}
             </div>
 
-            {/* ── GRID VIEW ── */}
             {viewMode === 'grid' && (
               <div
                 style={{
@@ -2512,12 +2122,11 @@ export default function ProductsPage() {
                     />
                   </div>
                 ))}
-                {/* Add card */}
                 <div
                   onClick={() => setEdit(null)}
                   style={{
                     borderRadius: 18,
-                    border: `2px dashed #D0BFA8`,
+                    border: '2px dashed #D0BFA8',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -2585,7 +2194,6 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* ── TABLE VIEW ── */}
             {viewMode === 'table' && (
               <div
                 style={{
