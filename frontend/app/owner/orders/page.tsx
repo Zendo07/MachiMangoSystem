@@ -1,7 +1,6 @@
 'use client';
 
-// frontend/app/owner/orders/page.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getStoredUser,
@@ -22,131 +21,23 @@ const C = {
   bg: '#F2EAD8',
 };
 
-// ─── INGREDIENTS CATALOG ──────────────────────────────────────────────────────
-interface Ingredient {
+// ─── TYPES ────────────────────────────────────────────────────────────────────
+interface Product {
   id: string;
   name: string;
   category: string;
-  unit: string;
-  pricePerUnit: number;
+  price: number;
+  stock: number;
   image: string;
+  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  sales: number;
 }
 
-const INGREDIENTS: Ingredient[] = [
-  {
-    id: '1',
-    name: 'Fresh Mango',
-    category: 'Fruits',
-    unit: 'kg',
-    pricePerUnit: 120,
-    image: '🥭',
-  },
-  {
-    id: '2',
-    name: 'Graham Crackers',
-    category: 'Dry Goods',
-    unit: 'pack',
-    pricePerUnit: 55,
-    image: '🍪',
-  },
-  {
-    id: '3',
-    name: 'All-Purpose Cream',
-    category: 'Dairy',
-    unit: 'can',
-    pricePerUnit: 45,
-    image: '🥛',
-  },
-  {
-    id: '4',
-    name: 'Condensed Milk',
-    category: 'Dairy',
-    unit: 'can',
-    pricePerUnit: 40,
-    image: '🍶',
-  },
-  {
-    id: '5',
-    name: 'Boba Pearls',
-    category: 'Dry Goods',
-    unit: 'kg',
-    pricePerUnit: 180,
-    image: '⚫',
-  },
-  {
-    id: '6',
-    name: 'Milk Tea Base',
-    category: 'Beverages',
-    unit: 'L',
-    pricePerUnit: 250,
-    image: '🧋',
-  },
-  {
-    id: '7',
-    name: 'Sugar Syrup',
-    category: 'Condiments',
-    unit: 'L',
-    pricePerUnit: 80,
-    image: '🍯',
-  },
-  {
-    id: '8',
-    name: 'Ice Cream Mix',
-    category: 'Dairy',
-    unit: 'kg',
-    pricePerUnit: 220,
-    image: '🍦',
-  },
-  {
-    id: '9',
-    name: 'Cheese Powder',
-    category: 'Dairy',
-    unit: 'kg',
-    pricePerUnit: 310,
-    image: '🧀',
-  },
-  {
-    id: '10',
-    name: 'Pastillas Mix',
-    category: 'Dry Goods',
-    unit: 'kg',
-    pricePerUnit: 160,
-    image: '🍬',
-  },
-  {
-    id: '11',
-    name: 'Plastic Cups',
-    category: 'Packaging',
-    unit: 'pcs',
-    pricePerUnit: 3,
-    image: '🥤',
-  },
-  {
-    id: '12',
-    name: 'Paper Bags',
-    category: 'Packaging',
-    unit: 'pcs',
-    pricePerUnit: 2,
-    image: '🛍️',
-  },
-];
-
-const CATEGORIES = [
-  'All',
-  'Fruits',
-  'Dairy',
-  'Dry Goods',
-  'Beverages',
-  'Condiments',
-  'Packaging',
-];
-
-interface CartItem extends Ingredient {
+interface CartItem extends Product {
   quantity: number;
   totalPrice: number;
 }
 
-// ─── ORDER STATUS TYPES ───────────────────────────────────────────────────────
 interface Order {
   id: string;
   createdAt: string;
@@ -221,7 +112,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── SUCCESS TOAST ────────────────────────────────────────────────────────────
 function SuccessToast({
   message,
   onClose,
@@ -233,7 +123,6 @@ function SuccessToast({
     const t = setTimeout(onClose, 4000);
     return () => clearTimeout(t);
   }, [onClose]);
-
   return (
     <div
       style={{
@@ -250,7 +139,6 @@ function SuccessToast({
         alignItems: 'center',
         gap: 12,
         maxWidth: 380,
-        animation: 'slideUp .3s ease',
       }}
     >
       <div style={{ fontSize: 24 }}>✅</div>
@@ -281,18 +169,19 @@ function SuccessToast({
   );
 }
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function OrdersPage() {
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
-  const [category, setCategory] = useState('All');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [productError, setProductError] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [tab, setTab] = useState<'order' | 'history'>('order');
   const [orders, setOrders] = useState<Order[]>([]);
   const [placing, setPlacing] = useState(false);
   const [toast, setToast] = useState('');
-  const [loaded, setLoaded] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   useEffect(() => {
@@ -311,49 +200,72 @@ export default function OrdersPage() {
       return;
     }
     setUser(u);
-    setTimeout(() => setLoaded(true), 80);
   }, [router]);
 
-  const fetchOrders = async () => {
+  // ─── FETCH PRODUCTS FROM API ──────────────────────────────────────────────
+  const fetchProducts = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) return;
+    setLoadingProducts(true);
+    setProductError('');
+    try {
+      const res = await fetch('http://localhost:3000/api/products', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as { success: boolean; data: Product[] };
+      if (data.success) setProducts(data.data);
+      else setProductError('Failed to load products');
+    } catch {
+      setProductError('Cannot reach backend. Is it running?');
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, []);
+
+  const fetchOrders = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) return;
     setLoadingOrders(true);
     try {
-      const token = getStoredToken();
       const res = await fetch('http://localhost:3000/api/orders/my-orders', {
-        headers: { Authorization: `Bearer ${token ?? ''}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as { success: boolean; data: Order[] };
       if (data.success) setOrders(data.data);
     } catch {
-      /* ignore */
+      /**/
     } finally {
       setLoadingOrders(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    if (user) void fetchProducts();
+  }, [user, fetchProducts]);
+  useEffect(() => {
     if (tab === 'history') void fetchOrders();
-  }, [tab]);
+  }, [tab, fetchOrders]);
 
   if (!user) return null;
 
   const role = user.role as UserRole;
   const meta = ROLE_META[role];
 
-  // Cart helpers
-  const addToCart = (ing: Ingredient) => {
+  // ─── CART HELPERS ─────────────────────────────────────────────────────────
+  const addToCart = (product: Product) => {
     setCart((prev) => {
-      const ex = prev.find((i) => i.id === ing.id);
+      const ex = prev.find((i) => i.id === product.id);
       if (ex)
         return prev.map((i) =>
-          i.id === ing.id
+          i.id === product.id
             ? {
                 ...i,
                 quantity: i.quantity + 1,
-                totalPrice: (i.quantity + 1) * i.pricePerUnit,
+                totalPrice: (i.quantity + 1) * i.price,
               }
             : i,
         );
-      return [...prev, { ...ing, quantity: 1, totalPrice: ing.pricePerUnit }];
+      return [...prev, { ...product, quantity: 1, totalPrice: product.price }];
     });
   };
   const removeFromCart = (id: string) =>
@@ -365,15 +277,14 @@ export default function OrdersPage() {
     }
     setCart((prev) =>
       prev.map((i) =>
-        i.id === id
-          ? { ...i, quantity: qty, totalPrice: qty * i.pricePerUnit }
-          : i,
+        i.id === id ? { ...i, quantity: qty, totalPrice: qty * i.price } : i,
       ),
     );
   };
   const cartTotal = cart.reduce((s, i) => s + i.totalPrice, 0);
   const cartQty = (id: string) => cart.find((i) => i.id === id)?.quantity ?? 0;
 
+  // ─── PLACE ORDER ──────────────────────────────────────────────────────────
   const placeOrder = async () => {
     if (!cart.length) return;
     setPlacing(true);
@@ -383,9 +294,9 @@ export default function OrdersPage() {
         items: cart.map((i) => ({
           ingredientId: i.id,
           name: i.name,
-          unit: i.unit,
+          unit: 'pcs',
           quantity: i.quantity,
-          pricePerUnit: i.pricePerUnit,
+          pricePerUnit: i.price,
           totalPrice: i.totalPrice,
         })),
         totalAmount: cartTotal,
@@ -406,28 +317,32 @@ export default function OrdersPage() {
         void fetchOrders();
       }
     } catch {
-      /* ignore */
+      /**/
     } finally {
       setPlacing(false);
     }
   };
 
-  const filtered = INGREDIENTS.filter(
-    (i) =>
-      (category === 'All' || i.category === category) &&
-      i.name.toLowerCase().includes(search.toLowerCase()),
+  // ─── DERIVE CATEGORIES FROM ACTUAL PRODUCTS ───────────────────────────────
+  const allCategories = [
+    'All',
+    ...Array.from(new Set(products.map((p) => p.category))),
+  ];
+  const filtered = products.filter(
+    (p) =>
+      (categoryFilter === 'All' || p.category === categoryFilter) &&
+      p.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const navItems = [
-    { name: 'Dashboard', route: '/owner/dashboard' },
-    { name: 'Products', route: '/owner/products' },
-    { name: 'Orders', route: '/owner/orders' },
+    { name: 'Dashboard', icon: '⊞', route: '/owner/dashboard' },
+    { name: 'Products', icon: '📦', route: '/owner/products' },
+    { name: 'Orders', icon: '🛒', route: '/owner/orders' },
   ];
 
   return (
     <>
       {toast && <SuccessToast message={toast} onClose={() => setToast('')} />}
-      <style>{`@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
 
       <div
         style={{
@@ -482,61 +397,7 @@ export default function OrdersPage() {
               gap: 4,
             }}
           >
-            {[
-              {
-                name: 'Dashboard',
-                icon: (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="14" width="7" height="7" rx="1" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                  </svg>
-                ),
-                route: '/owner/dashboard',
-              },
-              {
-                name: 'Products',
-                icon: (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                  </svg>
-                ),
-                route: '/owner/products',
-              },
-              {
-                name: 'Orders',
-                icon: (
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <circle cx="9" cy="21" r="1" />
-                    <circle cx="20" cy="21" r="1" />
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                  </svg>
-                ),
-                route: '/owner/orders',
-              },
-            ].map((item) => {
+            {navItems.map((item) => {
               const active = item.name === 'Orders';
               return (
                 <button
@@ -556,18 +417,17 @@ export default function OrdersPage() {
                       : 'transparent',
                     color: active ? C.brownDarker : 'rgba(245,200,66,.65)',
                     marginBottom: 3,
+                    fontSize: 18,
                     transition: 'all .18s',
                   }}
                   onMouseEnter={(e) => {
                     if (!active) {
                       e.currentTarget.style.background = 'rgba(245,200,66,.1)';
-                      e.currentTarget.style.color = C.yellow;
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!active) {
                       e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'rgba(245,200,66,.65)';
                     }
                   }}
                 >
@@ -736,7 +596,7 @@ export default function OrdersPage() {
                   height: 'calc(100vh - 200px)',
                 }}
               >
-                {/* Ingredients list */}
+                {/* Products list */}
                 <div
                   style={{
                     display: 'flex',
@@ -761,29 +621,10 @@ export default function OrdersPage() {
                     <div
                       style={{ position: 'relative', flex: 1, minWidth: 180 }}
                     >
-                      <svg
-                        style={{
-                          position: 'absolute',
-                          left: 11,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          color: '#BBA98A',
-                          pointerEvents: 'none',
-                        }}
-                        width="14"
-                        height="14"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle cx="11" cy="11" r="8" />
-                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                      </svg>
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search ingredients…"
+                        placeholder="Search products…"
                         style={{
                           width: '100%',
                           paddingLeft: 34,
@@ -803,23 +644,26 @@ export default function OrdersPage() {
                       />
                     </div>
                     <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                      {CATEGORIES.map((cat) => (
+                      {allCategories.map((cat) => (
                         <button
                           key={cat}
-                          onClick={() => setCategory(cat)}
+                          onClick={() => setCategoryFilter(cat)}
                           style={{
                             padding: '6px 12px',
                             borderRadius: 8,
-                            border: `1.5px solid ${category === cat ? C.orange : '#E5D9C8'}`,
+                            border: `1.5px solid ${categoryFilter === cat ? C.orange : '#E5D9C8'}`,
                             background:
-                              category === cat ? '#FFF0D9' : 'transparent',
+                              categoryFilter === cat
+                                ? '#FFF0D9'
+                                : 'transparent',
                             color:
-                              category === cat ? C.brownDarker : C.brownDark,
-                            fontWeight: category === cat ? 800 : 600,
+                              categoryFilter === cat
+                                ? C.brownDarker
+                                : C.brownDark,
+                            fontWeight: categoryFilter === cat ? 800 : 600,
                             fontSize: 12,
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
-                            transition: 'all .15s',
                           }}
                         >
                           {cat}
@@ -828,171 +672,289 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* Grid */}
-                  <div style={{ overflowY: 'auto', flex: 1 }}>
+                  {/* Error / Loading */}
+                  {productError && (
                     <div
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns:
-                          'repeat(auto-fill,minmax(170px,1fr))',
-                        gap: 12,
+                        padding: '14px 18px',
+                        background: '#FFEBEE',
+                        borderRadius: 12,
+                        border: '1.5px solid #EF9A9A',
+                        color: '#C62828',
+                        fontWeight: 600,
+                        fontSize: 13,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
                       }}
                     >
-                      {filtered.map((ing, i) => {
-                        const qty = cartQty(ing.id);
-                        return (
-                          <div
-                            key={ing.id}
-                            style={{
-                              background: '#fff',
-                              borderRadius: 16,
-                              border: `2px solid ${qty > 0 ? C.yellow : '#F0E8D8'}`,
-                              overflow: 'hidden',
-                              boxShadow:
-                                qty > 0
-                                  ? '0 4px 16px rgba(245,200,66,.2)'
-                                  : '0 2px 8px rgba(0,0,0,.06)',
-                              opacity: loaded ? 1 : 0,
-                              transform: loaded
-                                ? 'translateY(0)'
-                                : 'translateY(12px)',
-                              transition: `opacity .35s ${Math.min(i * 0.03, 0.3)}s, transform .35s ${Math.min(i * 0.03, 0.3)}s, border .2s`,
-                            }}
-                          >
+                      ⚠️ {productError}
+                      <button
+                        onClick={() => void fetchProducts()}
+                        style={{
+                          marginLeft: 'auto',
+                          padding: '6px 14px',
+                          borderRadius: 8,
+                          border: 'none',
+                          background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                          color: C.brownDarker,
+                          fontWeight: 700,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  )}
+                  {loadingProducts && (
+                    <div
+                      style={{
+                        padding: 48,
+                        textAlign: 'center',
+                        color: '#AAA',
+                        fontSize: 13,
+                      }}
+                    >
+                      Loading products from HQ…
+                    </div>
+                  )}
+
+                  {/* Product Grid */}
+                  {!loadingProducts && (
+                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns:
+                            'repeat(auto-fill,minmax(170px,1fr))',
+                          gap: 12,
+                        }}
+                      >
+                        {filtered.map((product) => {
+                          const qty = cartQty(product.id);
+                          const outOfStock = product.status === 'Out of Stock';
+                          return (
                             <div
+                              key={product.id}
                               style={{
-                                height: 72,
-                                background:
-                                  'linear-gradient(135deg,#F2EAD8,#EFE0C8)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 36,
+                                background: '#fff',
+                                borderRadius: 16,
+                                border: `2px solid ${qty > 0 ? C.yellow : outOfStock ? '#FFCDD2' : '#F0E8D8'}`,
+                                overflow: 'hidden',
+                                boxShadow:
+                                  qty > 0
+                                    ? '0 4px 16px rgba(245,200,66,.2)'
+                                    : '0 2px 8px rgba(0,0,0,.06)',
+                                opacity: outOfStock ? 0.7 : 1,
+                                transition: 'border .2s',
                               }}
                             >
-                              {ing.image}
-                            </div>
-                            <div style={{ padding: '10px 12px' }}>
                               <div
                                 style={{
-                                  fontSize: 9,
-                                  fontWeight: 700,
-                                  color: C.orange,
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '.1em',
-                                  marginBottom: 2,
-                                }}
-                              >
-                                {ing.category}
-                              </div>
-                              <div
-                                style={{
-                                  fontWeight: 800,
-                                  fontSize: 12,
-                                  color: C.brownDarker,
-                                  marginBottom: 4,
-                                  lineHeight: 1.3,
-                                }}
-                              >
-                                {ing.name}
-                              </div>
-                              <div
-                                style={{
+                                  height: 72,
+                                  background: outOfStock
+                                    ? '#F5F5F5'
+                                    : 'linear-gradient(135deg,#F2EAD8,#EFE0C8)',
                                   display: 'flex',
                                   alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  marginBottom: 8,
+                                  justifyContent: 'center',
+                                  fontSize: 36,
+                                  position: 'relative',
                                 }}
                               >
-                                <span
-                                  style={{
-                                    fontWeight: 900,
-                                    fontSize: 15,
-                                    color: C.brownDarker,
-                                  }}
-                                >
-                                  ₱{ing.pricePerUnit}
-                                </span>
-                                <span style={{ fontSize: 10, color: '#AAA' }}>
-                                  /{ing.unit}
-                                </span>
+                                {product.image}
+                                {outOfStock && (
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      background: 'rgba(0,0,0,.3)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        color: '#fff',
+                                        fontWeight: 800,
+                                        fontSize: 10,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '.05em',
+                                      }}
+                                    >
+                                      Out of Stock
+                                    </span>
+                                  </div>
+                                )}
                               </div>
-                              {qty === 0 ? (
-                                <button
-                                  onClick={() => addToCart(ing)}
+                              <div style={{ padding: '10px 12px' }}>
+                                <div
                                   style={{
-                                    width: '100%',
-                                    padding: '7px 0',
-                                    borderRadius: 9,
-                                    border: 'none',
-                                    background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                                    color: C.brownDarker,
+                                    fontSize: 9,
                                     fontWeight: 700,
-                                    fontSize: 12,
-                                    cursor: 'pointer',
+                                    color: C.orange,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '.1em',
+                                    marginBottom: 2,
                                   }}
                                 >
-                                  + Add
-                                </button>
-                              ) : (
+                                  {product.category}
+                                </div>
+                                <div
+                                  style={{
+                                    fontWeight: 800,
+                                    fontSize: 12,
+                                    color: C.brownDarker,
+                                    marginBottom: 4,
+                                    lineHeight: 1.3,
+                                  }}
+                                >
+                                  {product.name}
+                                </div>
                                 <div
                                   style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 6,
+                                    justifyContent: 'space-between',
+                                    marginBottom: 8,
                                   }}
                                 >
-                                  <button
-                                    onClick={() => updateQty(ing.id, qty - 1)}
-                                    style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 8,
-                                      border: `1.5px solid ${C.orange}`,
-                                      background: '#FFF0D9',
-                                      color: C.brownDarker,
-                                      fontWeight: 800,
-                                      fontSize: 15,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    −
-                                  </button>
                                   <span
                                     style={{
-                                      flex: 1,
-                                      textAlign: 'center',
-                                      fontWeight: 800,
-                                      fontSize: 14,
+                                      fontWeight: 900,
+                                      fontSize: 15,
                                       color: C.brownDarker,
                                     }}
                                   >
-                                    {qty}
+                                    ₱{Number(product.price).toLocaleString()}
                                   </span>
-                                  <button
-                                    onClick={() => updateQty(ing.id, qty + 1)}
+                                  <span
                                     style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 8,
-                                      border: `1.5px solid ${C.orange}`,
-                                      background: '#FFF0D9',
+                                      fontSize: 10,
+                                      color:
+                                        product.stock <= 10
+                                          ? '#CC7000'
+                                          : '#AAA',
+                                    }}
+                                  >
+                                    {product.stock <= 10 && product.stock > 0
+                                      ? `⚠️ ${product.stock} left`
+                                      : outOfStock
+                                        ? '🚫'
+                                        : `${product.stock} in stock`}
+                                  </span>
+                                </div>
+                                {outOfStock ? (
+                                  <div
+                                    style={{
+                                      width: '100%',
+                                      padding: '7px 0',
+                                      borderRadius: 9,
+                                      background: '#F5F5F5',
+                                      color: '#AAA',
+                                      fontWeight: 700,
+                                      fontSize: 12,
+                                      textAlign: 'center',
+                                    }}
+                                  >
+                                    Unavailable
+                                  </div>
+                                ) : qty === 0 ? (
+                                  <button
+                                    onClick={() => addToCart(product)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '7px 0',
+                                      borderRadius: 9,
+                                      border: 'none',
+                                      background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
                                       color: C.brownDarker,
-                                      fontWeight: 800,
-                                      fontSize: 15,
+                                      fontWeight: 700,
+                                      fontSize: 12,
                                       cursor: 'pointer',
                                     }}
                                   >
-                                    +
+                                    + Add
                                   </button>
-                                </div>
-                              )}
+                                ) : (
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 6,
+                                    }}
+                                  >
+                                    <button
+                                      onClick={() =>
+                                        updateQty(product.id, qty - 1)
+                                      }
+                                      style={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: 8,
+                                        border: `1.5px solid ${C.orange}`,
+                                        background: '#FFF0D9',
+                                        color: C.brownDarker,
+                                        fontWeight: 800,
+                                        fontSize: 15,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      −
+                                    </button>
+                                    <span
+                                      style={{
+                                        flex: 1,
+                                        textAlign: 'center',
+                                        fontWeight: 800,
+                                        fontSize: 14,
+                                        color: C.brownDarker,
+                                      }}
+                                    >
+                                      {qty}
+                                    </span>
+                                    <button
+                                      onClick={() =>
+                                        updateQty(product.id, qty + 1)
+                                      }
+                                      style={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: 8,
+                                        border: `1.5px solid ${C.orange}`,
+                                        background: '#FFF0D9',
+                                        color: C.brownDarker,
+                                        fontWeight: 800,
+                                        fontSize: 15,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          );
+                        })}
+                        {filtered.length === 0 && !loadingProducts && (
+                          <div
+                            style={{
+                              gridColumn: '1 / -1',
+                              padding: 48,
+                              textAlign: 'center',
+                              color: '#AAA',
+                              fontSize: 13,
+                            }}
+                          >
+                            No products found
                           </div>
-                        );
-                      })}
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Cart panel */}
@@ -1029,7 +991,6 @@ export default function OrdersPage() {
                         : `${cart.length} item${cart.length > 1 ? 's' : ''} selected`}
                     </div>
                   </div>
-
                   <div
                     style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}
                   >
@@ -1061,7 +1022,7 @@ export default function OrdersPage() {
                             textAlign: 'center',
                           }}
                         >
-                          Add ingredients from the catalog
+                          Add products from the catalog
                         </div>
                       </div>
                     ) : (
@@ -1106,8 +1067,8 @@ export default function OrdersPage() {
                                   marginTop: 1,
                                 }}
                               >
-                                {item.quantity} {item.unit} × ₱
-                                {item.pricePerUnit}
+                                {item.quantity} × ₱
+                                {Number(item.price).toLocaleString()}
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -1140,7 +1101,6 @@ export default function OrdersPage() {
                       </div>
                     )}
                   </div>
-
                   {cart.length > 0 && (
                     <div
                       style={{
@@ -1190,7 +1150,6 @@ export default function OrdersPage() {
                           fontSize: 14,
                           cursor: placing ? 'not-allowed' : 'pointer',
                           boxShadow: '0 4px 14px rgba(61,110,39,.3)',
-                          transition: 'all .2s',
                         }}
                       >
                         {placing ? '⏳ Placing Order…' : '✅ Place Order'}
@@ -1336,33 +1295,6 @@ export default function OrdersPage() {
                           </span>
                         </div>
                       </div>
-
-                      {/* Status message */}
-                      {order.status === 'processing' && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '8px 12px',
-                            borderRadius: 10,
-                            background: '#E0F2FA',
-                            border: '1.5px solid #4A9ECA',
-                            marginBottom: 10,
-                          }}
-                        >
-                          <span>⚙️</span>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: '#2E7BAD',
-                            }}
-                          >
-                            Admin is now processing your order!
-                          </span>
-                        </div>
-                      )}
                       {order.adminNote && (
                         <div
                           style={{
@@ -1388,8 +1320,6 @@ export default function OrdersPage() {
                           </span>
                         </div>
                       )}
-
-                      {/* Items summary */}
                       <div
                         style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}
                       >
@@ -1405,7 +1335,7 @@ export default function OrdersPage() {
                               color: C.brownDark,
                             }}
                           >
-                            {item.name} × {item.quantity} {item.unit}
+                            {item.name} × {item.quantity}
                           </span>
                         ))}
                       </div>

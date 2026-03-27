@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getStoredToken } from '@/lib/auth';
+import { AdminSidebar } from '@/app/admin/dashboard/page';
 import CreateAccountModal, {
   type CreatedAccountData,
 } from '@/components/admin/CreateAccountModal';
 import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
-import { AdminSidebar } from '@/app/admin/dashboard/page';
 
 const C = {
   brownDarker: '#3E1A00',
@@ -19,8 +20,34 @@ const C = {
   bg: '#F2EAD8',
 };
 
+const EMOJIS = [
+  '🥭',
+  '🥛',
+  '🍪',
+  '🫧',
+  '🍫',
+  '🥤',
+  '🔵',
+  '🛍️',
+  '🍱',
+  '🧃',
+  '🫙',
+  '🌟',
+  '📦',
+  '🍋',
+  '🍰',
+];
+const CATEGORIES = [
+  'All',
+  'Fruits',
+  'Dairy',
+  'Dry Goods',
+  'Toppings',
+  'Packaging',
+];
+
 interface Product {
-  id: number;
+  id: string;
   name: string;
   category: string;
   price: number;
@@ -32,165 +59,13 @@ interface Product {
 type SortKey = 'name' | 'price' | 'stock' | 'sales';
 type ViewMode = 'grid' | 'table';
 
-const INITIAL_PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: 'Mango Graham Float',
-    category: 'Desserts',
-    price: 220,
-    stock: 45,
-    image: '🥭',
-    status: 'In Stock',
-    sales: 312,
-  },
-  {
-    id: 2,
-    name: 'Mango Ice Cream',
-    category: 'Ice Cream',
-    price: 85,
-    stock: 8,
-    image: '🍦',
-    status: 'Low Stock',
-    sales: 198,
-  },
-  {
-    id: 3,
-    name: 'Mango Boba Tea',
-    category: 'Drinks',
-    price: 120,
-    stock: 0,
-    image: '🧋',
-    status: 'Out of Stock',
-    sales: 87,
-  },
-  {
-    id: 4,
-    name: 'Dried Mango Slices',
-    category: 'Snacks',
-    price: 95,
-    stock: 120,
-    image: '🍋',
-    status: 'In Stock',
-    sales: 445,
-  },
-  {
-    id: 5,
-    name: 'Mango Cheesecake',
-    category: 'Desserts',
-    price: 350,
-    stock: 12,
-    image: '🍰',
-    status: 'Low Stock',
-    sales: 156,
-  },
-  {
-    id: 6,
-    name: 'Mango Shake',
-    category: 'Drinks',
-    price: 110,
-    stock: 60,
-    image: '🥤',
-    status: 'In Stock',
-    sales: 523,
-  },
-  {
-    id: 7,
-    name: 'Mango Pastillas',
-    category: 'Candy',
-    price: 65,
-    stock: 200,
-    image: '🍬',
-    status: 'In Stock',
-    sales: 389,
-  },
-  {
-    id: 8,
-    name: 'Mango Polvoron',
-    category: 'Snacks',
-    price: 75,
-    stock: 3,
-    image: '🌟',
-    status: 'Low Stock',
-    sales: 74,
-  },
-  {
-    id: 9,
-    name: 'Mango Turon',
-    category: 'Snacks',
-    price: 45,
-    stock: 0,
-    image: '🌯',
-    status: 'Out of Stock',
-    sales: 62,
-  },
-  {
-    id: 10,
-    name: 'Fresh Mango (per kg)',
-    category: 'Fresh',
-    price: 180,
-    stock: 90,
-    image: '🥭',
-    status: 'In Stock',
-    sales: 671,
-  },
-  {
-    id: 11,
-    name: 'Mango Jam',
-    category: 'Spreads',
-    price: 135,
-    stock: 55,
-    image: '🫙',
-    status: 'In Stock',
-    sales: 210,
-  },
-  {
-    id: 12,
-    name: 'Mango Tart',
-    category: 'Desserts',
-    price: 175,
-    stock: 7,
-    image: '🥧',
-    status: 'Low Stock',
-    sales: 143,
-  },
-];
-
-const CATEGORIES = [
-  'All',
-  'Desserts',
-  'Ice Cream',
-  'Drinks',
-  'Snacks',
-  'Candy',
-  'Fresh',
-  'Spreads',
-];
-const EMOJIS = [
-  '🥭',
-  '🍦',
-  '🧋',
-  '🍋',
-  '🍰',
-  '🥤',
-  '🍬',
-  '🌟',
-  '🌯',
-  '🫙',
-  '🥧',
-  '🍱',
-];
-
-function autoStatus(qty: number): Product['status'] {
-  return qty === 0 ? 'Out of Stock' : qty <= 10 ? 'Low Stock' : 'In Stock';
-}
-
+// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Product['status'] }) {
   const m = {
     'In Stock': { bg: '#E8F5E1', color: '#3D6E27', dot: '#5A9E3A' },
     'Low Stock': { bg: '#FFF0D9', color: '#CC7000', dot: '#FF8C00' },
     'Out of Stock': { bg: '#FFEBEE', color: '#C62828', dot: '#EF5350' },
-  };
-  const s = m[status];
+  }[status];
   return (
     <span
       style={{
@@ -199,8 +74,8 @@ function StatusBadge({ status }: { status: Product['status'] }) {
         gap: 5,
         padding: '4px 10px',
         borderRadius: 20,
-        background: s.bg,
-        color: s.color,
+        background: m.bg,
+        color: m.color,
         fontSize: 11,
         fontWeight: 700,
         whiteSpace: 'nowrap',
@@ -211,7 +86,7 @@ function StatusBadge({ status }: { status: Product['status'] }) {
           width: 6,
           height: 6,
           borderRadius: '50%',
-          background: s.dot,
+          background: m.dot,
           flexShrink: 0,
         }}
       />
@@ -220,6 +95,7 @@ function StatusBadge({ status }: { status: Product['status'] }) {
   );
 }
 
+// ─── STOCK POPOVER ────────────────────────────────────────────────────────────
 function StockPopover({
   value,
   onSave,
@@ -352,6 +228,7 @@ function StockPopover({
   );
 }
 
+// ─── ADD / EDIT MODAL ─────────────────────────────────────────────────────────
 function ProductModal({
   product,
   onClose,
@@ -359,21 +236,22 @@ function ProductModal({
 }: {
   product: Partial<Product> | null;
   onClose: () => void;
-  onSave: (p: Partial<Product>) => void;
+  onSave: (p: Partial<Product>) => Promise<void>;
 }) {
   const isNew = !product?.id;
   const [form, setForm] = useState<Partial<Product>>(
     product ?? {
       name: '',
-      category: 'Desserts',
+      category: 'Toppings',
       price: 0,
       stock: 0,
-      image: '🥭',
-      status: 'In Stock',
-      sales: 0,
+      image: '📦',
     },
   );
   const [vis, setVis] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
   useEffect(() => {
     requestAnimationFrame(() => setVis(true));
   }, []);
@@ -381,6 +259,7 @@ function ProductModal({
     setVis(false);
     setTimeout(onClose, 240);
   };
+
   const inp = {
     width: '100%',
     padding: '10px 14px',
@@ -461,9 +340,7 @@ function ProductModal({
                 marginTop: 2,
               }}
             >
-              {isNew
-                ? 'Fill in the details to add a product'
-                : 'Update the product information'}
+              Changes are saved to the database
             </div>
           </div>
           <button
@@ -476,9 +353,6 @@ function ProductModal({
               background: 'rgba(245,200,66,.1)',
               color: C.yellow,
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               fontSize: 13,
               fontWeight: 800,
             }}
@@ -486,6 +360,7 @@ function ProductModal({
             ✕
           </button>
         </div>
+
         <div
           style={{
             padding: '20px 26px',
@@ -496,6 +371,22 @@ function ProductModal({
             overflowY: 'auto',
           }}
         >
+          {error && (
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: '#FFEBEE',
+                border: '1.5px solid #EF9A9A',
+                color: '#C62828',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              ⚠️ {error}
+            </div>
+          )}
+
           <div>
             <div
               style={{
@@ -522,8 +413,8 @@ function ProductModal({
                     background: form.image === e ? '#FFF0D9' : '#FDFAF4',
                     fontSize: 19,
                     cursor: 'pointer',
-                    transition: 'all .15s',
                     transform: form.image === e ? 'scale(1.12)' : 'scale(1)',
+                    transition: 'all .15s',
                   }}
                 >
                   {e}
@@ -531,6 +422,7 @@ function ProductModal({
               ))}
             </div>
           </div>
+
           <div>
             <div
               style={{
@@ -548,7 +440,7 @@ function ProductModal({
               type="text"
               value={form.name ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Mango Graham Float"
+              placeholder="e.g. Nata Pearl"
               style={{
                 ...inp,
                 border: `2px solid ${!form.name ? '#EF9A9A' : '#E5D9C8'}`,
@@ -559,6 +451,7 @@ function ProductModal({
               }
             />
           </div>
+
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
           >
@@ -575,47 +468,24 @@ function ProductModal({
               >
                 Category
               </div>
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, category: e.target.value }))
-                  }
-                  style={{
-                    ...inp,
-                    paddingRight: 32,
-                    appearance: 'none',
-                    cursor: 'pointer',
-                  }}
-                  onFocus={(e) =>
-                    (e.currentTarget.style.borderColor = C.yellow)
-                  }
-                  onBlur={(e) =>
-                    (e.currentTarget.style.borderColor = '#E5D9C8')
-                  }
-                >
-                  {CATEGORIES.filter((c) => c !== 'All').map((c) => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
-                <svg
-                  style={{
-                    position: 'absolute',
-                    right: 10,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                  }}
-                  width="11"
-                  height="11"
-                  fill="none"
-                  stroke={C.brownDark}
-                  strokeWidth="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </div>
+              <select
+                value={form.category}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, category: e.target.value }))
+                }
+                style={{
+                  ...inp,
+                  paddingRight: 32,
+                  appearance: 'none',
+                  cursor: 'pointer',
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = C.yellow)}
+                onBlur={(e) => (e.currentTarget.style.borderColor = '#E5D9C8')}
+              >
+                {CATEGORIES.filter((c) => c !== 'All').map((c) => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
             </div>
             <div>
               <div
@@ -644,6 +514,7 @@ function ProductModal({
               />
             </div>
           </div>
+
           <div>
             <div
               style={{
@@ -660,33 +531,18 @@ function ProductModal({
             <input
               type="number"
               value={form.stock ?? ''}
-              onChange={(e) => {
-                const q = +e.target.value;
-                setForm((f) => ({ ...f, stock: q, status: autoStatus(q) }));
-              }}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, stock: +e.target.value }))
+              }
               placeholder="0"
               min="0"
               style={inp}
               onFocus={(e) => (e.target.style.borderColor = C.yellow)}
               onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
             />
-            <div
-              style={{
-                marginTop: 6,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <StatusBadge status={form.status ?? 'In Stock'} />
-              <span
-                style={{ fontSize: 11, color: '#AAA', fontStyle: 'italic' }}
-              >
-                auto-set from quantity
-              </span>
-            </div>
           </div>
         </div>
+
         <div
           style={{
             padding: '14px 26px 20px',
@@ -712,24 +568,35 @@ function ProductModal({
             Cancel
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (!form.name) return;
-              onSave(form);
-              close();
+              setSaving(true);
+              setError('');
+              try {
+                await onSave(form);
+                close();
+              } catch (err: any) {
+                setError(err.message ?? 'Failed to save');
+              } finally {
+                setSaving(false);
+              }
             }}
+            disabled={saving}
             style={{
               padding: '10px 24px',
               borderRadius: 11,
               border: 'none',
-              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              background: saving
+                ? '#CCC'
+                : `linear-gradient(135deg,${C.yellow},${C.orange})`,
               color: C.brownDarker,
               fontWeight: 800,
               fontSize: 13,
-              cursor: 'pointer',
+              cursor: saving ? 'not-allowed' : 'pointer',
               boxShadow: '0 4px 14px rgba(255,140,0,.3)',
             }}
           >
-            {isNew ? '✓  Add Product' : '✓  Save Changes'}
+            {saving ? 'Saving…' : isNew ? '✓ Add Product' : '✓ Save Changes'}
           </button>
         </div>
       </div>
@@ -737,6 +604,7 @@ function ProductModal({
   );
 }
 
+// ─── DELETE MODAL ─────────────────────────────────────────────────────────────
 function DeleteModal({
   product,
   onClose,
@@ -744,9 +612,10 @@ function DeleteModal({
 }: {
   product: Product;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
 }) {
   const [vis, setVis] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   useEffect(() => {
     requestAnimationFrame(() => setVis(true));
   }, []);
@@ -809,9 +678,6 @@ function DeleteModal({
         >
           Remove Product?
         </div>
-        <div style={{ color: C.brownDark, fontSize: 14, marginBottom: 4 }}>
-          You are about to remove
-        </div>
         <div
           style={{
             fontWeight: 700,
@@ -823,7 +689,7 @@ function DeleteModal({
           {product.image} {product.name}
         </div>
         <div style={{ color: '#999', fontSize: 13, marginBottom: 22 }}>
-          This action cannot be undone.
+          This will remove it from the database and franchisee order catalog.
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -843,23 +709,27 @@ function DeleteModal({
             Cancel
           </button>
           <button
-            onClick={() => {
-              onConfirm();
+            onClick={async () => {
+              setDeleting(true);
+              await onConfirm();
               close();
             }}
+            disabled={deleting}
             style={{
               flex: 1,
               padding: 11,
               borderRadius: 12,
               border: 'none',
-              background: 'linear-gradient(135deg,#C62828,#B71C1C)',
+              background: deleting
+                ? '#CCC'
+                : 'linear-gradient(135deg,#C62828,#B71C1C)',
               color: '#fff',
               fontWeight: 700,
               fontSize: 13,
-              cursor: 'pointer',
+              cursor: deleting ? 'not-allowed' : 'pointer',
             }}
           >
-            Remove
+            {deleting ? 'Removing…' : 'Remove'}
           </button>
         </div>
       </div>
@@ -867,6 +737,7 @@ function DeleteModal({
   );
 }
 
+// ─── PRODUCT CARD ─────────────────────────────────────────────────────────────
 function ProductCard({
   p,
   onEdit,
@@ -976,38 +847,10 @@ function ProductCard({
             marginBottom: 10,
           }}
         >
-          <span
-            style={{
-              fontWeight: 900,
-              fontSize: 19,
-              color: C.brownDarker,
-              letterSpacing: '-.5px',
-            }}
-          >
-            ₱{p.price}
+          <span style={{ fontWeight: 900, fontSize: 19, color: C.brownDarker }}>
+            ₱{Number(p.price).toLocaleString()}
           </span>
-          <span
-            style={{
-              fontSize: 11,
-              color: '#888',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-            }}
-          >
-            <svg
-              width="11"
-              height="11"
-              fill="none"
-              stroke={C.green}
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-              <polyline points="16 7 22 7 22 13" />
-            </svg>
-            {p.sales} sold
-          </span>
+          <span style={{ fontSize: 11, color: '#888' }}>📈 {p.sales} sold</span>
         </div>
         <div style={{ marginBottom: 11 }}>
           <div
@@ -1047,14 +890,14 @@ function ProductCard({
               style={{
                 height: '100%',
                 borderRadius: 10,
-                transition: 'width .4s',
                 background:
                   p.stock === 0
                     ? '#EF5350'
                     : p.stock <= 10
                       ? C.orange
                       : `linear-gradient(90deg,${C.green},${C.darkGreen})`,
-                width: `${Math.min(100, (p.stock / 150) * 100)}%`,
+                width: `${Math.min(100, (p.stock / 200) * 100)}%`,
+                transition: 'width .4s',
               }}
             />
           </div>
@@ -1072,10 +915,6 @@ function ProductCard({
               fontWeight: 700,
               fontSize: 12,
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 4,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = C.yellow;
@@ -1086,18 +925,7 @@ function ProductCard({
               e.currentTarget.style.background = '#FDFAF4';
             }}
           >
-            <svg
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Edit
+            ✏️ Edit
           </button>
           <div style={{ position: 'relative' }}>
             <button
@@ -1109,8 +937,6 @@ function ProductCard({
                 background: '#FDFAF4',
                 color: C.brownDark,
                 cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
               }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.borderColor = C.orange)
@@ -1119,17 +945,7 @@ function ProductCard({
                 (e.currentTarget.style.borderColor = '#E5D9C8')
               }
             >
-              <svg
-                width="12"
-                height="12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
+              +
             </button>
             {pop && (
               <StockPopover
@@ -1148,23 +964,11 @@ function ProductCard({
               background: '#FFEBEE',
               color: '#C62828',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = '#FFCDD2')}
             onMouseLeave={(e) => (e.currentTarget.style.background = '#FFEBEE')}
           >
-            <svg
-              width="12"
-              height="12"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
+            🗑️
           </button>
         </div>
       </div>
@@ -1172,262 +976,14 @@ function ProductCard({
   );
 }
 
-function TableRow({
-  p,
-  idx,
-  onEdit,
-  onDelete,
-  onStock,
-}: {
-  p: Product;
-  idx: number;
-  onEdit: () => void;
-  onDelete: () => void;
-  onStock: (n: number) => void;
-}) {
-  const [pop, setPop] = useState(false);
-  const [hov, setHov] = useState(false);
-  return (
-    <tr
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: hov ? `${C.yellow}12` : idx % 2 === 0 ? '#fff' : '#FDFAF4',
-        borderBottom: '1.5px solid #F0E8D8',
-        transition: 'background .15s',
-      }}
-    >
-      <td style={{ padding: '13px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 11,
-              background: 'linear-gradient(135deg,#F2EAD8,#EFE0C8)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 20,
-              flexShrink: 0,
-            }}
-          >
-            {p.image}
-          </div>
-          <div>
-            <div
-              style={{ fontWeight: 700, fontSize: 13, color: C.brownDarker }}
-            >
-              {p.name}
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: C.orange,
-                fontWeight: 600,
-                marginTop: 1,
-              }}
-            >
-              {p.category}
-            </div>
-          </div>
-        </div>
-      </td>
-      <td
-        style={{
-          padding: '13px 20px',
-          fontWeight: 900,
-          fontSize: 14,
-          color: C.brownDarker,
-        }}
-      >
-        ₱{p.price}
-      </td>
-      <td style={{ padding: '13px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 13,
-              color:
-                p.stock === 0
-                  ? '#C62828'
-                  : p.stock <= 10
-                    ? '#CC7000'
-                    : C.darkGreen,
-              minWidth: 26,
-            }}
-          >
-            {p.stock}
-          </span>
-          <div
-            style={{
-              flex: 1,
-              height: 5,
-              background: '#F0E8D8',
-              borderRadius: 10,
-              overflow: 'hidden',
-              minWidth: 50,
-            }}
-          >
-            <div
-              style={{
-                height: '100%',
-                borderRadius: 10,
-                background:
-                  p.stock === 0
-                    ? '#EF5350'
-                    : p.stock <= 10
-                      ? C.orange
-                      : `linear-gradient(90deg,${C.green},${C.darkGreen})`,
-                width: `${Math.min(100, (p.stock / 150) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-      </td>
-      <td style={{ padding: '13px 20px' }}>
-        <StatusBadge status={p.status} />
-      </td>
-      <td
-        style={{
-          padding: '13px 20px',
-          fontWeight: 600,
-          fontSize: 13,
-          color: '#666',
-        }}
-      >
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <svg
-            width="11"
-            height="11"
-            fill="none"
-            stroke={C.green}
-            strokeWidth="2.5"
-            viewBox="0 0 24 24"
-          >
-            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-            <polyline points="16 7 22 7 22 13" />
-          </svg>
-          {p.sales}
-        </span>
-      </td>
-      <td style={{ padding: '13px 20px' }}>
-        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-          <button
-            onClick={onEdit}
-            style={{
-              padding: '6px 11px',
-              borderRadius: 8,
-              border: '1.5px solid #E5D9C8',
-              background: '#FDFAF4',
-              color: C.brownDark,
-              fontWeight: 700,
-              fontSize: 12,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = C.yellow;
-              e.currentTarget.style.background = '#FFFAE0';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#E5D9C8';
-              e.currentTarget.style.background = '#FDFAF4';
-            }}
-          >
-            <svg
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Edit
-          </button>
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setPop((v) => !v)}
-              style={{
-                padding: '6px 9px',
-                borderRadius: 8,
-                border: '1.5px solid #E5D9C8',
-                background: '#FDFAF4',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.borderColor = C.orange)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.borderColor = '#E5D9C8')
-              }
-            >
-              <svg
-                width="11"
-                height="11"
-                fill="none"
-                stroke={C.brownDark}
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-              >
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-            {pop && (
-              <StockPopover
-                value={p.stock}
-                onSave={onStock}
-                onClose={() => setPop(false)}
-              />
-            )}
-          </div>
-          <button
-            onClick={onDelete}
-            style={{
-              padding: '6px 9px',
-              borderRadius: 8,
-              border: '1.5px solid #FFCDD2',
-              background: '#FFEBEE',
-              color: '#C62828',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#FFCDD2')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#FFEBEE')}
-          >
-            <svg
-              width="11"
-              height="11"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              viewBox="0 0 24 24"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
-
-export default function ProductsPage() {
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+export default function AdminProductsPage() {
   const router = useRouter();
   const [adminName, setAdminName] = useState('Admin');
   const [sidebarOpen, setSidebar] = useState(true);
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [statusFilter, setStatus] = useState('All');
@@ -1438,7 +994,6 @@ export default function ProductsPage() {
     undefined,
   );
   const [delProd, setDel] = useState<Product | null>(null);
-  const [loaded, setLoaded] = useState(false);
   const [createModal, setCreate] = useState(false);
   const [successModal, setSuccess] = useState(false);
   const [account, setAccount] = useState<CreatedAccountData | null>(null);
@@ -1453,8 +1008,30 @@ export default function ProductsPage() {
     } catch {
       /**/
     }
-    setTimeout(() => setLoaded(true), 80);
   }, []);
+
+  const fetchProducts = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) return;
+    setLoading(true);
+    setFetchError('');
+    try {
+      const res = await fetch('http://localhost:3000/api/products', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as { success: boolean; data: Product[] };
+      if (data.success) setProducts(data.data);
+      else setFetchError('Failed to load products');
+    } catch {
+      setFetchError('Cannot reach backend. Is it running on port 3000?');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
 
   const handleNav = (route: string) => router.push(route);
   const handleLogout = () => {
@@ -1472,19 +1049,69 @@ export default function ProductsPage() {
     setTimeout(() => setCreate(true), 320);
   };
 
-  const total = products.length;
-  const inStock = products.filter((p) => p.status === 'In Stock').length;
-  const lowStock = products.filter((p) => p.status === 'Low Stock').length;
-  const outStock = products.filter((p) => p.status === 'Out of Stock').length;
-  const sold = products.reduce((s, p) => s + p.sales, 0);
+  // ─── API CALLS ─────────────────────────────────────────────────────────────
+  const apiSaveProduct = async (data: Partial<Product>) => {
+    const token = getStoredToken();
+    const isNew = !data.id;
+    const url = isNew
+      ? 'http://localhost:3000/api/products'
+      : `http://localhost:3000/api/products/${data.id}`;
+    const method = isNew ? 'POST' : 'PATCH';
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: data.name,
+        category: data.category,
+        price: data.price,
+        stock: data.stock,
+        image: data.image,
+      }),
+    });
+    const json = (await res.json()) as {
+      success: boolean;
+      data: Product;
+      message?: string;
+    };
+    if (!res.ok || !json.success)
+      throw new Error(json.message ?? 'Failed to save');
+    await fetchProducts();
+  };
 
+  const apiUpdateStock = async (id: string, stock: number) => {
+    const token = getStoredToken();
+    const res = await fetch(`http://localhost:3000/api/products/${id}/stock`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ stock }),
+    });
+    const json = (await res.json()) as { success: boolean; data: Product };
+    if (json.success)
+      setProducts((prev) => prev.map((p) => (p.id === id ? json.data : p)));
+  };
+
+  const apiDeleteProduct = async (id: string) => {
+    const token = getStoredToken();
+    await fetch(`http://localhost:3000/api/products/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ─── FILTER & SORT ─────────────────────────────────────────────────────────
   const filtered = products
     .filter(
       (p) =>
         (category === 'All' || p.category === category) &&
         (statusFilter === 'All' || p.status === statusFilter) &&
-        (p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.category.toLowerCase().includes(search.toLowerCase())),
+        p.name.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) => {
       const v =
@@ -1505,56 +1132,11 @@ export default function ProductsPage() {
       setSortAsc(true);
     }
   };
-  const saveProduct = (data: Partial<Product>) => {
-    if (data.id)
-      setProducts((ps) =>
-        ps.map((p) => (p.id === data.id ? ({ ...p, ...data } as Product) : p)),
-      );
-    else {
-      const qty = data.stock ?? 0;
-      setProducts((ps) => [
-        ...ps,
-        {
-          ...data,
-          id: Math.max(...ps.map((p) => p.id)) + 1,
-          status: autoStatus(qty),
-          sales: 0,
-        } as Product,
-      ]);
-    }
-  };
-  const updateStock = (id: number, qty: number) =>
-    setProducts((ps) =>
-      ps.map((p) =>
-        p.id === id ? { ...p, stock: qty, status: autoStatus(qty) } : p,
-      ),
-    );
-
-  const SBtn = ({ label, k }: { label: string; k: SortKey }) => (
-    <button
-      onClick={() => toggleSort(k)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        padding: '6px 11px',
-        borderRadius: 8,
-        border: `1.5px solid ${sortKey === k ? C.yellow : '#E5D9C8'}`,
-        background: sortKey === k ? '#FFFAE0' : 'transparent',
-        color: sortKey === k ? C.brownDarker : C.brownDark,
-        fontWeight: 700,
-        fontSize: 12,
-        cursor: 'pointer',
-        transition: 'all .15s',
-        flexShrink: 0,
-      }}
-    >
-      {label}{' '}
-      <span style={{ opacity: sortKey === k ? 1 : 0.3, fontSize: 10 }}>
-        {sortKey === k && !sortAsc ? '↑' : '↓'}
-      </span>
-    </button>
-  );
+  const total = products.length;
+  const inStock = products.filter((p) => p.status === 'In Stock').length;
+  const lowStock = products.filter((p) => p.status === 'Low Stock').length;
+  const outStock = products.filter((p) => p.status === 'Out of Stock').length;
+  const sold = products.reduce((s, p) => s + p.sales, 0);
 
   return (
     <>
@@ -1573,16 +1155,14 @@ export default function ProductsPage() {
         <ProductModal
           product={editProd}
           onClose={() => setEdit(undefined)}
-          onSave={saveProduct}
+          onSave={apiSaveProduct}
         />
       )}
       {delProd && (
         <DeleteModal
           product={delProd}
           onClose={() => setDel(null)}
-          onConfirm={() =>
-            setProducts((ps) => ps.filter((p) => p.id !== delProd.id))
-          }
+          onConfirm={() => apiDeleteProduct(delProd.id)}
         />
       )}
 
@@ -1592,7 +1172,7 @@ export default function ProductsPage() {
           height: '100vh',
           background: C.bg,
           overflow: 'hidden',
-          fontFamily: "'Segoe UI', system-ui, sans-serif",
+          fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
       >
         <AdminSidebar
@@ -1622,7 +1202,7 @@ export default function ProductsPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+              boxShadow: '0 2px 12px rgba(0,0,0,.07)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1662,12 +1242,7 @@ export default function ProductsPage() {
               </button>
               <div>
                 <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 19,
-                    color: C.brownDark,
-                    letterSpacing: '-0.4px',
-                  }}
+                  style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
                 >
                   Products
                 </div>
@@ -1679,7 +1254,8 @@ export default function ProductsPage() {
                     marginTop: 1,
                   }}
                 >
-                  Manage your store inventory · {total} items
+                  Manage store inventory · {total} items · Visible to all
+                  franchisees
                 </div>
               </div>
             </div>
@@ -1699,27 +1275,24 @@ export default function ProductsPage() {
                   fontSize: 14,
                   cursor: 'pointer',
                   boxShadow: '0 4px 16px rgba(255,140,0,.35)',
-                  transition: 'all .18s',
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.transform = 'translateY(-1px)')
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.transform = 'translateY(0)')
-                }
               >
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.8"
-                  viewBox="0 0 24 24"
-                >
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Add Product
+                + Add Product
+              </button>
+              <button
+                onClick={() => void fetchProducts()}
+                style={{
+                  padding: '9px 16px',
+                  border: `2px solid ${C.yellow}`,
+                  borderRadius: 10,
+                  background: `${C.yellow}22`,
+                  color: C.brownDark,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                ↺ Refresh
               </button>
               <button
                 onClick={handleLogout}
@@ -1727,18 +1300,12 @@ export default function ProductsPage() {
                   padding: '9px 20px',
                   background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
                   color: C.yellow,
-                  border: '2px solid rgba(245,200,66,0.4)',
+                  border: '2px solid rgba(245,200,66,.4)',
                   borderRadius: 10,
                   fontWeight: 700,
                   fontSize: 13,
                   cursor: 'pointer',
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.borderColor = C.yellow)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)')
-                }
               >
                 Sign Out
               </button>
@@ -1753,6 +1320,7 @@ export default function ProductsPage() {
               background: C.bg,
             }}
           >
+            {/* Stat Cards */}
             <div
               style={{
                 display: 'grid',
@@ -1800,9 +1368,6 @@ export default function ProductsPage() {
                     borderRadius: 14,
                     padding: '16px 18px',
                     boxShadow: '0 2px 10px rgba(0,0,0,.06)',
-                    opacity: loaded ? 1 : 0,
-                    transform: loaded ? 'translateY(0)' : 'translateY(14px)',
-                    transition: `opacity .4s ${i * 0.06}s, transform .4s ${i * 0.06}s`,
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.boxShadow =
@@ -1828,7 +1393,6 @@ export default function ProductsPage() {
                       justifyContent: 'center',
                       fontSize: 18,
                       marginBottom: 10,
-                      boxShadow: '0 3px 8px rgba(0,0,0,.15)',
                     }}
                   >
                     {card.icon}
@@ -1852,12 +1416,13 @@ export default function ProductsPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {card.value.toLocaleString()}
+                    {loading ? '—' : card.value.toLocaleString()}
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* Filters */}
             <div
               style={{
                 background: '#fff',
@@ -1878,25 +1443,6 @@ export default function ProductsPage() {
                   minWidth: 160,
                 }}
               >
-                <svg
-                  style={{
-                    position: 'absolute',
-                    left: 11,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                    color: '#BBA98A',
-                  }}
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
                 <input
                   type="text"
                   value={search}
@@ -1934,78 +1480,64 @@ export default function ProductsPage() {
                       fontWeight: category === cat ? 800 : 600,
                       fontSize: 12,
                       cursor: 'pointer',
-                      transition: 'all .15s',
-                      whiteSpace: 'nowrap',
                     }}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatus(e.target.value)}
-                  style={{
-                    padding: '8px 28px 8px 11px',
-                    borderRadius: 10,
-                    border: '1.5px solid #E5D9C8',
-                    background: '#FDFAF4',
-                    color: C.brownDark,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    outline: 'none',
-                    appearance: 'none',
-                  }}
-                >
-                  <option value="All">All Status</option>
-                  <option value="In Stock">In Stock</option>
-                  <option value="Low Stock">Low Stock</option>
-                  <option value="Out of Stock">Out of Stock</option>
-                </select>
-                <svg
-                  style={{
-                    position: 'absolute',
-                    right: 9,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                  }}
-                  width="10"
-                  height="10"
-                  fill="none"
-                  stroke={C.brownDark}
-                  strokeWidth="2.5"
-                  viewBox="0 0 24 24"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </div>
-              <div
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatus(e.target.value)}
                 style={{
-                  display: 'flex',
-                  gap: 4,
-                  alignItems: 'center',
-                  flexShrink: 0,
+                  padding: '8px 28px 8px 11px',
+                  borderRadius: 10,
+                  border: '1.5px solid #E5D9C8',
+                  background: '#FDFAF4',
+                  color: C.brownDark,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
+                  appearance: 'none',
                 }}
               >
+                <option value="All">All Status</option>
+                <option value="In Stock">In Stock</option>
+                <option value="Low Stock">Low Stock</option>
+                <option value="Out of Stock">Out of Stock</option>
+              </select>
+              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 <span
                   style={{
                     fontSize: 11,
                     fontWeight: 700,
                     color: '#BBA98A',
                     textTransform: 'uppercase',
-                    letterSpacing: '.07em',
                     marginRight: 2,
                   }}
                 >
                   Sort:
                 </span>
-                <SBtn label="Name" k="name" />
-                <SBtn label="Price" k="price" />
-                <SBtn label="Stock" k="stock" />
-                <SBtn label="Sales" k="sales" />
+                {(['name', 'price', 'stock', 'sales'] as SortKey[]).map((k) => (
+                  <button
+                    key={k}
+                    onClick={() => toggleSort(k)}
+                    style={{
+                      padding: '6px 11px',
+                      borderRadius: 8,
+                      border: `1.5px solid ${sortKey === k ? C.yellow : '#E5D9C8'}`,
+                      background: sortKey === k ? '#FFFAE0' : 'transparent',
+                      color: sortKey === k ? C.brownDarker : C.brownDark,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {k.charAt(0).toUpperCase() + k.slice(1)}{' '}
+                    {sortKey === k ? (sortAsc ? '↑' : '↓') : ''}
+                  </button>
+                ))}
               </div>
               <div
                 style={{
@@ -2013,7 +1545,6 @@ export default function ProductsPage() {
                   borderRadius: 9,
                   overflow: 'hidden',
                   border: '1.5px solid #E5D9C8',
-                  flexShrink: 0,
                   marginLeft: 'auto',
                 }}
               >
@@ -2022,7 +1553,7 @@ export default function ProductsPage() {
                     key={mode}
                     onClick={() => setView(mode)}
                     style={{
-                      padding: '7px 12px',
+                      padding: '7px 14px',
                       background:
                         viewMode === mode
                           ? `linear-gradient(135deg,${C.yellow},${C.orange})`
@@ -2032,44 +1563,9 @@ export default function ProductsPage() {
                       fontSize: 12,
                       cursor: 'pointer',
                       border: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      transition: 'all .15s',
                     }}
                   >
-                    {mode === 'grid' ? (
-                      <svg
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <rect x="3" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="3" width="7" height="7" rx="1" />
-                        <rect x="3" y="14" width="7" height="7" rx="1" />
-                        <rect x="14" y="14" width="7" height="7" rx="1" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="12"
-                        height="12"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <line x1="8" y1="6" x2="21" y2="6" />
-                        <line x1="8" y1="12" x2="21" y2="12" />
-                        <line x1="8" y1="18" x2="21" y2="18" />
-                        <line x1="3" y1="6" x2="3.01" y2="6" />
-                        <line x1="3" y1="12" x2="3.01" y2="12" />
-                        <line x1="3" y1="18" x2="3.01" y2="18" />
-                      </svg>
-                    )}
-                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    {mode === 'grid' ? '⊞ Grid' : '☰ Table'}
                   </button>
                 ))}
               </div>
@@ -2089,15 +1585,61 @@ export default function ProductsPage() {
               </strong>{' '}
               of <strong style={{ color: C.brownDarker }}>{total}</strong>{' '}
               products
-              {search && (
-                <span style={{ color: C.orange }}>
-                  {' '}
-                  for &quot;{search}&quot;
-                </span>
-              )}
             </div>
 
-            {viewMode === 'grid' && (
+            {/* Error */}
+            {fetchError && (
+              <div
+                style={{
+                  padding: '20px 24px',
+                  background: '#FFEBEE',
+                  borderRadius: 14,
+                  border: '1.5px solid #EF9A9A',
+                  color: '#C62828',
+                  fontWeight: 600,
+                  fontSize: 13,
+                  marginBottom: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                ⚠️ {fetchError}
+                <button
+                  onClick={() => void fetchProducts()}
+                  style={{
+                    marginLeft: 'auto',
+                    padding: '6px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                    color: C.brownDarker,
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Loading */}
+            {loading && (
+              <div
+                style={{
+                  padding: 60,
+                  textAlign: 'center',
+                  color: '#AAA',
+                  fontSize: 14,
+                }}
+              >
+                Loading products from database…
+              </div>
+            )}
+
+            {/* Grid View */}
+            {!loading && viewMode === 'grid' && (
               <div
                 style={{
                   display: 'grid',
@@ -2105,22 +1647,14 @@ export default function ProductsPage() {
                   gap: 16,
                 }}
               >
-                {filtered.map((p, i) => (
-                  <div
+                {filtered.map((p) => (
+                  <ProductCard
                     key={p.id}
-                    style={{
-                      opacity: loaded ? 1 : 0,
-                      transform: loaded ? 'translateY(0)' : 'translateY(18px)',
-                      transition: `opacity .4s ${Math.min(i * 0.04, 0.4)}s, transform .4s ${Math.min(i * 0.04, 0.4)}s`,
-                    }}
-                  >
-                    <ProductCard
-                      p={p}
-                      onEdit={() => setEdit(p)}
-                      onDelete={() => setDel(p)}
-                      onStock={(n) => updateStock(p.id, n)}
-                    />
-                  </div>
+                    p={p}
+                    onEdit={() => setEdit(p)}
+                    onDelete={() => setDel(p)}
+                    onStock={(n) => void apiUpdateStock(p.id, n)}
+                  />
                 ))}
                 <div
                   onClick={() => setEdit(null)}
@@ -2134,24 +1668,20 @@ export default function ProductsPage() {
                     gap: 9,
                     padding: 28,
                     cursor: 'pointer',
-                    transition: 'all .2s',
                     minHeight: 240,
+                    transition: 'all .2s',
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.borderColor =
                       C.orange;
                     (e.currentTarget as HTMLElement).style.background =
                       '#FFF0D9';
-                    (e.currentTarget as HTMLElement).style.transform =
-                      'translateY(-3px)';
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLElement).style.borderColor =
                       '#D0BFA8';
                     (e.currentTarget as HTMLElement).style.background =
                       'transparent';
-                    (e.currentTarget as HTMLElement).style.transform =
-                      'translateY(0)';
                   }}
                 >
                   <div
@@ -2166,7 +1696,6 @@ export default function ProductsPage() {
                       fontSize: 22,
                       color: C.brownDarker,
                       fontWeight: 900,
-                      boxShadow: '0 4px 14px rgba(255,140,0,.3)',
                     }}
                   >
                     +
@@ -2188,13 +1717,14 @@ export default function ProductsPage() {
                       lineHeight: 1.4,
                     }}
                   >
-                    Click to add a new item to your store
+                    Saved to DB · visible to franchisees
                   </span>
                 </div>
               </div>
             )}
 
-            {viewMode === 'table' && (
+            {/* Table View */}
+            {!loading && viewMode === 'table' && (
               <div
                 style={{
                   background: '#fff',
@@ -2212,18 +1742,15 @@ export default function ProductsPage() {
                       }}
                     >
                       {[
-                        { l: 'Product', k: null },
-                        { l: 'Price', k: 'price' },
-                        { l: 'Stock', k: 'stock' },
-                        { l: 'Status', k: null },
-                        { l: 'Sales', k: 'sales' },
-                        { l: 'Actions', k: null },
-                      ].map(({ l, k }) => (
+                        'Product',
+                        'Price',
+                        'Stock',
+                        'Status',
+                        'Sales',
+                        'Actions',
+                      ].map((col) => (
                         <th
-                          key={l}
-                          onClick={
-                            k ? () => toggleSort(k as SortKey) : undefined
-                          }
+                          key={col}
                           style={{
                             padding: '13px 20px',
                             textAlign: 'left',
@@ -2233,47 +1760,149 @@ export default function ProductsPage() {
                             textTransform: 'uppercase',
                             letterSpacing: '.07em',
                             whiteSpace: 'nowrap',
-                            cursor: k ? 'pointer' : 'default',
-                            userSelect: 'none',
                           }}
                         >
-                          <span
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                            }}
-                          >
-                            {l}
-                            {k && (
-                              <span
-                                style={{
-                                  opacity: sortKey === k ? 1 : 0.3,
-                                  fontSize: 10,
-                                }}
-                              >
-                                {sortKey === k ? (sortAsc ? '↑' : '↓') : '↕'}
-                              </span>
-                            )}
-                          </span>
+                          {col}
                         </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.map((p, idx) => (
-                      <TableRow
+                      <tr
                         key={p.id}
-                        p={p}
-                        idx={idx}
-                        onEdit={() => setEdit(p)}
-                        onDelete={() => setDel(p)}
-                        onStock={(n) => updateStock(p.id, n)}
-                      />
+                        style={{
+                          borderBottom: `1.5px solid ${C.yellow}30`,
+                          background: idx % 2 === 0 ? '#fff' : '#FDFAF4',
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background = `${C.yellow}12`)
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background =
+                            idx % 2 === 0 ? '#fff' : '#FDFAF4')
+                        }
+                      >
+                        <td style={{ padding: '13px 20px' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 11,
+                                background:
+                                  'linear-gradient(135deg,#F2EAD8,#EFE0C8)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 20,
+                              }}
+                            >
+                              {p.image}
+                            </div>
+                            <div>
+                              <div
+                                style={{
+                                  fontWeight: 700,
+                                  fontSize: 13,
+                                  color: C.brownDarker,
+                                }}
+                              >
+                                {p.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 11,
+                                  color: C.orange,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {p.category}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td
+                          style={{
+                            padding: '13px 20px',
+                            fontWeight: 900,
+                            fontSize: 14,
+                            color: C.brownDarker,
+                          }}
+                        >
+                          ₱{Number(p.price).toLocaleString()}
+                        </td>
+                        <td
+                          style={{
+                            padding: '13px 20px',
+                            fontWeight: 700,
+                            fontSize: 13,
+                            color:
+                              p.stock === 0
+                                ? '#C62828'
+                                : p.stock <= 10
+                                  ? '#CC7000'
+                                  : C.darkGreen,
+                          }}
+                        >
+                          {p.stock}
+                        </td>
+                        <td style={{ padding: '13px 20px' }}>
+                          <StatusBadge status={p.status} />
+                        </td>
+                        <td
+                          style={{
+                            padding: '13px 20px',
+                            fontSize: 13,
+                            color: '#666',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {p.sales}
+                        </td>
+                        <td style={{ padding: '13px 20px' }}>
+                          <div style={{ display: 'flex', gap: 5 }}>
+                            <button
+                              onClick={() => setEdit(p)}
+                              style={{
+                                padding: '6px 11px',
+                                borderRadius: 8,
+                                border: '1.5px solid #E5D9C8',
+                                background: '#FDFAF4',
+                                color: C.brownDark,
+                                fontWeight: 700,
+                                fontSize: 12,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => setDel(p)}
+                              style={{
+                                padding: '6px 9px',
+                                borderRadius: 8,
+                                border: '1.5px solid #FFCDD2',
+                                background: '#FFEBEE',
+                                color: '#C62828',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     ))}
                   </tbody>
                 </table>
-                {filtered.length === 0 && (
+                {filtered.length === 0 && !loading && (
                   <div style={{ padding: 48, textAlign: 'center' }}>
                     <div style={{ fontSize: 34, marginBottom: 10 }}>🔍</div>
                     <div
@@ -2281,13 +1910,9 @@ export default function ProductsPage() {
                         fontWeight: 700,
                         fontSize: 14,
                         color: C.brownDark,
-                        marginBottom: 5,
                       }}
                     >
                       No products found
-                    </div>
-                    <div style={{ fontSize: 13, color: '#BBA98A' }}>
-                      Try adjusting your search or filters
                     </div>
                   </div>
                 )}
