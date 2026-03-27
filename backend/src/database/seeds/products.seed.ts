@@ -1,19 +1,10 @@
 // backend/src/database/seeds/products.seed.ts
-// Run once to seed initial products into the DB.
-// Usage: add a call to seedProducts() inside your AppModule onApplicationBootstrap
-// OR call it from main.ts after bootstrap (development only).
-
 import { DataSource } from 'typeorm';
 import { Product } from '../../modules/products/entities/product.entity';
 
 const INITIAL_PRODUCTS = [
-  {
-    name: 'Nata Pearl',
-    category: 'Toppings',
-    price: 180,
-    stock: 50,
-    image: '🫧',
-  },
+  { name: 'Nata', category: 'Toppings', price: 90, stock: 50, image: '🫧' },
+  { name: 'Pearl', category: 'Toppings', price: 90, stock: 50, image: '⚫' },
   { name: 'Graham', category: 'Dry Goods', price: 55, stock: 80, image: '🍪' },
   { name: 'Mango', category: 'Fruits', price: 120, stock: 90, image: '🥭' },
   { name: 'Milk', category: 'Dairy', price: 80, stock: 60, image: '🥛' },
@@ -48,7 +39,6 @@ export async function seedProducts(dataSource: DataSource): Promise<void> {
   const repo = dataSource.getRepository(Product);
 
   for (const p of INITIAL_PRODUCTS) {
-    // Only seed if a product with that name doesn't exist yet
     const exists = await repo.findOne({ where: { name: p.name } });
     if (!exists) {
       await repo.save(
