@@ -36,6 +36,7 @@ const EMOJIS = [
   '📦',
   '🍋',
   '🍰',
+  '⚫',
 ];
 const CATEGORIES = [
   'All',
@@ -251,7 +252,6 @@ function ProductModal({
   const [vis, setVis] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
   useEffect(() => {
     requestAnimationFrame(() => setVis(true));
   }, []);
@@ -259,7 +259,6 @@ function ProductModal({
     setVis(false);
     setTimeout(onClose, 240);
   };
-
   const inp = {
     width: '100%',
     padding: '10px 14px',
@@ -331,7 +330,7 @@ function ProductModal({
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: 17, color: C.yellow }}>
-              {isNew ? 'Add New Product' : 'Edit Product'}
+              {isNew ? 'Add New Ingredient' : 'Edit Ingredient'}
             </div>
             <div
               style={{
@@ -340,7 +339,7 @@ function ProductModal({
                 marginTop: 2,
               }}
             >
-              Changes are saved to the database
+              Changes are saved to the database · visible to franchisees
             </div>
           </div>
           <button
@@ -360,7 +359,6 @@ function ProductModal({
             ✕
           </button>
         </div>
-
         <div
           style={{
             padding: '20px 26px',
@@ -386,7 +384,6 @@ function ProductModal({
               ⚠️ {error}
             </div>
           )}
-
           <div>
             <div
               style={{
@@ -398,7 +395,7 @@ function ProductModal({
                 marginBottom: 8,
               }}
             >
-              Product Icon
+              Icon
             </div>
             <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
               {EMOJIS.map((e) => (
@@ -422,7 +419,6 @@ function ProductModal({
               ))}
             </div>
           </div>
-
           <div>
             <div
               style={{
@@ -434,13 +430,13 @@ function ProductModal({
                 marginBottom: 6,
               }}
             >
-              Product Name <span style={{ color: C.orange }}>*</span>
+              Name <span style={{ color: C.orange }}>*</span>
             </div>
             <input
               type="text"
               value={form.name ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="e.g. Nata Pearl"
+              placeholder="e.g. Nata"
               style={{
                 ...inp,
                 border: `2px solid ${!form.name ? '#EF9A9A' : '#E5D9C8'}`,
@@ -451,7 +447,6 @@ function ProductModal({
               }
             />
           </div>
-
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
           >
@@ -498,7 +493,7 @@ function ProductModal({
                   marginBottom: 6,
                 }}
               >
-                Price (₱) <span style={{ color: C.orange }}>*</span>
+                Price per unit (₱) <span style={{ color: C.orange }}>*</span>
               </div>
               <input
                 type="number"
@@ -514,7 +509,6 @@ function ProductModal({
               />
             </div>
           </div>
-
           <div>
             <div
               style={{
@@ -542,7 +536,6 @@ function ProductModal({
             />
           </div>
         </div>
-
         <div
           style={{
             padding: '14px 26px 20px',
@@ -596,7 +589,7 @@ function ProductModal({
               boxShadow: '0 4px 14px rgba(255,140,0,.3)',
             }}
           >
-            {saving ? 'Saving…' : isNew ? '✓ Add Product' : '✓ Save Changes'}
+            {saving ? 'Saving…' : isNew ? '✓ Add Ingredient' : '✓ Save Changes'}
           </button>
         </div>
       </div>
@@ -676,7 +669,7 @@ function DeleteModal({
             marginBottom: 6,
           }}
         >
-          Remove Product?
+          Remove Ingredient?
         </div>
         <div
           style={{
@@ -689,7 +682,8 @@ function DeleteModal({
           {product.image} {product.name}
         </div>
         <div style={{ color: '#999', fontSize: 13, marginBottom: 22 }}>
-          This will remove it from the database and franchisee order catalog.
+          This will remove it from the database and the franchisee order
+          catalog.
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -807,7 +801,7 @@ function ProductCard({
                 letterSpacing: '.05em',
               }}
             >
-              Unavailable
+              Out of Stock
             </span>
           </div>
         )}
@@ -937,6 +931,8 @@ function ProductCard({
                 background: '#FDFAF4',
                 color: C.brownDark,
                 cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 700,
               }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.borderColor = C.orange)
@@ -1056,9 +1052,8 @@ export default function AdminProductsPage() {
     const url = isNew
       ? 'http://localhost:3000/api/products'
       : `http://localhost:3000/api/products/${data.id}`;
-    const method = isNew ? 'POST' : 'PATCH';
     const res = await fetch(url, {
-      method,
+      method: isNew ? 'POST' : 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -1175,6 +1170,7 @@ export default function AdminProductsPage() {
           fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
       >
+        {/* ── SHARED SIDEBAR (correct 3-item nav) ── */}
         <AdminSidebar
           sidebarOpen={sidebarOpen}
           activeNav="Products"
@@ -1192,6 +1188,7 @@ export default function AdminProductsPage() {
             minWidth: 0,
           }}
         >
+          {/* Header */}
           <header
             style={{
               background: '#fff',
@@ -1244,7 +1241,7 @@ export default function AdminProductsPage() {
                 <div
                   style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
                 >
-                  Products
+                  Ingredient Catalog
                 </div>
                 <div
                   style={{
@@ -1254,8 +1251,9 @@ export default function AdminProductsPage() {
                     marginTop: 1,
                   }}
                 >
-                  Manage store inventory · {total} items · Visible to all
-                  franchisees
+                  {loading
+                    ? 'Loading…'
+                    : `${total} ingredients · visible to all franchisees for ordering`}
                 </div>
               </div>
             </div>
@@ -1277,7 +1275,7 @@ export default function AdminProductsPage() {
                   boxShadow: '0 4px 16px rgba(255,140,0,.35)',
                 }}
               >
-                + Add Product
+                + Add Ingredient
               </button>
               <button
                 onClick={() => void fetchProducts()}
@@ -1331,7 +1329,7 @@ export default function AdminProductsPage() {
             >
               {[
                 {
-                  label: 'Total Products',
+                  label: 'Total Ingredients',
                   value: total,
                   icon: '📦',
                   grad: `linear-gradient(135deg,${C.orange},#CC7000)`,
@@ -1355,7 +1353,7 @@ export default function AdminProductsPage() {
                   grad: 'linear-gradient(135deg,#C62828,#B71C1C)',
                 },
                 {
-                  label: 'Total Sold',
+                  label: 'Total Units Sold',
                   value: sold,
                   icon: '📈',
                   grad: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
@@ -1368,6 +1366,7 @@ export default function AdminProductsPage() {
                     borderRadius: 14,
                     padding: '16px 18px',
                     boxShadow: '0 2px 10px rgba(0,0,0,.06)',
+                    transition: 'all .2s',
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.boxShadow =
@@ -1436,36 +1435,26 @@ export default function AdminProductsPage() {
                 alignItems: 'center',
               }}
             >
-              <div
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search ingredients…"
                 style={{
-                  position: 'relative',
                   flex: '1 1 200px',
                   minWidth: 160,
+                  padding: '9px 14px',
+                  borderRadius: 10,
+                  border: '1.5px solid #E5D9C8',
+                  background: '#FDFAF4',
+                  color: C.brownDarker,
+                  fontSize: 13,
+                  outline: 'none',
+                  boxSizing: 'border-box',
                 }}
-              >
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search products…"
-                  style={{
-                    width: '100%',
-                    paddingLeft: 34,
-                    paddingRight: 12,
-                    paddingTop: 9,
-                    paddingBottom: 9,
-                    borderRadius: 10,
-                    border: '1.5px solid #E5D9C8',
-                    background: '#FDFAF4',
-                    color: C.brownDarker,
-                    fontSize: 13,
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = C.yellow)}
-                  onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
-                />
-              </div>
+                onFocus={(e) => (e.target.style.borderColor = C.yellow)}
+                onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
+              />
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 {CATEGORIES.map((cat) => (
                   <button
@@ -1490,7 +1479,7 @@ export default function AdminProductsPage() {
                 value={statusFilter}
                 onChange={(e) => setStatus(e.target.value)}
                 style={{
-                  padding: '8px 28px 8px 11px',
+                  padding: '8px 14px',
                   borderRadius: 10,
                   border: '1.5px solid #E5D9C8',
                   background: '#FDFAF4',
@@ -1499,7 +1488,6 @@ export default function AdminProductsPage() {
                   fontWeight: 600,
                   cursor: 'pointer',
                   outline: 'none',
-                  appearance: 'none',
                 }}
               >
                 <option value="All">All Status</option>
@@ -1584,16 +1572,16 @@ export default function AdminProductsPage() {
                 {filtered.length}
               </strong>{' '}
               of <strong style={{ color: C.brownDarker }}>{total}</strong>{' '}
-              products
+              ingredients
             </div>
 
             {/* Error */}
             {fetchError && (
               <div
                 style={{
-                  padding: '20px 24px',
+                  padding: '16px 20px',
                   background: '#FFEBEE',
-                  borderRadius: 14,
+                  borderRadius: 12,
                   border: '1.5px solid #EF9A9A',
                   color: '#C62828',
                   fontWeight: 600,
@@ -1634,7 +1622,7 @@ export default function AdminProductsPage() {
                   fontSize: 14,
                 }}
               >
-                Loading products from database…
+                Loading ingredients from database…
               </div>
             )}
 
@@ -1643,7 +1631,7 @@ export default function AdminProductsPage() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill,minmax(210px,1fr))',
+                  gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))',
                   gap: 16,
                 }}
               >
@@ -1656,6 +1644,7 @@ export default function AdminProductsPage() {
                     onStock={(n) => void apiUpdateStock(p.id, n)}
                   />
                 ))}
+                {/* Add card */}
                 <div
                   onClick={() => setEdit(null)}
                   style={{
@@ -1668,8 +1657,8 @@ export default function AdminProductsPage() {
                     gap: 9,
                     padding: 28,
                     cursor: 'pointer',
-                    minHeight: 240,
                     transition: 'all .2s',
+                    minHeight: 240,
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.borderColor =
@@ -1707,7 +1696,7 @@ export default function AdminProductsPage() {
                       color: C.brownDark,
                     }}
                   >
-                    Add Product
+                    Add Ingredient
                   </span>
                   <span
                     style={{
@@ -1720,6 +1709,26 @@ export default function AdminProductsPage() {
                     Saved to DB · visible to franchisees
                   </span>
                 </div>
+                {!loading && filtered.length === 0 && !fetchError && (
+                  <div
+                    style={{
+                      gridColumn: '1/-1',
+                      padding: 48,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: 34, marginBottom: 10 }}>🔍</div>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: C.brownDark,
+                      }}
+                    >
+                      No ingredients found
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1742,7 +1751,7 @@ export default function AdminProductsPage() {
                       }}
                     >
                       {[
-                        'Product',
+                        'Ingredient',
                         'Price',
                         'Stock',
                         'Status',
@@ -1867,7 +1876,7 @@ export default function AdminProductsPage() {
                           {p.sales}
                         </td>
                         <td style={{ padding: '13px 20px' }}>
-                          <div style={{ display: 'flex', gap: 5 }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
                             <button
                               onClick={() => setEdit(p)}
                               style={{
@@ -1902,7 +1911,7 @@ export default function AdminProductsPage() {
                     ))}
                   </tbody>
                 </table>
-                {filtered.length === 0 && !loading && (
+                {filtered.length === 0 && (
                   <div style={{ padding: 48, textAlign: 'center' }}>
                     <div style={{ fontSize: 34, marginBottom: 10 }}>🔍</div>
                     <div
@@ -1912,7 +1921,7 @@ export default function AdminProductsPage() {
                         color: C.brownDark,
                       }}
                     >
-                      No products found
+                      No ingredients found
                     </div>
                   </div>
                 )}

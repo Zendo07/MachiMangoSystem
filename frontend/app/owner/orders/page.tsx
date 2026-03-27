@@ -295,11 +295,11 @@ export default function OrdersPage() {
           ingredientId: i.id,
           name: i.name,
           unit: 'pcs',
-          quantity: i.quantity,
-          pricePerUnit: i.price,
-          totalPrice: i.totalPrice,
+          quantity: Number(i.quantity),
+          pricePerUnit: Number(i.price),
+          totalPrice: Number(i.totalPrice),
         })),
-        totalAmount: cartTotal,
+        totalAmount: Number(cartTotal),
       };
       const res = await fetch('http://localhost:3000/api/orders', {
         method: 'POST',

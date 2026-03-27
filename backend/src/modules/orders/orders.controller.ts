@@ -36,7 +36,7 @@ export class OrdersController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
-  @Roles('franchisee', 'crew')
+  @Roles('franchise_owner', 'franchisee', 'crew')
   async createOrder(
     @Body() dto: CreateOrderDto,
     @Request() req: AuthenticatedRequest,
@@ -52,7 +52,7 @@ export class OrdersController {
   // ─── FRANCHISEE: View own orders ──────────────────────────────────────────
   @Get('my-orders')
   @UseGuards(RolesGuard)
-  @Roles('franchisee', 'crew')
+  @Roles('franchise_owner', 'franchisee', 'crew')
   async getMyOrders(@Request() req: AuthenticatedRequest): Promise<unknown> {
     const orders = await this.ordersService.getMyOrders(req.user.sub);
     return { success: true, data: orders };
