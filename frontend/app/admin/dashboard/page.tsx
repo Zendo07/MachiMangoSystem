@@ -48,6 +48,7 @@ export const C = {
 export const NAV_ITEMS = [
   {
     name: 'Dashboard',
+    route: '/admin/dashboard',
     icon: (
       <svg
         width="18"
@@ -65,7 +66,8 @@ export const NAV_ITEMS = [
     ),
   },
   {
-    name: 'Branches',
+    name: 'Franchisee Orders',
+    route: '/admin/orders',
     icon: (
       <svg
         width="18"
@@ -75,28 +77,15 @@ export const NAV_ITEMS = [
         stroke="currentColor"
         strokeWidth="2.5"
       >
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Analytics',
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-      >
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        <circle cx="9" cy="21" r="1" />
+        <circle cx="20" cy="21" r="1" />
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
       </svg>
     ),
   },
   {
     name: 'Products',
+    route: '/admin/products',
     icon: (
       <svg
         width="18"
@@ -112,22 +101,6 @@ export const NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    name: 'Settings',
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-      >
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    ),
-  },
 ];
 
 // ─── SHARED SIDEBAR ───────────────────────────────────────────────────────────
@@ -140,7 +113,7 @@ export function AdminSidebar({
 }: {
   sidebarOpen: boolean;
   activeNav: string;
-  onNav: (name: string) => void;
+  onNav: (route: string) => void;
   adminName: string;
   onCreateAccount: () => void;
 }) {
@@ -230,7 +203,7 @@ export function AdminSidebar({
           return (
             <button
               key={item.name}
-              onClick={() => onNav(item.name)}
+              onClick={() => onNav(item.route)}
               style={{
                 width: '100%',
                 display: 'flex',
@@ -272,7 +245,9 @@ export function AdminSidebar({
               >
                 {item.icon}
               </span>
-              {sidebarOpen && <span>{item.name}</span>}
+              {sidebarOpen && (
+                <span style={{ flex: 1, textAlign: 'left' }}>{item.name}</span>
+              )}
             </button>
           );
         })}
@@ -437,22 +412,21 @@ export default function AdminDashboard() {
     localStorage.removeItem('user');
     window.location.href = '/login';
   };
+
   const handleAccountCreated = (data: CreatedAccountData) => {
     setCreatedAccount(data);
     setCreateModalOpen(false);
     setTimeout(() => setSuccessModalOpen(true), 320);
   };
+
   const handleCreateAnother = () => {
     setSuccessModalOpen(false);
     setTimeout(() => setCreateModalOpen(true), 320);
   };
 
-  const handleNav = (name: string) => {
-    if (name === 'Products') router.push('/admin/products');
-    // Add other routes here as the project grows:
-    // if (name === 'Branches') router.push('/admin/branches');
-    // if (name === 'Analytics') router.push('/admin/analytics');
-    // if (name === 'Settings') router.push('/admin/settings');
+  // ── Nav handler — push to the route directly ──────────────────────────────
+  const handleNav = (route: string) => {
+    router.push(route);
   };
 
   // Chart data
@@ -475,6 +449,7 @@ export default function AdminDashboard() {
       },
     ],
   };
+
   const branchData = {
     labels: ['Fla. Blanca', 'Porac', 'Sta. Rita', 'Angeles', 'San Fernando'],
     datasets: [
@@ -487,6 +462,7 @@ export default function AdminDashboard() {
       },
     ],
   };
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
