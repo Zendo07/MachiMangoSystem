@@ -26,24 +26,37 @@ interface Product {
   id: string;
   name: string;
   category: string;
-  price: number;
+  price: number | string; // TypeORM decimal columns serialize as strings from the API
   stock: number;
   image: string;
   status: 'In Stock' | 'Low Stock' | 'Out of Stock';
   sales: number;
 }
 
-interface CartItem extends Product {
+interface CartItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number; // always a parsed float — never a string
+  stock: number;
+  image: string;
+  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  sales: number;
   quantity: number;
-  totalPrice: number;
+  totalPrice: number; // quantity × price, rounded to 2 dp
 }
 
 interface Order {
   id: string;
   createdAt: string;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  totalAmount: number;
-  items: { name: string; quantity: number; unit: string; totalPrice: number }[];
+  totalAmount: number | string;
+  items: {
+    name: string;
+    quantity: number;
+    unit: string;
+    totalPrice: number | string;
+  }[];
   adminNote?: string;
 }
 
@@ -88,6 +101,24 @@ const STATUS_META: Record<
   },
 };
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+/** Safely parse any price value (string | number) to a float rounded to 2 dp */
+function toNum(v: number | string | undefined | null): number {
+  const n = parseFloat(String(v ?? 0));
+  return isNaN(n) ? 0 : Math.round(n * 100) / 100;
+}
+
+/** Format as Philippine Peso with 2 decimal places */
+function formatPHP(v: number | string): string {
+  return (
+    '₱' +
+    toNum(v).toLocaleString('en-PH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const m = STATUS_META[status] ?? STATUS_META.pending;
   return (
@@ -107,7 +138,7 @@ function StatusBadge({ status }: { status: string }) {
       <span
         style={{ width: 6, height: 6, borderRadius: '50%', background: m.dot }}
       />
-      {m.label}
+      {m.icon} {m.label}
     </span>
   );
 }
@@ -169,6 +200,7 @@ function SuccessToast({
   );
 }
 
+// ─── PAGE ─────────────────────────────────────────────────────────────────────
 export default function OrdersPage() {
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
@@ -202,7 +234,7 @@ export default function OrdersPage() {
     setUser(u);
   }, [router]);
 
-  // ─── FETCH PRODUCTS FROM API ──────────────────────────────────────────────
+  // ─── FETCH ────────────────────────────────────────────────────────────────
   const fetchProducts = useCallback(async () => {
     const token = getStoredToken();
     if (!token) return;
@@ -253,23 +285,36 @@ export default function OrdersPage() {
 
   // ─── CART HELPERS ─────────────────────────────────────────────────────────
   const addToCart = (product: Product) => {
+    const unitPrice = toNum(product.price); // parse ONCE here
     setCart((prev) => {
-      const ex = prev.find((i) => i.id === product.id);
-      if (ex)
+      const existing = prev.find((i) => i.id === product.id);
+      if (existing) {
+        const newQty = existing.quantity + 1;
         return prev.map((i) =>
           i.id === product.id
             ? {
                 ...i,
-                quantity: i.quantity + 1,
-                totalPrice: (i.quantity + 1) * i.price,
+                quantity: newQty,
+                totalPrice: Math.round(newQty * i.price * 100) / 100,
               }
             : i,
         );
-      return [...prev, { ...product, quantity: 1, totalPrice: product.price }];
+      }
+      return [
+        ...prev,
+        {
+          ...product,
+          price: unitPrice,
+          quantity: 1,
+          totalPrice: unitPrice,
+        } as CartItem,
+      ];
     });
   };
+
   const removeFromCart = (id: string) =>
     setCart((prev) => prev.filter((i) => i.id !== id));
+
   const updateQty = (id: string, qty: number) => {
     if (qty < 1) {
       removeFromCart(id);
@@ -277,11 +322,20 @@ export default function OrdersPage() {
     }
     setCart((prev) =>
       prev.map((i) =>
-        i.id === id ? { ...i, quantity: qty, totalPrice: qty * i.price } : i,
+        i.id === id
+          ? {
+              ...i,
+              quantity: qty,
+              totalPrice: Math.round(qty * i.price * 100) / 100,
+            }
+          : i,
       ),
     );
   };
-  const cartTotal = cart.reduce((s, i) => s + i.totalPrice, 0);
+
+  // Sum line totals and round to avoid floating-point drift
+  const cartTotal =
+    Math.round(cart.reduce((s, i) => s + i.totalPrice, 0) * 100) / 100;
   const cartQty = (id: string) => cart.find((i) => i.id === id)?.quantity ?? 0;
 
   // ─── PLACE ORDER ──────────────────────────────────────────────────────────
@@ -295,11 +349,11 @@ export default function OrdersPage() {
           ingredientId: i.id,
           name: i.name,
           unit: 'pcs',
-          quantity: Number(i.quantity),
-          pricePerUnit: Number(i.price),
-          totalPrice: Number(i.totalPrice),
+          quantity: i.quantity,
+          pricePerUnit: i.price,
+          totalPrice: i.totalPrice,
         })),
-        totalAmount: Number(cartTotal),
+        totalAmount: cartTotal,
       };
       const res = await fetch('http://localhost:3000/api/orders', {
         method: 'POST',
@@ -323,7 +377,7 @@ export default function OrdersPage() {
     }
   };
 
-  // ─── DERIVE CATEGORIES FROM ACTUAL PRODUCTS ───────────────────────────────
+  // ─── FILTER ───────────────────────────────────────────────────────────────
   const allCategories = [
     'All',
     ...Array.from(new Set(products.map((p) => p.category))),
@@ -340,6 +394,7 @@ export default function OrdersPage() {
     { name: 'Orders', icon: '🛒', route: '/owner/orders' },
   ];
 
+  // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
     <>
       {toast && <SuccessToast message={toast} onClose={() => setToast('')} />}
@@ -353,7 +408,7 @@ export default function OrdersPage() {
           fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
       >
-        {/* Sidebar */}
+        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside
           style={{
             width: 72,
@@ -421,14 +476,12 @@ export default function OrdersPage() {
                     transition: 'all .18s',
                   }}
                   onMouseEnter={(e) => {
-                    if (!active) {
+                    if (!active)
                       e.currentTarget.style.background = 'rgba(245,200,66,.1)';
-                    }
                   }}
                   onMouseLeave={(e) => {
-                    if (!active) {
+                    if (!active)
                       e.currentTarget.style.background = 'transparent';
-                    }
                   }}
                 >
                   {item.icon}
@@ -472,7 +525,7 @@ export default function OrdersPage() {
             minWidth: 0,
           }}
         >
-          {/* Header */}
+          {/* ── Header ───────────────────────────────────────────────────── */}
           <header
             style={{
               background: '#fff',
@@ -490,7 +543,7 @@ export default function OrdersPage() {
               <div
                 style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
               >
-                Order Ingredients
+                Order Products
               </div>
               <div
                 style={{
@@ -516,8 +569,8 @@ export default function OrdersPage() {
                     color: C.orange,
                   }}
                 >
-                  🛒 {cart.length} item{cart.length > 1 ? 's' : ''} · ₱
-                  {cartTotal.toLocaleString()}
+                  🛒 {cart.length} item{cart.length > 1 ? 's' : ''} ·{' '}
+                  {formatPHP(cartTotal)}
                 </div>
               )}
               <button
@@ -586,7 +639,7 @@ export default function OrdersPage() {
               ))}
             </div>
 
-            {/* ── ORDER TAB ── */}
+            {/* ══ ORDER TAB ══════════════════════════════════════════════════ */}
             {tab === 'order' && (
               <div
                 style={{
@@ -596,7 +649,7 @@ export default function OrdersPage() {
                   height: 'calc(100vh - 200px)',
                 }}
               >
-                {/* Products list */}
+                {/* Left: Product catalog */}
                 <div
                   style={{
                     display: 'flex',
@@ -672,7 +725,7 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* Error / Loading */}
+                  {/* Error */}
                   {productError && (
                     <div
                       style={{
@@ -707,6 +760,8 @@ export default function OrdersPage() {
                       </button>
                     </div>
                   )}
+
+                  {/* Loading */}
                   {loadingProducts && (
                     <div
                       style={{
@@ -720,8 +775,8 @@ export default function OrdersPage() {
                     </div>
                   )}
 
-                  {/* Product Grid */}
-                  {!loadingProducts && (
+                  {/* Product grid */}
+                  {!loadingProducts && !productError && (
                     <div style={{ overflowY: 'auto', flex: 1 }}>
                       <div
                         style={{
@@ -733,6 +788,7 @@ export default function OrdersPage() {
                       >
                         {filtered.map((product) => {
                           const qty = cartQty(product.id);
+                          const unitPrice = toNum(product.price);
                           const outOfStock = product.status === 'Out of Stock';
                           return (
                             <div
@@ -740,8 +796,8 @@ export default function OrdersPage() {
                               style={{
                                 background: '#fff',
                                 borderRadius: 16,
-                                border: `2px solid ${qty > 0 ? C.yellow : outOfStock ? '#FFCDD2' : '#F0E8D8'}`,
                                 overflow: 'hidden',
+                                border: `2px solid ${qty > 0 ? C.yellow : outOfStock ? '#FFCDD2' : '#F0E8D8'}`,
                                 boxShadow:
                                   qty > 0
                                     ? '0 4px 16px rgba(245,200,66,.2)'
@@ -750,6 +806,7 @@ export default function OrdersPage() {
                                 transition: 'border .2s',
                               }}
                             >
+                              {/* Thumbnail */}
                               <div
                                 style={{
                                   height: 72,
@@ -789,6 +846,8 @@ export default function OrdersPage() {
                                   </div>
                                 )}
                               </div>
+
+                              {/* Info */}
                               <div style={{ padding: '10px 12px' }}>
                                 <div
                                   style={{
@@ -828,7 +887,7 @@ export default function OrdersPage() {
                                       color: C.brownDarker,
                                     }}
                                   >
-                                    ₱{Number(product.price).toLocaleString()}
+                                    {formatPHP(unitPrice)}
                                   </span>
                                   <span
                                     style={{
@@ -846,6 +905,8 @@ export default function OrdersPage() {
                                         : `${product.stock} in stock`}
                                   </span>
                                 </div>
+
+                                {/* Add / qty controls */}
                                 {outOfStock ? (
                                   <div
                                     style={{
@@ -939,7 +1000,7 @@ export default function OrdersPage() {
                             </div>
                           );
                         })}
-                        {filtered.length === 0 && !loadingProducts && (
+                        {filtered.length === 0 && (
                           <div
                             style={{
                               gridColumn: '1 / -1',
@@ -957,7 +1018,7 @@ export default function OrdersPage() {
                   )}
                 </div>
 
-                {/* Cart panel */}
+                {/* Right: Cart panel */}
                 <div
                   style={{
                     background: '#fff',
@@ -969,6 +1030,7 @@ export default function OrdersPage() {
                     overflow: 'hidden',
                   }}
                 >
+                  {/* Cart header */}
                   <div
                     style={{
                       padding: '18px 20px',
@@ -991,6 +1053,8 @@ export default function OrdersPage() {
                         : `${cart.length} item${cart.length > 1 ? 's' : ''} selected`}
                     </div>
                   </div>
+
+                  {/* Cart items */}
                   <div
                     style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}
                   >
@@ -1067,11 +1131,10 @@ export default function OrdersPage() {
                                   marginTop: 1,
                                 }}
                               >
-                                {item.quantity} × ₱
-                                {Number(item.price).toLocaleString()}
+                                {item.quantity} × {formatPHP(item.price)}
                               </div>
                             </div>
-                            <div style={{ textAlign: 'right' }}>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
                               <div
                                 style={{
                                   fontWeight: 800,
@@ -1079,7 +1142,7 @@ export default function OrdersPage() {
                                   color: C.brownDarker,
                                 }}
                               >
-                                ₱{item.totalPrice.toLocaleString()}
+                                {formatPHP(item.totalPrice)}
                               </div>
                               <button
                                 onClick={() => removeFromCart(item.id)}
@@ -1101,6 +1164,8 @@ export default function OrdersPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Cart footer — subtotals + grand total */}
                   {cart.length > 0 && (
                     <div
                       style={{
@@ -1108,32 +1173,71 @@ export default function OrdersPage() {
                         borderTop: `2px solid ${C.yellow}30`,
                       }}
                     >
+                      {/* Line subtotals */}
+                      <div
+                        style={{
+                          marginBottom: 8,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 3,
+                        }}
+                      >
+                        {cart.map((item) => (
+                          <div
+                            key={item.id}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              fontSize: 11,
+                              color: '#999',
+                            }}
+                          >
+                            <span>
+                              {item.name} × {item.quantity}
+                            </span>
+                            <span>{formatPHP(item.totalPrice)}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Divider */}
+                      <div
+                        style={{
+                          height: 1,
+                          background: '#F0E8D8',
+                          margin: '8px 0',
+                        }}
+                      />
+
+                      {/* Grand total */}
                       <div
                         style={{
                           display: 'flex',
                           justifyContent: 'space-between',
-                          marginBottom: 12,
+                          alignItems: 'center',
+                          marginBottom: 14,
                         }}
                       >
                         <span
                           style={{
-                            fontWeight: 700,
+                            fontWeight: 800,
                             fontSize: 14,
                             color: C.brownDark,
                           }}
                         >
-                          Total
+                          Grand Total
                         </span>
                         <span
                           style={{
                             fontWeight: 900,
-                            fontSize: 18,
+                            fontSize: 20,
                             color: C.brownDarker,
                           }}
                         >
-                          ₱{cartTotal.toLocaleString()}
+                          {formatPHP(cartTotal)}
                         </span>
                       </div>
+
                       <button
                         onClick={placeOrder}
                         disabled={placing}
@@ -1170,7 +1274,7 @@ export default function OrdersPage() {
               </div>
             )}
 
-            {/* ── HISTORY TAB ── */}
+            {/* ══ HISTORY TAB ════════════════════════════════════════════════ */}
             {tab === 'history' && (
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
@@ -1239,6 +1343,7 @@ export default function OrdersPage() {
                         border: `2px solid ${order.status === 'processing' ? C.yellow : '#F0E8D8'}`,
                       }}
                     >
+                      {/* Order header */}
                       <div
                         style={{
                           display: 'flex',
@@ -1284,17 +1389,87 @@ export default function OrdersPage() {
                           }}
                         >
                           <StatusBadge status={order.status} />
+                        </div>
+                      </div>
+
+                      {/* Item breakdown */}
+                      <div
+                        style={{
+                          background: '#FDFAF4',
+                          borderRadius: 10,
+                          padding: '10px 14px',
+                          border: '1px solid #F0E8D8',
+                          marginBottom: order.adminNote ? 10 : 0,
+                        }}
+                      >
+                        {order.items.map((item, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              paddingBottom: i < order.items.length - 1 ? 6 : 0,
+                              marginBottom: i < order.items.length - 1 ? 6 : 0,
+                              borderBottom:
+                                i < order.items.length - 1
+                                  ? '1px solid #F0E8D8'
+                                  : 'none',
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: C.brownDark,
+                              }}
+                            >
+                              {item.name} × {item.quantity}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: C.brownDarker,
+                              }}
+                            >
+                              {formatPHP(item.totalPrice)}
+                            </span>
+                          </div>
+                        ))}
+                        {/* Total row */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: 8,
+                            paddingTop: 8,
+                            borderTop: `2px solid ${C.yellow}50`,
+                          }}
+                        >
                           <span
                             style={{
+                              fontSize: 13,
+                              fontWeight: 800,
+                              color: C.brownDark,
+                            }}
+                          >
+                            Total
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 15,
                               fontWeight: 900,
-                              fontSize: 16,
                               color: C.brownDarker,
                             }}
                           >
-                            ₱{Number(order.totalAmount).toLocaleString()}
+                            {formatPHP(order.totalAmount)}
                           </span>
                         </div>
                       </div>
+
+                      {/* Admin note */}
                       {order.adminNote && (
                         <div
                           style={{
@@ -1305,7 +1480,7 @@ export default function OrdersPage() {
                             borderRadius: 10,
                             background: '#FFFAE0',
                             border: `1.5px solid ${C.yellow}`,
-                            marginBottom: 10,
+                            marginTop: 10,
                           }}
                         >
                           <span>💬</span>
@@ -1320,25 +1495,6 @@ export default function OrdersPage() {
                           </span>
                         </div>
                       )}
-                      <div
-                        style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}
-                      >
-                        {order.items.map((item, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              padding: '4px 10px',
-                              borderRadius: 20,
-                              background: '#F2EAD8',
-                              fontSize: 11,
-                              fontWeight: 600,
-                              color: C.brownDark,
-                            }}
-                          >
-                            {item.name} × {item.quantity}
-                          </span>
-                        ))}
-                      </div>
                     </div>
                   ))
                 )}
