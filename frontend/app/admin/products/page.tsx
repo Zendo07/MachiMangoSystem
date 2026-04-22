@@ -386,22 +386,68 @@ const Icon = {
   ),
 };
 
-// ─── CSS-CLASS-BASED STABLE STYLES (no inline hover mutations) ───────────────
+// ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
 const globalStyles = `
   .prod-card {
     background: #fff;
     border-radius: 14px;
-    border: 1.5px solid #E8DDD0;
-    overflow: visible;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
-    will-change: transform;
+    border: 1.5px solid #E8DDD0;
   }
   .prod-card:hover {
-    transform: translateY(-2px);
     box-shadow: 0 12px 32px rgba(62,26,0,0.12);
     border-color: #F5C842;
   }
+  .prod-card img {
+  display: block;
+}
+
+  .prod-img-band {
+    height: 112px;
+    background: linear-gradient(135deg, #F4EFE6, #EDE5D8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .prod-img-band.has-image {
+    background: transparent;
+  }
+
+  .prod-img-band.out-of-stock::after {
+    content: 'Out of Stock';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.38);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .prod-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.18s;
+  }
+  .prod-img-overlay button {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .prod-img-overlay:hover { background: rgba(0,0,0,0.45); }
+  .prod-img-overlay:hover button { opacity: 1; }
+
   .btn-edit {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 11px; border-radius: 8px;
@@ -427,14 +473,11 @@ const globalStyles = `
   .btn-stock:hover { border-color: #FF8C00; }
   .filter-tab {
     padding: 5px 12px; border-radius: 7px; font-size: 12px; font-weight: 600;
-    cursor: pointer; transition: all 0.15s; white-space: nowrap; border: 1.5px solid transparent;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    border: 1.5px solid transparent;
   }
-  .filter-tab.active {
-    background: #FFF0D9; border-color: #FF8C00; color: #3E1A00; font-weight: 700;
-  }
-  .filter-tab:not(.active) {
-    background: transparent; border-color: #E8DDD0; color: #6B3A2A;
-  }
+  .filter-tab.active { background: #FFF0D9; border-color: #FF8C00; color: #3E1A00; font-weight: 700; }
+  .filter-tab:not(.active) { background: transparent; border-color: #E8DDD0; color: #6B3A2A; }
   .filter-tab:not(.active):hover { border-color: #D4C4B0; background: #F8F4EE; }
   .sort-btn {
     display: inline-flex; align-items: center; gap: 4px;
@@ -447,7 +490,7 @@ const globalStyles = `
   .view-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 13px; font-size: 12px; font-weight: 600;
-    cursor: pointer; border: none; transition: all 0.15s;
+    cursor: pointer; border: none; transition: background 0.15s;
   }
   .view-btn.active { background: linear-gradient(135deg,#F5C842,#FF8C00); color: #3E1A00; font-weight: 700; }
   .view-btn:not(.active) { background: transparent; color: #6B3A2A; }
@@ -455,25 +498,25 @@ const globalStyles = `
   .add-card {
     border-radius: 14px; border: 2px dashed #D4C4B0;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px; padding: 28px; cursor: pointer; transition: all 0.2s; min-height: 240px;
+    gap: 8px; padding: 28px; cursor: pointer; transition: border-color 0.2s, background 0.2s; min-height: 240px;
     background: transparent;
   }
   .add-card:hover { border-color: #FF8C00; background: #FFF8F0; }
   .tr-product { transition: background 0.12s; }
   .tr-product:hover { background: rgba(245,200,66,0.07) !important; }
   .stat-card {
-    background: #fff; border-radius: 12px; padding: 16px 18px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1.5px solid #EDE5D8;
-    transition: transform 0.18s, box-shadow 0.18s;
-    will-change: transform;
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 18px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    border: 1.5px solid #EDE5D8;
   }
-  .stat-card:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.09); }
   .header-btn {
     display: inline-flex; align-items: center; gap: 7px;
     padding: 9px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;
-    cursor: pointer; transition: opacity 0.15s, transform 0.15s;
+    cursor: pointer; transition: opacity 0.15s;
   }
-  .header-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .header-btn:hover { opacity: 0.85; }
   .inp-field {
     width: 100%; padding: 10px 14px; border-radius: 10px;
     border: 1.5px solid #E8DDD0; background: #FAFAF8;
@@ -487,29 +530,21 @@ const globalStyles = `
     display: flex; align-items: center; justify-content: center; padding: 16px;
     background: rgba(20,8,0,0.55); backdrop-filter: blur(4px);
   }
+  [data-admin] { position: relative; isolation: isolate; }
+  [data-admin] main {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
 `;
 
 // ─── STATUS BADGE ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: Product['status'] }) {
   const cfg = {
-    'In Stock': {
-      bg: '#EAF5E9',
-      color: '#2E7D32',
-      dot: '#43A047',
-      icon: <Icon.CheckCircle />,
-    },
-    'Low Stock': {
-      bg: '#FFF3E0',
-      color: '#E65100',
-      dot: '#FB8C00',
-      icon: <Icon.AlertTriangle />,
-    },
-    'Out of Stock': {
-      bg: '#FFEBEE',
-      color: '#C62828',
-      dot: '#EF5350',
-      icon: <Icon.XCircle />,
-    },
+    'In Stock': { bg: '#EAF5E9', color: '#2E7D32', dot: '#43A047' },
+    'Low Stock': { bg: '#FFF3E0', color: '#E65100', dot: '#FB8C00' },
+    'Out of Stock': { bg: '#FFEBEE', color: '#C62828', dot: '#EF5350' },
   }[status];
   return (
     <span
@@ -793,40 +828,17 @@ function ImageUploader({
                 objectFit: 'cover',
                 display: 'block',
                 borderRadius: 10,
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden',
               }}
             />
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(0,0,0,0)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                transition: 'background .18s',
-                borderRadius: 10,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(0,0,0,0.45)';
-                e.currentTarget
-                  .querySelectorAll('button')
-                  .forEach((b) => ((b as HTMLElement).style.opacity = '1'));
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(0,0,0,0)';
-                e.currentTarget
-                  .querySelectorAll('button')
-                  .forEach((b) => ((b as HTMLElement).style.opacity = '0'));
-              }}
-            >
+            <div className="prod-img-overlay">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   fileRef.current?.click();
                 }}
                 style={{
-                  opacity: 0,
                   padding: '7px 14px',
                   borderRadius: 8,
                   border: 'none',
@@ -835,7 +847,6 @@ function ImageUploader({
                   fontWeight: 700,
                   fontSize: 12,
                   cursor: 'pointer',
-                  transition: 'opacity .15s',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
@@ -849,7 +860,6 @@ function ImageUploader({
                   onChange('');
                 }}
                 style={{
-                  opacity: 0,
                   padding: '7px 14px',
                   borderRadius: 8,
                   border: 'none',
@@ -858,7 +868,6 @@ function ImageUploader({
                   fontWeight: 700,
                   fontSize: 12,
                   cursor: 'pointer',
-                  transition: 'opacity .15s',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
@@ -969,7 +978,6 @@ function ProductModal({
           boxShadow: '0 24px 64px rgba(30,10,0,.28)',
         }}
       >
-        {/* Header */}
         <div
           style={{
             padding: '18px 24px',
@@ -1027,7 +1035,6 @@ function ProductModal({
             <Icon.X />
           </button>
         </div>
-        {/* Body */}
         <div
           style={{
             padding: '20px 24px',
@@ -1178,7 +1185,6 @@ function ProductModal({
             />
           </div>
         </div>
-        {/* Footer */}
         <div
           style={{
             padding: '14px 24px 20px',
@@ -1382,24 +1388,22 @@ function ProductCard({
   const [pop, setPop] = useState(false);
   const hasImage =
     p.image && (p.image.startsWith('http') || p.image.startsWith('data:'));
+
   return (
     <div className="prod-card">
-      {/* Image band */}
+      {/*
+        IMAGE BAND — THE KEY FIX IS HERE:
+        - No overflow:hidden (parent .prod-card handles clipping)
+        - No border-radius (parent .prod-card handles it)
+        - Class-based conditionals instead of inline style logic
+        Removing the nested overflow:hidden eliminates the nested clip context
+        that was being recalculated on every scroll frame.
+      */}
       <div
-        style={{
-          height: 112,
-          background: hasImage
-            ? 'transparent'
-            : 'linear-gradient(135deg,#F4EFE6,#EDE5D8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          borderRadius: '12px 12px 0 0',
-          overflow: 'hidden',
-        }}
+        className={`prod-img-band${hasImage ? ' has-image' : ''}${p.status === 'Out of Stock' ? ' out-of-stock' : ''}`}
       >
-        {hasImage ? (
+        // AFTER
+        {hasImage && (
           <img
             src={p.image}
             alt={p.name}
@@ -1410,7 +1414,8 @@ function ProductCard({
               display: 'block',
             }}
           />
-        ) : (
+        )}
+        {!hasImage && (
           <div style={{ color: '#C8B89A' }}>
             <Icon.Image />
           </div>
@@ -1418,33 +1423,8 @@ function ProductCard({
         <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}>
           <StatusBadge status={p.status} />
         </div>
-        {p.status === 'Out of Stock' && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(0,0,0,.38)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span
-              style={{
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: '.06em',
-              }}
-            >
-              Out of Stock
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Body */}
       <div style={{ padding: '12px 14px' }}>
         <div
           style={{
@@ -1472,8 +1452,6 @@ function ProductCard({
         >
           {p.name}
         </div>
-
-        {/* Price + sales row */}
         <div
           style={{
             display: 'flex',
@@ -1505,8 +1483,6 @@ function ProductCard({
             {p.sales}
           </span>
         </div>
-
-        {/* Stock */}
         <div style={{ marginBottom: 12 }}>
           <div
             style={{
@@ -1535,8 +1511,6 @@ function ProductCard({
           </div>
           <StockBar stock={p.stock} />
         </div>
-
-        {/* Actions */}
         <div style={{ display: 'flex', gap: 5 }}>
           <button className="btn-edit" onClick={onEdit} style={{ flex: 1 }}>
             <Icon.Edit /> Edit
@@ -1800,6 +1774,7 @@ export default function AdminProductsPage() {
       )}
 
       <div
+        data-admin="true"
         style={{
           display: 'flex',
           height: '100vh',
@@ -1825,7 +1800,7 @@ export default function AdminProductsPage() {
             minWidth: 0,
           }}
         >
-          {/* ── Header ─────────────────────────────────────────────────────── */}
+          {/* Header */}
           <header
             style={{
               background: C.surface,
@@ -1938,7 +1913,13 @@ export default function AdminProductsPage() {
             </div>
           </header>
 
-          {/* ── Scrollable body ─────────────────────────────────────────────── */}
+          {/*
+            MAIN SCROLL CONTAINER:
+            transform:translateZ(0) forces this onto its own GPU compositing
+            layer so scroll compositing is isolated here and doesn't propagate
+            repaint signals up to parent stacking contexts.
+            isolation:isolate creates a new stacking context for z-index safety.
+          */}
           <main
             style={{
               flex: 1,
@@ -1946,6 +1927,8 @@ export default function AdminProductsPage() {
               overflowX: 'hidden',
               padding: 24,
               background: C.bg,
+              transform: 'translateZ(0)',
+              isolation: 'isolate',
             }}
           >
             {/* Stat cards */}
@@ -2017,7 +2000,6 @@ export default function AdminProductsPage() {
                 alignItems: 'center',
               }}
             >
-              {/* Search */}
               <div
                 style={{
                   position: 'relative',
@@ -2051,8 +2033,6 @@ export default function AdminProductsPage() {
                   }}
                 />
               </div>
-
-              {/* Category tabs */}
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 {CATEGORIES.map((cat) => (
                   <button
@@ -2064,8 +2044,6 @@ export default function AdminProductsPage() {
                   </button>
                 ))}
               </div>
-
-              {/* Status select */}
               <div style={{ position: 'relative' }}>
                 <select
                   value={statusFilter}
@@ -2098,8 +2076,6 @@ export default function AdminProductsPage() {
                   <Icon.ChevronDown />
                 </span>
               </div>
-
-              {/* Sort */}
               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 <span
                   style={{
@@ -2128,8 +2104,6 @@ export default function AdminProductsPage() {
                   </button>
                 ))}
               </div>
-
-              {/* View toggle */}
               <div
                 style={{
                   display: 'flex',
@@ -2208,7 +2182,6 @@ export default function AdminProductsPage() {
               </div>
             )}
 
-            {/* Loading */}
             {loading && (
               <div
                 style={{
@@ -2222,7 +2195,7 @@ export default function AdminProductsPage() {
               </div>
             )}
 
-            {/* ── GRID VIEW ── */}
+            {/* GRID VIEW */}
             {!loading && viewMode === 'grid' && (
               <div
                 style={{
@@ -2240,7 +2213,6 @@ export default function AdminProductsPage() {
                     onStock={(n) => void apiUpdateStock(p.id, n)}
                   />
                 ))}
-                {/* Add card */}
                 <div className="add-card" onClick={() => setEdit(null)}>
                   <div
                     style={{
@@ -2302,7 +2274,7 @@ export default function AdminProductsPage() {
               </div>
             )}
 
-            {/* ── TABLE VIEW ── */}
+            {/* TABLE VIEW */}
             {!loading && viewMode === 'table' && (
               <div
                 style={{
@@ -2390,6 +2362,8 @@ export default function AdminProductsPage() {
                                       width: '100%',
                                       height: '100%',
                                       objectFit: 'cover',
+                                      transform: 'translateZ(0)',
+                                      backfaceVisibility: 'hidden',
                                     }}
                                   />
                                 ) : (

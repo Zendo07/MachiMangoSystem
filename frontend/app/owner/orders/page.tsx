@@ -816,11 +816,27 @@ export default function OrdersPage() {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  fontSize: 36,
                                   position: 'relative',
+                                  overflow: 'hidden',
                                 }}
                               >
-                                {product.image}
+                                {product.image &&
+                                (product.image.startsWith('http') ||
+                                  product.image.startsWith('data:')) ? (
+                                  <img
+                                    src={product.image}
+                                    alt={product.name}
+                                    style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                    }}
+                                  />
+                                ) : (
+                                  <span style={{ fontSize: 36 }}>
+                                    {product.image || '📦'}
+                                  </span>
+                                )}
                                 {outOfStock && (
                                   <div
                                     style={{
@@ -846,7 +862,6 @@ export default function OrdersPage() {
                                   </div>
                                 )}
                               </div>
-
                               {/* Info */}
                               <div style={{ padding: '10px 12px' }}>
                                 <div

@@ -66,6 +66,29 @@ body {
   min-height: 100vh;
 }
 
+/* ── Admin layout reset ────────────────────────────────────────────────────
+   Admin pages use a fixed height: 100vh flex shell with their own internal
+   scroll regions (<main style="overflowY: auto">). The public-site body
+   gradient + min-height fight that shell and cause two competing scroll
+   axes, making the page feel "stuck" or scroll inconsistently.
+
+   Scoping these overrides to `body:has([data-admin])` keeps all public-site
+   styles 100% intact while giving the admin shell a clean slate.
+
+   Usage: add  data-admin="true"  to the outermost <div> in every admin page.
+   Example (page.tsx):
+     <div data-admin="true" style={{ display: 'flex', height: '100vh', ... }}>
+─────────────────────────────────────────────────────────────────────────── */
+body:has([data-admin]) {
+  /* Replace the animated gradient with the flat admin bg */
+  background: #f4efe6;
+  /* Let the admin shell control height — body must NOT create its own
+     scroll container here */
+  min-height: unset;
+  height: 100vh;
+  overflow: hidden; /* single scroll axis lives inside <main> only */
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
