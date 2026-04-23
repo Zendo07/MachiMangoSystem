@@ -9,42 +9,29 @@ import {
   ROLE_META,
   type UserRole,
 } from '@/lib/auth';
+import OwnerSidebar from '@/components/owner/OwnerSidebar';
 
+/* ── palette ── */
+const PAGE_BG =
+  'linear-gradient(180deg,#87ceeb 0%,#98d8e8 18%,#c8eeaa 42%,#a8dc7a 68%,#7cb342 100%)';
 const C = {
-  brownDarker: '#3E1A00',
-  brownDark: '#6B3A2A',
-  brown: '#8B4513',
-  yellow: '#F5C842',
-  orange: '#FF8C00',
-  green: '#5A9E3A',
-  darkGreen: '#3D6E27',
-  bg: '#F2EAD8',
+  brown: '#4a2511',
+  brownMid: '#654321',
+  yellow: '#ffe135',
+  orange: '#ff8c00',
+  textGreen: '#3d7a1c',
+  muted: '#9a8478',
+  rowBg: 'rgba(255,255,255,0.92)',
+  rowHover: 'rgba(255,249,220,0.95)',
+  rowExpanded: 'rgba(255,252,235,1)',
+  rowDivider: 'rgba(74,37,17,0.08)',
+  panelBg: 'rgba(255,253,240,0.98)',
+  card: 'rgba(255,255,255,0.82)',
+  cardBorder: 'rgba(255,255,255,0.6)',
+  yellowBorder: 'rgba(255,225,53,0.7)',
+  shadow: '0 2px 14px rgba(0,80,40,0.10)',
+  shadowMd: '0 4px 24px rgba(34,100,34,0.13)',
 };
-
-// ─── TYPES ────────────────────────────────────────────────────────────────────
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number | string; // TypeORM decimal columns serialize as strings from the API
-  stock: number;
-  image: string;
-  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
-  sales: number;
-}
-
-interface CartItem {
-  id: string;
-  name: string;
-  category: string;
-  price: number; // always a parsed float — never a string
-  stock: number;
-  image: string;
-  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
-  sales: number;
-  quantity: number;
-  totalPrice: number; // quantity × price, rounded to 2 dp
-}
 
 interface Order {
   id: string;
@@ -62,53 +49,54 @@ interface Order {
 
 const STATUS_META: Record<
   string,
-  { label: string; bg: string; color: string; dot: string; icon: string }
+  { label: string; bg: string; color: string; dot: string }
 > = {
   pending: {
     label: 'Pending',
-    bg: '#FFF0D9',
-    color: '#CC7000',
-    dot: '#FF8C00',
-    icon: '⏳',
+    bg: '#FEF3E2',
+    color: '#A05C00',
+    dot: '#E08C20',
   },
   processing: {
     label: 'Processing',
-    bg: '#E0F2FA',
-    color: '#2E7BAD',
-    dot: '#4A9ECA',
-    icon: '⚙️',
+    bg: '#E8F3FB',
+    color: '#1B6899',
+    dot: '#3A8EBF',
   },
   shipped: {
     label: 'Shipped',
-    bg: '#F3E5FF',
-    color: '#7B3FA0',
-    dot: '#9C4DC4',
-    icon: '🚚',
+    bg: '#F0E8FB',
+    color: '#6230A0',
+    dot: '#8A52CA',
   },
   delivered: {
     label: 'Delivered',
-    bg: '#E8F5E1',
-    color: '#3D6E27',
-    dot: '#5A9E3A',
-    icon: '✅',
+    bg: '#EBF5E5',
+    color: '#2E6020',
+    dot: '#4A9432',
   },
   cancelled: {
     label: 'Cancelled',
-    bg: '#FFEBEE',
-    color: '#C62828',
-    dot: '#EF5350',
-    icon: '❌',
+    bg: '#FCEAEA',
+    color: '#991B1B',
+    dot: '#DC3535',
   },
 };
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
-/** Safely parse any price value (string | number) to a float rounded to 2 dp */
+const ALL_STATUSES = [
+  'all',
+  'pending',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
+] as const;
+const COLS = '160px 1fr 120px 130px 140px 40px';
+
 function toNum(v: number | string | undefined | null): number {
   const n = parseFloat(String(v ?? 0));
   return isNaN(n) ? 0 : Math.round(n * 100) / 100;
 }
-
-/** Format as Philippine Peso with 2 decimal places */
 function formatPHP(v: number | string): string {
   return (
     '₱' +
@@ -133,88 +121,53 @@ function StatusBadge({ status }: { status: string }) {
         color: m.color,
         fontSize: 11,
         fontWeight: 700,
+        whiteSpace: 'nowrap',
       }}
     >
       <span
-        style={{ width: 6, height: 6, borderRadius: '50%', background: m.dot }}
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: m.dot,
+          flexShrink: 0,
+        }}
       />
-      {m.icon} {m.label}
+      {m.label}
     </span>
   );
 }
 
-function SuccessToast({
-  message,
-  onClose,
-}: {
-  message: string;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 4000);
-    return () => clearTimeout(t);
-  }, [onClose]);
+function Chevron({ open }: { open: boolean }) {
   return (
-    <div
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={C.brownMid}
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       style={{
-        position: 'fixed',
-        bottom: 28,
-        right: 28,
-        zIndex: 999,
-        background: `linear-gradient(135deg,${C.darkGreen},${C.green})`,
-        color: '#fff',
-        borderRadius: 16,
-        padding: '16px 22px',
-        boxShadow: '0 8px 32px rgba(61,110,39,.35)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        maxWidth: 380,
+        transition: 'transform .2s',
+        transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+        flexShrink: 0,
       }}
     >
-      <div style={{ fontSize: 24 }}>✅</div>
-      <div>
-        <div style={{ fontWeight: 800, fontSize: 14 }}>Order Placed!</div>
-        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 2 }}>
-          {message}
-        </div>
-      </div>
-      <button
-        onClick={onClose}
-        style={{
-          marginLeft: 'auto',
-          background: 'rgba(255,255,255,.2)',
-          border: 'none',
-          borderRadius: '50%',
-          width: 24,
-          height: 24,
-          color: '#fff',
-          cursor: 'pointer',
-          fontSize: 12,
-          fontWeight: 700,
-        }}
-      >
-        ✕
-      </button>
-    </div>
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
   );
 }
 
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
+/* ─────────────────────────── page ─────────────────────────── */
 export default function OrdersPage() {
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-  const [productError, setProductError] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [search, setSearch] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [tab, setTab] = useState<'order' | 'history'>('order');
   const [orders, setOrders] = useState<Order[]>([]);
-  const [placing, setPlacing] = useState(false);
-  const [toast, setToast] = useState('');
-  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>('all');
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     const u = getStoredUser();
@@ -234,30 +187,10 @@ export default function OrdersPage() {
     setUser(u);
   }, [router]);
 
-  // ─── FETCH ────────────────────────────────────────────────────────────────
-  const fetchProducts = useCallback(async () => {
-    const token = getStoredToken();
-    if (!token) return;
-    setLoadingProducts(true);
-    setProductError('');
-    try {
-      const res = await fetch('http://localhost:3000/api/products', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = (await res.json()) as { success: boolean; data: Product[] };
-      if (data.success) setProducts(data.data);
-      else setProductError('Failed to load products');
-    } catch {
-      setProductError('Cannot reach backend. Is it running?');
-    } finally {
-      setLoadingProducts(false);
-    }
-  }, []);
-
   const fetchOrders = useCallback(async () => {
     const token = getStoredToken();
     if (!token) return;
-    setLoadingOrders(true);
+    setLoading(true);
     try {
       const res = await fetch('http://localhost:3000/api/orders/my-orders', {
         headers: { Authorization: `Bearer ${token}` },
@@ -267,1257 +200,606 @@ export default function OrdersPage() {
     } catch {
       /**/
     } finally {
-      setLoadingOrders(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (user) void fetchProducts();
-  }, [user, fetchProducts]);
-  useEffect(() => {
-    if (tab === 'history') void fetchOrders();
-  }, [tab, fetchOrders]);
+    if (user) void fetchOrders();
+  }, [user, fetchOrders]);
 
   if (!user) return null;
 
   const role = user.role as UserRole;
   const meta = ROLE_META[role];
+  const isFranchiseOwner = role === 'franchise_owner';
+  const filtered =
+    filter === 'all' ? orders : orders.filter((o) => o.status === filter);
 
-  // ─── CART HELPERS ─────────────────────────────────────────────────────────
-  const addToCart = (product: Product) => {
-    const unitPrice = toNum(product.price); // parse ONCE here
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === product.id);
-      if (existing) {
-        const newQty = existing.quantity + 1;
-        return prev.map((i) =>
-          i.id === product.id
-            ? {
-                ...i,
-                quantity: newQty,
-                totalPrice: Math.round(newQty * i.price * 100) / 100,
-              }
-            : i,
-        );
-      }
-      return [
-        ...prev,
-        {
-          ...product,
-          price: unitPrice,
-          quantity: 1,
-          totalPrice: unitPrice,
-        } as CartItem,
-      ];
-    });
-  };
-
-  const removeFromCart = (id: string) =>
-    setCart((prev) => prev.filter((i) => i.id !== id));
-
-  const updateQty = (id: string, qty: number) => {
-    if (qty < 1) {
-      removeFromCart(id);
-      return;
-    }
-    setCart((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? {
-              ...i,
-              quantity: qty,
-              totalPrice: Math.round(qty * i.price * 100) / 100,
-            }
-          : i,
-      ),
-    );
-  };
-
-  // Sum line totals and round to avoid floating-point drift
-  const cartTotal =
-    Math.round(cart.reduce((s, i) => s + i.totalPrice, 0) * 100) / 100;
-  const cartQty = (id: string) => cart.find((i) => i.id === id)?.quantity ?? 0;
-
-  // ─── PLACE ORDER ──────────────────────────────────────────────────────────
-  const placeOrder = async () => {
-    if (!cart.length) return;
-    setPlacing(true);
-    try {
-      const token = getStoredToken();
-      const payload = {
-        items: cart.map((i) => ({
-          ingredientId: i.id,
-          name: i.name,
-          unit: 'pcs',
-          quantity: i.quantity,
-          pricePerUnit: i.price,
-          totalPrice: i.totalPrice,
-        })),
-        totalAmount: cartTotal,
-      };
-      const res = await fetch('http://localhost:3000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token ?? ''}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      const data = (await res.json()) as { success: boolean; message: string };
-      if (res.ok && data.success) {
-        setCart([]);
-        setToast('Admin is now processing your order.');
-        setTab('history');
-        void fetchOrders();
-      }
-    } catch {
-      /**/
-    } finally {
-      setPlacing(false);
-    }
-  };
-
-  // ─── FILTER ───────────────────────────────────────────────────────────────
-  const allCategories = [
-    'All',
-    ...Array.from(new Set(products.map((p) => p.category))),
-  ];
-  const filtered = products.filter(
-    (p) =>
-      (categoryFilter === 'All' || p.category === categoryFilter) &&
-      p.name.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  const navItems = [
-    { name: 'Dashboard', icon: '⊞', route: '/owner/dashboard' },
-    { name: 'Products', icon: '📦', route: '/owner/products' },
-    { name: 'Orders', icon: '🛒', route: '/owner/orders' },
-  ];
-
-  // ─── RENDER ───────────────────────────────────────────────────────────────
   return (
-    <>
-      {toast && <SuccessToast message={toast} onClose={() => setToast('')} />}
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',
+        overflow: 'hidden',
+        fontFamily: "'Poppins', system-ui, sans-serif",
+        background: PAGE_BG,
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fredoka:wght@600;700&family=JetBrains+Mono:wght@500&display=swap');
+        * { box-sizing: border-box; }
+
+        .order-row { transition: background .15s, border-left .15s; cursor: pointer; }
+        .order-row:hover { background: ${C.rowHover} !important; }
+
+        .pill { transition: all .15s; border: none; cursor: pointer; }
+        .pill:hover { opacity: .85; }
+
+        .hdr-btn { transition: all .13s; border: none; cursor: pointer; }
+        .hdr-btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+        .hdr-btn:active { transform: translateY(0); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(100,67,33,.22); border-radius: 99px; }
+
+        @media (max-width: 860px) {
+          .tbl-head { display: none !important; }
+          .tbl-row  { grid-template-columns: 1fr !important; gap: 6px !important; }
+          .main-pad { padding: 14px !important; }
+        }
+        @media (max-width: 580px) {
+          .filter-row { overflow-x: auto; flex-wrap: nowrap !important; padding-bottom: 4px; }
+        }
+      `}</style>
+
+      <OwnerSidebar
+        activeNav="My Orders"
+        userName={user.fullName}
+        userRole={role}
+        onCreateAccount={isFranchiseOwner ? () => {} : undefined}
+      />
 
       <div
         style={{
+          flex: 1,
           display: 'flex',
-          height: '100vh',
-          background: C.bg,
+          flexDirection: 'column',
           overflow: 'hidden',
-          fontFamily: "'Segoe UI',system-ui,sans-serif",
+          minWidth: 0,
         }}
       >
-        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-        <aside
+        {/* ── Header ── */}
+        <header
           style={{
-            width: 72,
-            background: `linear-gradient(180deg,${C.brownDarker},${C.brownDark})`,
-            display: 'flex',
-            flexDirection: 'column',
+            background: 'rgba(255,255,255,0.70)',
+            backdropFilter: 'blur(18px)',
+            WebkitBackdropFilter: 'blur(18px)',
+            borderBottom: `3px solid ${C.yellow}`,
+            height: 68,
             flexShrink: 0,
-            boxShadow: '4px 0 24px rgba(62,26,0,.18)',
-            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 28px',
+            justifyContent: 'space-between',
+            boxShadow: '0 2px 14px rgba(34,100,34,.10)',
           }}
         >
-          <div
-            style={{
-              padding: '20px 14px',
-              borderBottom: '1px solid rgba(245,200,66,.2)',
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
+          <div>
             <div
               style={{
-                width: 44,
-                height: 44,
-                background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                borderRadius: 14,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
+                fontFamily: "'Fredoka', sans-serif",
+                fontWeight: 700,
+                fontSize: 20,
+                color: C.brownMid,
+                lineHeight: 1.1,
               }}
             >
-              🥭
+              My Orders
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: C.textGreen,
+                fontWeight: 600,
+                marginTop: 2,
+              }}
+            >
+              {meta.label} · {user.branchId ?? 'Your Branch'}
             </div>
           </div>
-          <nav
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="hdr-btn"
+              onClick={() => router.push('/owner/products')}
+              style={{
+                padding: '9px 20px',
+                borderRadius: 10,
+                background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                color: C.brown,
+                fontWeight: 700,
+                fontSize: 13,
+                boxShadow: '0 3px 10px rgba(255,140,0,.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Place New Order
+            </button>
+            <button
+              className="hdr-btn"
+              onClick={() => {
+                clearAuth();
+                router.replace('/login');
+              }}
+              style={{
+                padding: '9px 18px',
+                borderRadius: 10,
+                background: `linear-gradient(135deg,${C.brownMid},${C.brown})`,
+                color: C.yellow,
+                fontWeight: 700,
+                fontSize: 13,
+                border: '2px solid rgba(255,225,53,.30)',
+              }}
+            >
+              Sign Out
+            </button>
+          </div>
+        </header>
+
+        {/* ── Body ── */}
+        <main
+          className="main-pad"
+          style={{ flex: 1, overflowY: 'auto', padding: '22px 26px' }}
+        >
+          {/* ── Filter pills ── */}
+          <div
+            className="filter-row"
             style={{
-              flex: 1,
-              padding: '16px 10px',
               display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
+              gap: 6,
+              flexWrap: 'wrap',
+              marginBottom: 18,
             }}
           >
-            {navItems.map((item) => {
-              const active = item.name === 'Orders';
+            {ALL_STATUSES.map((s) => {
+              const active = filter === s;
+              const m = STATUS_META[s];
+              const count =
+                s === 'all'
+                  ? orders.length
+                  : orders.filter((o) => o.status === s).length;
               return (
                 <button
-                  key={item.name}
-                  onClick={() => router.push(item.route)}
-                  title={item.name}
+                  key={s}
+                  className="pill"
+                  onClick={() => setFilter(s)}
                   style={{
-                    width: '100%',
-                    padding: '11px 0',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    borderRadius: 12,
-                    border: 'none',
-                    cursor: 'pointer',
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontWeight: 700,
+                    fontSize: 12,
                     background: active
-                      ? `linear-gradient(90deg,${C.yellow},${C.orange})`
-                      : 'transparent',
-                    color: active ? C.brownDarker : 'rgba(245,200,66,.65)',
-                    marginBottom: 3,
-                    fontSize: 18,
-                    transition: 'all .18s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!active)
-                      e.currentTarget.style.background = 'rgba(245,200,66,.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!active)
-                      e.currentTarget.style.background = 'transparent';
+                      ? s === 'all'
+                        ? `linear-gradient(135deg,${C.yellow},${C.orange})`
+                        : m.bg
+                      : 'rgba(255,255,255,0.60)',
+                    color: active
+                      ? s === 'all'
+                        ? C.brown
+                        : m.color
+                      : C.brownMid,
+                    border: `1.5px solid ${active ? (s === 'all' ? C.orange : m.dot + '70') : 'rgba(255,255,255,0.55)'}`,
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: active ? C.shadow : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
                   }}
                 >
-                  {item.icon}
+                  {s === 'all' ? 'All Orders' : m.label}
+                  <span
+                    style={{
+                      minWidth: 18,
+                      textAlign: 'center',
+                      padding: '0 5px',
+                      borderRadius: 10,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      background: active
+                        ? s === 'all'
+                          ? 'rgba(74,37,17,.18)'
+                          : m.dot + '28'
+                        : 'rgba(100,67,33,.10)',
+                      color: active
+                        ? s === 'all'
+                          ? C.brown
+                          : m.color
+                        : C.muted,
+                    }}
+                  >
+                    {count}
+                  </span>
                 </button>
               );
             })}
-          </nav>
-          <div
-            style={{
-              padding: '14px 10px',
-              borderTop: '1px solid rgba(245,200,66,.2)',
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                background: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 700,
-              }}
-              title={user.fullName}
-            >
-              {user.fullName?.charAt(0).toUpperCase()}
-            </div>
           </div>
-        </aside>
 
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            minWidth: 0,
-          }}
-        >
-          {/* ── Header ───────────────────────────────────────────────────── */}
-          <header
-            style={{
-              background: '#fff',
-              borderBottom: `3px solid ${C.yellow}`,
-              padding: '0 28px',
-              height: 70,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexShrink: 0,
-              boxShadow: '0 2px 12px rgba(0,0,0,.07)',
-            }}
-          >
-            <div>
-              <div
-                style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
-              >
-                Order Products
-              </div>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: C.green,
-                  fontWeight: 600,
-                  marginTop: 1,
-                }}
-              >
-                {meta.emoji} {meta.label} · {user.branchId ?? 'Your Branch'}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {cart.length > 0 && (
-                <div
-                  style={{
-                    padding: '7px 14px',
-                    borderRadius: 10,
-                    background: `${C.orange}18`,
-                    border: `1.5px solid ${C.orange}`,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: C.orange,
-                  }}
-                >
-                  🛒 {cart.length} item{cart.length > 1 ? 's' : ''} ·{' '}
-                  {formatPHP(cartTotal)}
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  clearAuth();
-                  router.replace('/login');
-                }}
-                style={{
-                  padding: '9px 20px',
-                  background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
-                  color: C.yellow,
-                  border: '2px solid rgba(245,200,66,.4)',
-                  borderRadius: 10,
-                  fontWeight: 700,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
-          </header>
-
-          <main
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: 28,
-              background: C.bg,
-            }}
-          >
-            {/* Tabs */}
+          {/* ── Table ── */}
+          {loading ? (
             <div
               style={{
-                display: 'flex',
-                gap: 4,
-                marginBottom: 22,
-                background: '#fff',
-                borderRadius: 12,
-                padding: 4,
-                boxShadow: '0 2px 10px rgba(0,0,0,.06)',
-                width: 'fit-content',
+                background: C.card,
+                backdropFilter: 'blur(12px)',
+                borderRadius: 16,
+                border: `1.5px solid ${C.cardBorder}`,
+                padding: '64px 24px',
+                textAlign: 'center',
+                color: C.muted,
+                fontSize: 14,
+                fontWeight: 500,
+                boxShadow: C.shadow,
               }}
             >
-              {(['order', 'history'] as const).map((t) => (
+              Loading your orders…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div
+              style={{
+                background: C.card,
+                backdropFilter: 'blur(12px)',
+                borderRadius: 16,
+                border: `1.5px solid ${C.cardBorder}`,
+                padding: '64px 24px',
+                textAlign: 'center',
+                boxShadow: C.shadow,
+              }}
+            >
+              <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 15,
+                  color: C.brown,
+                  marginBottom: 6,
+                }}
+              >
+                {filter === 'all'
+                  ? 'No orders yet'
+                  : `No ${STATUS_META[filter]?.label ?? filter} orders`}
+              </div>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 20 }}>
+                {filter === 'all'
+                  ? 'Your order history will appear here once you place an order.'
+                  : 'Try a different filter.'}
+              </div>
+              {filter === 'all' && (
                 <button
-                  key={t}
-                  onClick={() => setTab(t)}
+                  className="hdr-btn"
+                  onClick={() => router.push('/owner/products')}
                   style={{
-                    padding: '8px 22px',
-                    borderRadius: 9,
-                    border: 'none',
-                    cursor: 'pointer',
+                    padding: '10px 24px',
+                    borderRadius: 10,
+                    background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                    color: C.brown,
                     fontWeight: 700,
                     fontSize: 13,
-                    background:
-                      tab === t
-                        ? `linear-gradient(135deg,${C.yellow},${C.orange})`
-                        : 'transparent',
-                    color: tab === t ? C.brownDarker : C.brownDark,
-                    transition: 'all .18s',
+                    boxShadow: '0 3px 12px rgba(255,140,0,.25)',
                   }}
                 >
-                  {t === 'order' ? '🛒 Place Order' : '📋 Order History'}
+                  Place Your First Order
                 </button>
-              ))}
+              )}
             </div>
-
-            {/* ══ ORDER TAB ══════════════════════════════════════════════════ */}
-            {tab === 'order' && (
+          ) : (
+            <div
+              style={{
+                background: C.card,
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                borderRadius: 16,
+                border: `2px solid ${C.yellowBorder}`,
+                overflow: 'hidden',
+                boxShadow: C.shadowMd,
+              }}
+            >
+              {/* Table head */}
               <div
+                className="tbl-head"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 340px',
-                  gap: 20,
-                  height: 'calc(100vh - 200px)',
+                  gridTemplateColumns: COLS,
+                  padding: '12px 20px',
+                  background: `linear-gradient(90deg,${C.brown},${C.brownMid})`,
+                  gap: 12,
                 }}
               >
-                {/* Left: Product catalog */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 14,
-                    minWidth: 0,
-                  }}
-                >
-                  {/* Filters */}
-                  <div
-                    style={{
-                      background: '#fff',
-                      borderRadius: 14,
-                      padding: '14px 18px',
-                      boxShadow: '0 2px 10px rgba(0,0,0,.06)',
-                      display: 'flex',
-                      gap: 10,
-                      flexWrap: 'wrap',
-                      alignItems: 'center',
-                    }}
-                  >
+                {['Order ID', 'Items', 'Total', 'Status', 'Date', ''].map(
+                  (col) => (
                     <div
-                      style={{ position: 'relative', flex: 1, minWidth: 180 }}
-                    >
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search products…"
-                        style={{
-                          width: '100%',
-                          paddingLeft: 34,
-                          paddingRight: 12,
-                          paddingTop: 8,
-                          paddingBottom: 8,
-                          borderRadius: 10,
-                          border: '1.5px solid #E5D9C8',
-                          background: '#FDFAF4',
-                          fontSize: 13,
-                          outline: 'none',
-                          color: C.brownDarker,
-                          boxSizing: 'border-box',
-                        }}
-                        onFocus={(e) => (e.target.style.borderColor = C.yellow)}
-                        onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                      {allCategories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setCategoryFilter(cat)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: 8,
-                            border: `1.5px solid ${categoryFilter === cat ? C.orange : '#E5D9C8'}`,
-                            background:
-                              categoryFilter === cat
-                                ? '#FFF0D9'
-                                : 'transparent',
-                            color:
-                              categoryFilter === cat
-                                ? C.brownDarker
-                                : C.brownDark,
-                            fontWeight: categoryFilter === cat ? 800 : 600,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Error */}
-                  {productError && (
-                    <div
+                      key={col}
                       style={{
-                        padding: '14px 18px',
-                        background: '#FFEBEE',
-                        borderRadius: 12,
-                        border: '1.5px solid #EF9A9A',
-                        color: '#C62828',
-                        fontWeight: 600,
-                        fontSize: 13,
-                        display: 'flex',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        color: C.yellow,
+                        textTransform: 'uppercase',
+                        letterSpacing: '.08em',
+                      }}
+                    >
+                      {col}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {/* Rows */}
+              {filtered.map((order, idx) => {
+                const isOpen = expanded === order.id;
+                return (
+                  <div key={order.id}>
+                    <div
+                      className="order-row tbl-row"
+                      onClick={() => setExpanded(isOpen ? null : order.id)}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: COLS,
+                        padding: '15px 20px',
+                        gap: 12,
                         alignItems: 'center',
-                        gap: 10,
+                        background: isOpen ? C.rowExpanded : C.rowBg,
+                        borderBottom:
+                          idx < filtered.length - 1 || isOpen
+                            ? `1px solid ${C.rowDivider}`
+                            : 'none',
+                        borderLeft: isOpen
+                          ? `3px solid ${C.orange}`
+                          : '3px solid transparent',
                       }}
                     >
-                      ⚠️ {productError}
-                      <button
-                        onClick={() => void fetchProducts()}
-                        style={{
-                          marginLeft: 'auto',
-                          padding: '6px 14px',
-                          borderRadius: 8,
-                          border: 'none',
-                          background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                          color: C.brownDarker,
-                          fontWeight: 700,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Retry
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Loading */}
-                  {loadingProducts && (
-                    <div
-                      style={{
-                        padding: 48,
-                        textAlign: 'center',
-                        color: '#AAA',
-                        fontSize: 13,
-                      }}
-                    >
-                      Loading products from HQ…
-                    </div>
-                  )}
-
-                  {/* Product grid */}
-                  {!loadingProducts && !productError && (
-                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                      {/* Order ID */}
                       <div
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns:
-                            'repeat(auto-fill,minmax(170px,1fr))',
-                          gap: 12,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          fontWeight: 500,
+                          fontSize: 12,
+                          color: C.brownMid,
                         }}
                       >
-                        {filtered.map((product) => {
-                          const qty = cartQty(product.id);
-                          const unitPrice = toNum(product.price);
-                          const outOfStock = product.status === 'Out of Stock';
-                          return (
-                            <div
-                              key={product.id}
-                              style={{
-                                background: '#fff',
-                                borderRadius: 16,
-                                overflow: 'hidden',
-                                border: `2px solid ${qty > 0 ? C.yellow : outOfStock ? '#FFCDD2' : '#F0E8D8'}`,
-                                boxShadow:
-                                  qty > 0
-                                    ? '0 4px 16px rgba(245,200,66,.2)'
-                                    : '0 2px 8px rgba(0,0,0,.06)',
-                                opacity: outOfStock ? 0.7 : 1,
-                                transition: 'border .2s',
-                              }}
-                            >
-                              {/* Thumbnail */}
-                              <div
-                                style={{
-                                  height: 72,
-                                  background: outOfStock
-                                    ? '#F5F5F5'
-                                    : 'linear-gradient(135deg,#F2EAD8,#EFE0C8)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  position: 'relative',
-                                  overflow: 'hidden',
-                                }}
-                              >
-                                {product.image &&
-                                (product.image.startsWith('http') ||
-                                  product.image.startsWith('data:')) ? (
-                                  <img
-                                    src={product.image}
-                                    alt={product.name}
-                                    style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      objectFit: 'cover',
-                                    }}
-                                  />
-                                ) : (
-                                  <span style={{ fontSize: 36 }}>
-                                    {product.image || '📦'}
-                                  </span>
-                                )}
-                                {outOfStock && (
-                                  <div
-                                    style={{
-                                      position: 'absolute',
-                                      inset: 0,
-                                      background: 'rgba(0,0,0,.3)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <span
-                                      style={{
-                                        color: '#fff',
-                                        fontWeight: 800,
-                                        fontSize: 10,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '.05em',
-                                      }}
-                                    >
-                                      Out of Stock
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                              {/* Info */}
-                              <div style={{ padding: '10px 12px' }}>
-                                <div
-                                  style={{
-                                    fontSize: 9,
-                                    fontWeight: 700,
-                                    color: C.orange,
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '.1em',
-                                    marginBottom: 2,
-                                  }}
-                                >
-                                  {product.category}
-                                </div>
-                                <div
-                                  style={{
-                                    fontWeight: 800,
-                                    fontSize: 12,
-                                    color: C.brownDarker,
-                                    marginBottom: 4,
-                                    lineHeight: 1.3,
-                                  }}
-                                >
-                                  {product.name}
-                                </div>
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    marginBottom: 8,
-                                  }}
-                                >
-                                  <span
-                                    style={{
-                                      fontWeight: 900,
-                                      fontSize: 15,
-                                      color: C.brownDarker,
-                                    }}
-                                  >
-                                    {formatPHP(unitPrice)}
-                                  </span>
-                                  <span
-                                    style={{
-                                      fontSize: 10,
-                                      color:
-                                        product.stock <= 10
-                                          ? '#CC7000'
-                                          : '#AAA',
-                                    }}
-                                  >
-                                    {product.stock <= 10 && product.stock > 0
-                                      ? `⚠️ ${product.stock} left`
-                                      : outOfStock
-                                        ? '🚫'
-                                        : `${product.stock} in stock`}
-                                  </span>
-                                </div>
+                        #{order.id.slice(-8).toUpperCase()}
+                      </div>
 
-                                {/* Add / qty controls */}
-                                {outOfStock ? (
-                                  <div
-                                    style={{
-                                      width: '100%',
-                                      padding: '7px 0',
-                                      borderRadius: 9,
-                                      background: '#F5F5F5',
-                                      color: '#AAA',
-                                      fontWeight: 700,
-                                      fontSize: 12,
-                                      textAlign: 'center',
-                                    }}
-                                  >
-                                    Unavailable
-                                  </div>
-                                ) : qty === 0 ? (
-                                  <button
-                                    onClick={() => addToCart(product)}
-                                    style={{
-                                      width: '100%',
-                                      padding: '7px 0',
-                                      borderRadius: 9,
-                                      border: 'none',
-                                      background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                                      color: C.brownDarker,
-                                      fontWeight: 700,
-                                      fontSize: 12,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    + Add
-                                  </button>
-                                ) : (
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 6,
-                                    }}
-                                  >
-                                    <button
-                                      onClick={() =>
-                                        updateQty(product.id, qty - 1)
-                                      }
-                                      style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: 8,
-                                        border: `1.5px solid ${C.orange}`,
-                                        background: '#FFF0D9',
-                                        color: C.brownDarker,
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      −
-                                    </button>
-                                    <span
-                                      style={{
-                                        flex: 1,
-                                        textAlign: 'center',
-                                        fontWeight: 800,
-                                        fontSize: 14,
-                                        color: C.brownDarker,
-                                      }}
-                                    >
-                                      {qty}
-                                    </span>
-                                    <button
-                                      onClick={() =>
-                                        updateQty(product.id, qty + 1)
-                                      }
-                                      style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: 8,
-                                        border: `1.5px solid ${C.orange}`,
-                                        background: '#FFF0D9',
-                                        color: C.brownDarker,
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {filtered.length === 0 && (
-                          <div
+                      {/* Items */}
+                      <div
+                        style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}
+                      >
+                        {order.items.slice(0, 3).map((item, i) => (
+                          <span
+                            key={i}
                             style={{
-                              gridColumn: '1 / -1',
-                              padding: 48,
-                              textAlign: 'center',
-                              color: '#AAA',
-                              fontSize: 13,
+                              padding: '3px 9px',
+                              borderRadius: 20,
+                              background: 'rgba(200,238,170,0.50)',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: '#2e6010',
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            No products found
-                          </div>
+                            {item.name} ×{item.quantity}
+                          </span>
+                        ))}
+                        {order.items.length > 3 && (
+                          <span
+                            style={{
+                              padding: '3px 9px',
+                              borderRadius: 20,
+                              background: 'rgba(100,67,33,.08)',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: C.muted,
+                            }}
+                          >
+                            +{order.items.length - 3} more
+                          </span>
                         )}
                       </div>
-                    </div>
-                  )}
-                </div>
 
-                {/* Right: Cart panel */}
-                <div
-                  style={{
-                    background: '#fff',
-                    borderRadius: 18,
-                    boxShadow: '0 2px 16px rgba(0,0,0,.08)',
-                    border: `2px solid ${C.yellow}30`,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {/* Cart header */}
-                  <div
-                    style={{
-                      padding: '18px 20px',
-                      borderBottom: `2px solid ${C.yellow}30`,
-                      background: `linear-gradient(90deg,${C.yellow}18,${C.orange}10)`,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 800,
-                        fontSize: 16,
-                        color: C.brownDark,
-                      }}
-                    >
-                      🛒 Your Order
-                    </div>
-                    <div style={{ fontSize: 11, color: '#AAA', marginTop: 2 }}>
-                      {cart.length === 0
-                        ? 'No items yet'
-                        : `${cart.length} item${cart.length > 1 ? 's' : ''} selected`}
-                    </div>
-                  </div>
-
-                  {/* Cart items */}
-                  <div
-                    style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}
-                  >
-                    {cart.length === 0 ? (
+                      {/* Total */}
                       <div
                         style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          height: '100%',
-                          gap: 8,
+                          fontWeight: 800,
+                          fontSize: 13,
+                          color: C.brown,
                         }}
                       >
-                        <div style={{ fontSize: 40 }}>🛒</div>
+                        {formatPHP(order.totalAmount)}
+                      </div>
+
+                      {/* Status */}
+                      <StatusBadge status={order.status} />
+
+                      {/* Date */}
+                      <div>
                         <div
                           style={{
-                            fontWeight: 700,
-                            fontSize: 13,
-                            color: C.brownDark,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: C.brown,
                           }}
                         >
-                          Cart is empty
+                          {new Date(order.createdAt).toLocaleDateString(
+                            'en-PH',
+                            { month: 'short', day: 'numeric', year: 'numeric' },
+                          )}
                         </div>
                         <div
-                          style={{
-                            fontSize: 11,
-                            color: '#AAA',
-                            textAlign: 'center',
-                          }}
+                          style={{ fontSize: 10, color: C.muted, marginTop: 2 }}
                         >
-                          Add products from the catalog
+                          {new Date(order.createdAt).toLocaleTimeString(
+                            'en-PH',
+                            { hour: '2-digit', minute: '2-digit' },
+                          )}
                         </div>
                       </div>
-                    ) : (
+
+                      {/* Chevron */}
+                      <div
+                        style={{ display: 'flex', justifyContent: 'center' }}
+                      >
+                        <Chevron open={isOpen} />
+                      </div>
+                    </div>
+
+                    {/* Expanded panel */}
+                    {isOpen && (
                       <div
                         style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 8,
+                          background: C.panelBg,
+                          borderBottom: `1px solid ${C.rowDivider}`,
+                          borderLeft: `3px solid ${C.orange}`,
+                          padding: '16px 20px 18px',
                         }}
                       >
-                        {cart.map((item) => (
-                          <div
-                            key={item.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 10,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              background: '#FDFAF4',
-                              border: '1.5px solid #F0E8D8',
-                            }}
-                          >
-                            <span style={{ fontSize: 20 }}>{item.image}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontWeight: 700,
-                                  fontSize: 12,
-                                  color: C.brownDarker,
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                }}
-                              >
-                                {item.name}
+                        <div
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 800,
+                            color: C.muted,
+                            textTransform: 'uppercase',
+                            letterSpacing: '.08em',
+                            marginBottom: 10,
+                          }}
+                        >
+                          Order Items
+                        </div>
+
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 8,
+                            marginBottom: order.adminNote ? 14 : 0,
+                          }}
+                        >
+                          {order.items.map((item, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                background: 'rgba(255,255,255,0.90)',
+                                border: '1px solid rgba(255,225,53,0.35)',
+                                borderRadius: 10,
+                                padding: '9px 14px',
+                                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                              }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: C.brown,
+                                  }}
+                                >
+                                  {item.name}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: C.muted,
+                                    marginTop: 1,
+                                  }}
+                                >
+                                  {item.quantity} {item.unit}
+                                </div>
                               </div>
                               <div
                                 style={{
-                                  fontSize: 10,
-                                  color: '#AAA',
-                                  marginTop: 1,
-                                }}
-                              >
-                                {item.quantity} × {formatPHP(item.price)}
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                              <div
-                                style={{
-                                  fontWeight: 800,
                                   fontSize: 13,
-                                  color: C.brownDarker,
+                                  fontWeight: 800,
+                                  color: C.brownMid,
                                 }}
                               >
                                 {formatPHP(item.totalPrice)}
                               </div>
-                              <button
-                                onClick={() => removeFromCart(item.id)}
+                            </div>
+                          ))}
+                        </div>
+
+                        {order.adminNote && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: 10,
+                              alignItems: 'flex-start',
+                              background: 'rgba(255,248,200,0.95)',
+                              border: '1px solid rgba(255,200,50,.50)',
+                              borderRadius: 10,
+                              padding: '10px 14px',
+                            }}
+                          >
+                            <svg
+                              width="13"
+                              height="13"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke={C.brownMid}
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              style={{ marginTop: 1, flexShrink: 0 }}
+                            >
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                            </svg>
+                            <div>
+                              <div
                                 style={{
                                   fontSize: 10,
-                                  color: '#C62828',
-                                  background: 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                  padding: 0,
+                                  fontWeight: 800,
+                                  color: C.brownMid,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '.05em',
+                                  marginBottom: 3,
                                 }}
                               >
-                                Remove
-                              </button>
+                                Admin Note
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 12,
+                                  color: C.brown,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {order.adminNote}
+                              </div>
                             </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
-
-                  {/* Cart footer — subtotals + grand total */}
-                  {cart.length > 0 && (
-                    <div
-                      style={{
-                        padding: '14px 16px',
-                        borderTop: `2px solid ${C.yellow}30`,
-                      }}
-                    >
-                      {/* Line subtotals */}
-                      <div
-                        style={{
-                          marginBottom: 8,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 3,
-                        }}
-                      >
-                        {cart.map((item) => (
-                          <div
-                            key={item.id}
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              fontSize: 11,
-                              color: '#999',
-                            }}
-                          >
-                            <span>
-                              {item.name} × {item.quantity}
-                            </span>
-                            <span>{formatPHP(item.totalPrice)}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Divider */}
-                      <div
-                        style={{
-                          height: 1,
-                          background: '#F0E8D8',
-                          margin: '8px 0',
-                        }}
-                      />
-
-                      {/* Grand total */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: 14,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontWeight: 800,
-                            fontSize: 14,
-                            color: C.brownDark,
-                          }}
-                        >
-                          Grand Total
-                        </span>
-                        <span
-                          style={{
-                            fontWeight: 900,
-                            fontSize: 20,
-                            color: C.brownDarker,
-                          }}
-                        >
-                          {formatPHP(cartTotal)}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={placeOrder}
-                        disabled={placing}
-                        style={{
-                          width: '100%',
-                          padding: '12px 0',
-                          borderRadius: 12,
-                          border: 'none',
-                          background: placing
-                            ? '#CCC'
-                            : `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-                          color: '#fff',
-                          fontWeight: 800,
-                          fontSize: 14,
-                          cursor: placing ? 'not-allowed' : 'pointer',
-                          boxShadow: '0 4px 14px rgba(61,110,39,.3)',
-                        }}
-                      >
-                        {placing ? '⏳ Placing Order…' : '✅ Place Order'}
-                      </button>
-                      <div
-                        style={{
-                          fontSize: 10,
-                          color: '#AAA',
-                          textAlign: 'center',
-                          marginTop: 8,
-                        }}
-                      >
-                        Admin will process your order after confirmation
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ══ HISTORY TAB ════════════════════════════════════════════════ */}
-            {tab === 'history' && (
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-              >
-                {loadingOrders ? (
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      padding: 60,
-                      color: '#AAA',
-                      fontSize: 14,
-                    }}
-                  >
-                    Loading orders…
-                  </div>
-                ) : orders.length === 0 ? (
-                  <div
-                    style={{
-                      background: '#fff',
-                      borderRadius: 18,
-                      padding: 60,
-                      textAlign: 'center',
-                      boxShadow: '0 2px 12px rgba(0,0,0,.07)',
-                    }}
-                  >
-                    <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: 15,
-                        color: C.brownDark,
-                        marginBottom: 6,
-                      }}
-                    >
-                      No orders yet
-                    </div>
-                    <div style={{ fontSize: 12, color: '#AAA' }}>
-                      Your order history will appear here
-                    </div>
-                    <button
-                      onClick={() => setTab('order')}
-                      style={{
-                        marginTop: 16,
-                        padding: '10px 24px',
-                        borderRadius: 10,
-                        border: 'none',
-                        background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                        color: C.brownDarker,
-                        fontWeight: 700,
-                        fontSize: 13,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Place First Order
-                    </button>
-                  </div>
-                ) : (
-                  orders.map((order) => (
-                    <div
-                      key={order.id}
-                      style={{
-                        background: '#fff',
-                        borderRadius: 16,
-                        padding: '18px 22px',
-                        boxShadow: '0 2px 12px rgba(0,0,0,.07)',
-                        border: `2px solid ${order.status === 'processing' ? C.yellow : '#F0E8D8'}`,
-                      }}
-                    >
-                      {/* Order header */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          marginBottom: 12,
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: 800,
-                              fontSize: 14,
-                              color: C.brownDarker,
-                            }}
-                          >
-                            Order #{order.id.slice(-8).toUpperCase()}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: '#AAA',
-                              marginTop: 2,
-                            }}
-                          >
-                            {new Date(order.createdAt).toLocaleDateString(
-                              'en-PH',
-                              {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              },
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                          }}
-                        >
-                          <StatusBadge status={order.status} />
-                        </div>
-                      </div>
-
-                      {/* Item breakdown */}
-                      <div
-                        style={{
-                          background: '#FDFAF4',
-                          borderRadius: 10,
-                          padding: '10px 14px',
-                          border: '1px solid #F0E8D8',
-                          marginBottom: order.adminNote ? 10 : 0,
-                        }}
-                      >
-                        {order.items.map((item, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              paddingBottom: i < order.items.length - 1 ? 6 : 0,
-                              marginBottom: i < order.items.length - 1 ? 6 : 0,
-                              borderBottom:
-                                i < order.items.length - 1
-                                  ? '1px solid #F0E8D8'
-                                  : 'none',
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 600,
-                                color: C.brownDark,
-                              }}
-                            >
-                              {item.name} × {item.quantity}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: C.brownDarker,
-                              }}
-                            >
-                              {formatPHP(item.totalPrice)}
-                            </span>
-                          </div>
-                        ))}
-                        {/* Total row */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginTop: 8,
-                            paddingTop: 8,
-                            borderTop: `2px solid ${C.yellow}50`,
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 13,
-                              fontWeight: 800,
-                              color: C.brownDark,
-                            }}
-                          >
-                            Total
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 15,
-                              fontWeight: 900,
-                              color: C.brownDarker,
-                            }}
-                          >
-                            {formatPHP(order.totalAmount)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Admin note */}
-                      {order.adminNote && (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '8px 12px',
-                            borderRadius: 10,
-                            background: '#FFFAE0',
-                            border: `1.5px solid ${C.yellow}`,
-                            marginTop: 10,
-                          }}
-                        >
-                          <span>💬</span>
-                          <span
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: C.brownDark,
-                            }}
-                          >
-                            Admin note: {order.adminNote}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </main>
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
       </div>
-    </>
+    </div>
   );
 }

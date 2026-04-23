@@ -13,368 +13,35 @@ import CreateAccountModal, {
   type CreatedAccountData,
 } from '@/components/admin/CreateAccountModal';
 import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
+import OwnerSidebar from '@/components/owner/OwnerSidebar';
 
+// ─── PALETTE — matches Products page exactly ─────────────────────────────────
 const C = {
-  brownDarker: '#3E1A00',
-  brownDark: '#6B3A2A',
-  brown: '#8B4513',
-  yellow: '#F5C842',
-  orange: '#FF8C00',
-  green: '#5A9E3A',
-  darkGreen: '#3D6E27',
-  bg: '#F2EAD8',
+  brownDarker: '#4a2511',
+  brownDark: '#654321',
+  yellow: '#ffe135',
+  orange: '#ff8c00',
+  green: '#7cb342',
+  darkGreen: '#228b22',
+  skyBlue: '#87ceeb',
+
+  // Surfaces — frosted glass over the gradient
+  card: 'rgba(255,255,255,0.72)',
+  cardBorder: 'rgba(255,255,255,0.55)',
+  cardShadow: '0 2px 14px rgba(0,80,40,0.10)',
+  panelBg: 'rgba(255,255,255,0.68)',
+  inputBg: 'rgba(255,255,255,0.85)',
+  inputBorder: 'rgba(124,179,66,0.30)',
+
+  // Text
+  textPrimary: '#4a2511',
+  textSecondary: '#654321',
+  textMuted: '#999',
+  textGreen: '#3d7a1c',
 };
 
-// ─── NAV ITEMS per role ───────────────────────────────────────────────────────
-function getNavItems(role: UserRole) {
-  const base = [
-    {
-      name: 'Dashboard',
-      route: '/owner/dashboard',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Products',
-      route: '/owner/products',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-      ),
-    },
-    {
-      name: 'My Orders',
-      route: '/owner/orders',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-      ),
-    },
-  ];
-  return base;
-}
-
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-function OwnerSidebar({
-  sidebarOpen,
-  activeNav,
-  onNav,
-  userName,
-  userRole,
-  onCreateAccount,
-}: {
-  sidebarOpen: boolean;
-  activeNav: string;
-  onNav: (route: string) => void;
-  userName: string;
-  userRole: UserRole;
-  onCreateAccount?: () => void;
-}) {
-  const navItems = getNavItems(userRole);
-  const meta = ROLE_META[userRole];
-  const isFranchiseOwner = userRole === 'franchise_owner';
-
-  return (
-    <aside
-      style={{
-        width: sidebarOpen ? 256 : 72,
-        background: `linear-gradient(180deg,${C.brownDarker} 0%,${C.brownDark} 100%)`,
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'width 0.28s cubic-bezier(.4,0,.2,1)',
-        flexShrink: 0,
-        boxShadow: '4px 0 24px rgba(62,26,0,0.18)',
-        zIndex: 10,
-      }}
-    >
-      {/* Logo */}
-      <div
-        style={{
-          padding: '24px 16px 20px',
-          borderBottom: '1px solid rgba(245,200,66,0.2)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              flexShrink: 0,
-              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-              borderRadius: 14,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 22,
-              boxShadow: '0 4px 12px rgba(255,140,0,0.4)',
-            }}
-          >
-            🥭
-          </div>
-          {sidebarOpen && (
-            <div style={{ overflow: 'hidden' }}>
-              <div
-                style={{
-                  fontWeight: 800,
-                  fontSize: 17,
-                  color: C.yellow,
-                  letterSpacing: '-0.3px',
-                  lineHeight: 1.2,
-                }}
-              >
-                Machi Mango
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(245,200,66,0.7)',
-                  fontWeight: 600,
-                  marginTop: 2,
-                }}
-              >
-                {meta.label} Portal
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav style={{ flex: 1, padding: '16px 10px', overflowY: 'auto' }}>
-        {sidebarOpen && (
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: 'rgba(245,200,66,0.35)',
-              padding: '8px 14px 6px',
-            }}
-          >
-            Main Menu
-          </div>
-        )}
-        {navItems.map((item) => {
-          const active = activeNav === item.name;
-          return (
-            <button
-              key={item.name}
-              onClick={() => onNav(item.route)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: sidebarOpen ? '11px 14px' : '11px 0',
-                justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                borderRadius: 12,
-                marginBottom: 3,
-                border: 'none',
-                cursor: 'pointer',
-                background: active
-                  ? `linear-gradient(90deg,${C.yellow},${C.orange})`
-                  : 'transparent',
-                color: active ? C.brownDarker : 'rgba(245,200,66,0.65)',
-                fontWeight: active ? 700 : 500,
-                fontSize: 13.5,
-                boxShadow: active ? '0 4px 14px rgba(255,140,0,0.3)' : 'none',
-                transition: 'all 0.18s ease',
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'rgba(245,200,66,0.1)';
-                  e.currentTarget.style.color = C.yellow;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'rgba(245,200,66,0.65)';
-                }
-              }}
-            >
-              <span
-                style={{
-                  flexShrink: 0,
-                  color: active ? C.brownDarker : 'inherit',
-                }}
-              >
-                {item.icon}
-              </span>
-              {sidebarOpen && (
-                <span style={{ flex: 1, textAlign: 'left' }}>{item.name}</span>
-              )}
-            </button>
-          );
-        })}
-
-        {/* Franchise Owner gets Create Account */}
-        {isFranchiseOwner && onCreateAccount && (
-          <>
-            {sidebarOpen && (
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  color: 'rgba(245,200,66,0.35)',
-                  padding: '14px 14px 6px',
-                }}
-              >
-                Administration
-              </div>
-            )}
-            <button
-              onClick={onCreateAccount}
-              style={{
-                width: sidebarOpen ? '100%' : 42,
-                margin: sidebarOpen ? '4px 0 8px' : '4px auto 8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                gap: 10,
-                padding: sidebarOpen ? '12px 14px' : '11px 0',
-                borderRadius: 13,
-                border: '2px dashed rgba(245,200,66,0.4)',
-                background: 'rgba(245,200,66,0.07)',
-                color: C.yellow,
-                fontWeight: 700,
-                fontSize: 13.5,
-                cursor: 'pointer',
-                transition: 'all .2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(245,200,66,0.15)';
-                e.currentTarget.style.borderColor = C.yellow;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(245,200,66,0.07)';
-                e.currentTarget.style.borderColor = 'rgba(245,200,66,0.4)';
-              }}
-              title="Create Account"
-            >
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  flexShrink: 0,
-                  background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: C.brownDarker,
-                  fontSize: 17,
-                  fontWeight: 800,
-                }}
-              >
-                +
-              </div>
-              {sidebarOpen && <span>Create Account</span>}
-            </button>
-          </>
-        )}
-      </nav>
-
-      {/* User card */}
-      <div
-        style={{
-          padding: '14px 10px',
-          borderTop: '1px solid rgba(245,200,66,0.2)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px 12px',
-            borderRadius: 12,
-            background: 'rgba(255,255,255,0.06)',
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              flexShrink: 0,
-              background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 15,
-            }}
-          >
-            {userName.charAt(0).toUpperCase()}
-          </div>
-          {sidebarOpen && (
-            <div style={{ overflow: 'hidden' }}>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 13,
-                  color: C.yellow,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {userName}
-              </div>
-              <div
-                style={{
-                  fontSize: 11,
-                  color: 'rgba(245,200,66,0.6)',
-                  marginTop: 1,
-                }}
-              >
-                {meta.emoji} {meta.label}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </aside>
-  );
-}
+const PAGE_BG =
+  'linear-gradient(180deg, #87ceeb 0%, #98d8e8 18%, #c8eeaa 42%, #a8dc7a 68%, #7cb342 100%)';
 
 // ─── ORDER STATUS BADGE ───────────────────────────────────────────────────────
 const STATUS_META: Record<
@@ -446,7 +113,6 @@ function StatusBadge({ status }: { status: string }) {
 export default function OwnerDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -504,7 +170,6 @@ export default function OwnerDashboard() {
   const branchLabel =
     user.branchId ?? (isFranchiseOwner ? 'All Branches' : 'Your Branch');
 
-  const handleNav = (route: string) => router.push(route);
   const handleAccountCreated = (data: CreatedAccountData) => {
     setCreatedAccount(data);
     setCreateModal(false);
@@ -515,7 +180,6 @@ export default function OwnerDashboard() {
     setTimeout(() => setCreateModal(true), 320);
   };
 
-  // Stats derived from real orders
   const totalOrders = recentOrders.length;
   const pendingOrders = recentOrders.filter(
     (o) => o.status === 'pending',
@@ -588,15 +252,15 @@ export default function OwnerDashboard() {
         style={{
           display: 'flex',
           height: '100vh',
-          background: C.bg,
+          background: PAGE_BG,
+          backgroundAttachment: 'fixed',
           overflow: 'hidden',
-          fontFamily: "'Segoe UI',system-ui,sans-serif",
+          fontFamily: "'Poppins', system-ui, sans-serif",
         }}
       >
+        {/* ── Shared Sidebar ── */}
         <OwnerSidebar
-          sidebarOpen={sidebarOpen}
           activeNav="Dashboard"
-          onNav={handleNav}
           userName={user.fullName}
           userRole={role}
           onCreateAccount={
@@ -613,10 +277,12 @@ export default function OwnerDashboard() {
             minWidth: 0,
           }}
         >
-          {/* Header */}
+          {/* ── Header ── */}
           <header
             style={{
-              background: '#fff',
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               borderBottom: `3px solid ${C.yellow}`,
               padding: '0 28px',
               height: 70,
@@ -624,44 +290,10 @@ export default function OwnerDashboard() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
-              boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+              boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <button
-                onClick={() => setSidebarOpen((v) => !v)}
-                style={{
-                  border: '2px solid transparent',
-                  borderRadius: 10,
-                  padding: '7px 9px',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 4,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${C.yellow}22`;
-                  e.currentTarget.style.borderColor = C.yellow;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
-              >
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    style={{
-                      display: 'block',
-                      width: 20,
-                      height: 2.5,
-                      background: C.brown,
-                      borderRadius: 2,
-                    }}
-                  />
-                ))}
-              </button>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div
@@ -669,6 +301,7 @@ export default function OwnerDashboard() {
                       fontWeight: 800,
                       fontSize: 19,
                       color: C.brownDark,
+                      fontFamily: "'Fredoka', sans-serif",
                     }}
                   >
                     {meta.emoji} {meta.label} Dashboard
@@ -692,7 +325,7 @@ export default function OwnerDashboard() {
                 <div
                   style={{
                     fontSize: 12,
-                    color: C.green,
+                    color: C.textGreen,
                     fontWeight: 600,
                     marginTop: 1,
                   }}
@@ -711,7 +344,7 @@ export default function OwnerDashboard() {
                 style={{
                   padding: '7px 14px',
                   borderRadius: 10,
-                  background: '#E8F5E1',
+                  background: 'rgba(200,238,170,0.5)',
                   border: `1.5px solid ${C.green}`,
                   fontSize: 11,
                   fontWeight: 700,
@@ -729,7 +362,7 @@ export default function OwnerDashboard() {
                   padding: '9px 20px',
                   background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
                   color: C.yellow,
-                  border: '2px solid rgba(245,200,66,.4)',
+                  border: '2px solid rgba(255,225,53,.35)',
                   borderRadius: 10,
                   fontWeight: 700,
                   fontSize: 13,
@@ -739,7 +372,7 @@ export default function OwnerDashboard() {
                   (e.currentTarget.style.borderColor = C.yellow)
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.borderColor = 'rgba(245,200,66,.4)')
+                  (e.currentTarget.style.borderColor = 'rgba(255,225,53,.35)')
                 }
               >
                 Sign Out
@@ -747,13 +380,13 @@ export default function OwnerDashboard() {
             </div>
           </header>
 
-          {/* Body */}
+          {/* ── Body ── */}
           <main
             style={{
               flex: 1,
               overflowY: 'auto',
               padding: 28,
-              background: C.bg,
+              background: 'transparent',
             }}
           >
             {/* Welcome Banner */}
@@ -763,10 +396,11 @@ export default function OwnerDashboard() {
                 borderRadius: 18,
                 padding: '24px 32px',
                 marginBottom: 24,
-                border: '2px solid rgba(245,200,66,.2)',
+                border: '2px solid rgba(255,225,53,.20)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                boxShadow: '0 4px 20px rgba(74,37,17,0.25)',
               }}
             >
               <div>
@@ -776,7 +410,7 @@ export default function OwnerDashboard() {
                 <div
                   style={{
                     fontSize: 13,
-                    color: 'rgba(245,200,66,.7)',
+                    color: 'rgba(255,225,53,.7)',
                     marginTop: 4,
                   }}
                 >
@@ -831,33 +465,36 @@ export default function OwnerDashboard() {
               {[
                 {
                   label: 'Total Orders',
-                  value: totalOrders,
-                  icon: '📋',
                   grad: `linear-gradient(135deg,${C.orange},#CC7000)`,
+                  value: totalOrders,
                   note: 'All time',
                 },
                 {
                   label: 'Pending Orders',
-                  value: pendingOrders,
-                  icon: '⏳',
                   grad: `linear-gradient(135deg,#FF8C00,#E65100)`,
+                  value: pendingOrders,
                   note: 'Awaiting HQ',
                 },
                 {
                   label: 'Delivered',
-                  value: deliveredOrders,
-                  icon: '✅',
                   grad: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
+                  value: deliveredOrders,
                   note: 'Completed',
                 },
               ].map((card, i) => (
                 <div
                   key={i}
                   style={{
-                    background: '#fff',
+                    background: C.card,
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
                     borderRadius: 16,
-                    padding: '22px 22px 18px',
-                    boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+                    padding: '22px',
+                    boxShadow: C.cardShadow,
+                    border: `1.5px solid ${C.cardBorder}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     opacity: loaded ? 1 : 0,
                     transform: loaded ? 'translateY(0)' : 'translateY(14px)',
                     transition: `opacity .4s ${i * 0.08}s, transform .4s ${i * 0.08}s`,
@@ -866,61 +503,54 @@ export default function OwnerDashboard() {
                     (e.currentTarget as HTMLElement).style.transform =
                       'translateY(-3px)';
                     (e.currentTarget as HTMLElement).style.boxShadow =
-                      '0 8px 24px rgba(0,0,0,.11)';
+                      '0 8px 24px rgba(0,80,40,0.16)';
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLElement).style.transform =
                       'translateY(0)';
                     (e.currentTarget as HTMLElement).style.boxShadow =
-                      '0 2px 12px rgba(0,0,0,.07)';
+                      C.cardShadow;
                   }}
                 >
                   <div
                     style={{
-                      width: 46,
-                      height: 46,
-                      borderRadius: 13,
-                      background: card.grad,
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 20,
-                      marginBottom: 14,
-                      boxShadow: '0 4px 10px rgba(0,0,0,.15)',
+                      textAlign: 'center',
+                      gap: 4,
                     }}
                   >
-                    {card.icon}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: C.brownDark,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {card.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 30,
-                      fontWeight: 900,
-                      color: C.brownDarker,
-                      letterSpacing: '-0.5px',
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {loadingOrders ? '—' : card.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: '#AAA',
-                      fontWeight: 600,
-                      marginTop: 4,
-                    }}
-                  >
-                    {card.note}
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: C.brownDark,
+                      }}
+                    >
+                      {card.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 30,
+                        fontWeight: 900,
+                        color: C.brownDarker,
+                        letterSpacing: '-0.5px',
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {loadingOrders ? '—' : card.value}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: C.textMuted,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {card.note}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -937,10 +567,13 @@ export default function OwnerDashboard() {
               {/* Quick Actions */}
               <div
                 style={{
-                  background: '#fff',
+                  background: C.panelBg,
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
                   borderRadius: 16,
                   padding: '22px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+                  boxShadow: C.cardShadow,
+                  border: `1.5px solid ${C.cardBorder}`,
                 }}
               >
                 <div
@@ -949,6 +582,7 @@ export default function OwnerDashboard() {
                     fontSize: 16,
                     color: C.brownDark,
                     marginBottom: 16,
+                    fontFamily: "'Fredoka', sans-serif",
                   }}
                 >
                   Quick Actions
@@ -966,8 +600,8 @@ export default function OwnerDashboard() {
                         gap: 14,
                         padding: '14px 16px',
                         borderRadius: 12,
-                        border: '1.5px solid #E5D9C8',
-                        background: '#FDFAF4',
+                        border: `1.5px solid rgba(255,255,255,0.55)`,
+                        background: 'rgba(255,255,255,0.50)',
                         cursor: 'pointer',
                         textAlign: 'left',
                         opacity: loaded ? 1 : 0,
@@ -980,15 +614,15 @@ export default function OwnerDashboard() {
                         (e.currentTarget as HTMLElement).style.borderColor =
                           C.yellow;
                         (e.currentTarget as HTMLElement).style.background =
-                          '#FFFAE0';
+                          'rgba(255,225,53,0.15)';
                         (e.currentTarget as HTMLElement).style.transform =
                           'translateX(4px)';
                       }}
                       onMouseLeave={(e) => {
                         (e.currentTarget as HTMLElement).style.borderColor =
-                          '#E5D9C8';
+                          'rgba(255,255,255,0.55)';
                         (e.currentTarget as HTMLElement).style.background =
-                          '#FDFAF4';
+                          'rgba(255,255,255,0.50)';
                         (e.currentTarget as HTMLElement).style.transform =
                           'translateX(0)';
                       }}
@@ -1020,7 +654,11 @@ export default function OwnerDashboard() {
                           {action.label}
                         </div>
                         <div
-                          style={{ fontSize: 11, color: '#AAA', marginTop: 2 }}
+                          style={{
+                            fontSize: 11,
+                            color: C.textMuted,
+                            marginTop: 2,
+                          }}
                         >
                           {action.desc}
                         </div>
@@ -1044,10 +682,13 @@ export default function OwnerDashboard() {
               {/* Access Level */}
               <div
                 style={{
-                  background: '#fff',
+                  background: C.panelBg,
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
                   borderRadius: 16,
                   padding: '22px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+                  boxShadow: C.cardShadow,
+                  border: `1.5px solid ${C.cardBorder}`,
                 }}
               >
                 <div
@@ -1059,6 +700,7 @@ export default function OwnerDashboard() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
+                    fontFamily: "'Fredoka', sans-serif",
                   }}
                 >
                   <svg
@@ -1119,8 +761,10 @@ export default function OwnerDashboard() {
                         gap: 7,
                         padding: '8px 10px',
                         borderRadius: 9,
-                        background: p.ok ? '#E8F5E1' : '#FDFAF4',
-                        border: `1.5px solid ${p.ok ? C.green + '40' : '#E5D9C8'}`,
+                        background: p.ok
+                          ? 'rgba(200,238,170,0.55)'
+                          : 'rgba(255,255,255,0.40)',
+                        border: `1.5px solid ${p.ok ? C.green + '40' : 'rgba(255,255,255,0.45)'}`,
                       }}
                     >
                       <span
@@ -1151,11 +795,13 @@ export default function OwnerDashboard() {
             {/* Recent Orders */}
             <div
               style={{
-                background: '#fff',
+                background: C.card,
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
                 borderRadius: 18,
-                boxShadow: '0 2px 16px rgba(0,0,0,.08)',
+                boxShadow: '0 4px 24px rgba(34,100,34,0.13)',
                 overflow: 'hidden',
-                border: `3px solid ${C.yellow}`,
+                border: `2px solid ${C.yellow}`,
               }}
             >
               <div
@@ -1164,8 +810,8 @@ export default function OwnerDashboard() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '18px 24px',
-                  background: `linear-gradient(90deg,${C.yellow}28,${C.orange}18)`,
-                  borderBottom: `2px solid ${C.yellow}`,
+                  background: `linear-gradient(90deg,rgba(255,225,53,0.22),rgba(255,140,0,0.14))`,
+                  borderBottom: `2px solid rgba(255,225,53,0.35)`,
                 }}
               >
                 <div>
@@ -1174,6 +820,7 @@ export default function OwnerDashboard() {
                       fontWeight: 800,
                       fontSize: 16,
                       color: C.brownDark,
+                      fontFamily: "'Fredoka', sans-serif",
                     }}
                   >
                     Recent Orders
@@ -1181,9 +828,9 @@ export default function OwnerDashboard() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: C.brownDark,
+                      color: C.textGreen,
                       fontWeight: 600,
-                      opacity: 0.7,
+                      opacity: 0.9,
                       marginTop: 2,
                     }}
                   >
@@ -1201,7 +848,7 @@ export default function OwnerDashboard() {
                     fontWeight: 700,
                     fontSize: 13,
                     cursor: 'pointer',
-                    boxShadow: '0 3px 10px rgba(61,110,39,.3)',
+                    boxShadow: '0 3px 10px rgba(34,139,34,.28)',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
                   onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
@@ -1215,7 +862,7 @@ export default function OwnerDashboard() {
                   style={{
                     padding: 48,
                     textAlign: 'center',
-                    color: '#AAA',
+                    color: C.brownDark,
                     fontSize: 14,
                   }}
                 >
@@ -1223,7 +870,11 @@ export default function OwnerDashboard() {
                 </div>
               ) : recentOrders.length === 0 ? (
                 <div style={{ padding: 56, textAlign: 'center' }}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>📋</div>
+                  <div
+                    style={{ fontSize: 40, marginBottom: 10, opacity: 0.45 }}
+                  >
+                    📋
+                  </div>
                   <div
                     style={{
                       fontWeight: 700,
@@ -1235,7 +886,11 @@ export default function OwnerDashboard() {
                     No orders yet
                   </div>
                   <div
-                    style={{ fontSize: 12, color: '#AAA', marginBottom: 18 }}
+                    style={{
+                      fontSize: 12,
+                      color: C.textMuted,
+                      marginBottom: 18,
+                    }}
                   >
                     Your ingredient orders from HQ will appear here
                   </div>
@@ -1250,6 +905,7 @@ export default function OwnerDashboard() {
                       fontWeight: 700,
                       fontSize: 13,
                       cursor: 'pointer',
+                      boxShadow: '0 3px 12px rgba(255,140,0,0.25)',
                     }}
                   >
                     🛒 Place First Order
@@ -1294,16 +950,22 @@ export default function OwnerDashboard() {
                         <tr
                           key={order.id}
                           style={{
-                            borderBottom: `1.5px solid ${C.yellow}30`,
-                            background: idx % 2 === 0 ? '#fff' : '#FDFAF4',
+                            borderBottom: `1.5px solid rgba(255,225,53,0.20)`,
+                            background:
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)',
                             transition: 'background .15s',
                           }}
                           onMouseEnter={(e) =>
-                            (e.currentTarget.style.background = `${C.yellow}12`)
+                            (e.currentTarget.style.background =
+                              'rgba(255,225,53,0.12)')
                           }
                           onMouseLeave={(e) =>
                             (e.currentTarget.style.background =
-                              idx % 2 === 0 ? '#fff' : '#FDFAF4')
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)')
                           }
                         >
                           <td
@@ -1334,7 +996,7 @@ export default function OwnerDashboard() {
                                     style={{
                                       padding: '2px 8px',
                                       borderRadius: 20,
-                                      background: '#F2EAD8',
+                                      background: 'rgba(200,238,170,0.6)',
                                       fontSize: 10,
                                       fontWeight: 600,
                                       color: C.brownDark,
@@ -1349,10 +1011,10 @@ export default function OwnerDashboard() {
                                   style={{
                                     padding: '2px 8px',
                                     borderRadius: 20,
-                                    background: '#F2EAD8',
+                                    background: 'rgba(200,238,170,0.6)',
                                     fontSize: 10,
                                     fontWeight: 600,
-                                    color: '#AAA',
+                                    color: C.textMuted,
                                   }}
                                 >
                                   +{order.items.length - 2} more
@@ -1377,7 +1039,7 @@ export default function OwnerDashboard() {
                             style={{
                               padding: '14px 20px',
                               fontSize: 11,
-                              color: '#AAA',
+                              color: C.textMuted,
                               whiteSpace: 'nowrap',
                             }}
                           >

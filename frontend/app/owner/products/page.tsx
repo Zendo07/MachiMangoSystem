@@ -9,19 +9,30 @@ import {
   ROLE_META,
   type UserRole,
 } from '@/lib/auth';
+import OwnerSidebar from '@/components/owner/OwnerSidebar';
 
 const C = {
-  brownDarker: '#3E1A00',
-  brownDark: '#6B3A2A',
-  brown: '#8B4513',
-  yellow: '#F5C842',
-  orange: '#FF8C00',
-  green: '#5A9E3A',
-  darkGreen: '#3D6E27',
-  bg: '#F2EAD8',
+  brownDarker: '#4a2511',
+  brownDark: '#654321',
+  yellow: '#ffe135',
+  orange: '#ff8c00',
+  green: '#7cb342',
+  darkGreen: '#228b22',
+  card: 'rgba(255,255,255,0.72)',
+  cardBorder: 'rgba(255,255,255,0.55)',
+  cardShadow: '0 2px 14px rgba(0,80,40,0.10)',
+  panelBg: 'rgba(255,255,255,0.68)',
+  inputBg: 'rgba(255,255,255,0.85)',
+  inputBorder: 'rgba(124,179,66,0.30)',
+  textPrimary: '#4a2511',
+  textSecondary: '#654321',
+  textMuted: '#999',
+  textGreen: '#3d7a1c',
 };
 
-// ─── TYPES ────────────────────────────────────────────────────────────────────
+const PAGE_BG =
+  'linear-gradient(180deg, #87ceeb 0%, #98d8e8 18%, #c8eeaa 42%, #a8dc7a 68%, #7cb342 100%)';
+
 interface Product {
   id: string;
   name: string;
@@ -101,7 +112,6 @@ const STATUS_META: Record<
   },
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
 function toNum(v: number | string | undefined | null): number {
   const n = parseFloat(String(v ?? 0));
   return isNaN(n) ? 0 : Math.round(n * 100) / 100;
@@ -117,7 +127,6 @@ function formatPHP(v: number | string): string {
   );
 }
 
-// ─── IMAGE PLACEHOLDER ────────────────────────────────────────────────────────
 function ImgPlaceholder({ size = 24 }: { size?: number }) {
   return (
     <svg
@@ -125,7 +134,7 @@ function ImgPlaceholder({ size = 24 }: { size?: number }) {
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#C8B89A"
+      stroke="rgba(124,179,66,0.5)"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -137,7 +146,6 @@ function ImgPlaceholder({ size = 24 }: { size?: number }) {
   );
 }
 
-// ─── STATUS BADGE ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const m = STATUS_META[status] ?? STATUS_META.pending;
   return (
@@ -162,7 +170,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── TOAST ────────────────────────────────────────────────────────────────────
 function SuccessToast({
   message,
   onClose,
@@ -185,7 +192,7 @@ function SuccessToast({
         color: '#fff',
         borderRadius: 16,
         padding: '16px 22px',
-        boxShadow: '0 8px 32px rgba(61,110,39,.35)',
+        boxShadow: '0 8px 32px rgba(34,139,34,.30)',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
@@ -220,187 +227,7 @@ function SuccessToast({
   );
 }
 
-// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
-function OwnerSidebar({
-  user,
-  activeNav,
-  onNav,
-}: {
-  user: ReturnType<typeof getStoredUser>;
-  activeNav: string;
-  onNav: (r: string) => void;
-}) {
-  const role = user?.role as UserRole;
-  const meta = ROLE_META[role];
-  const navItems = [
-    {
-      name: 'Dashboard',
-      route: '/owner/dashboard',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Products',
-      route: '/owner/products',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        </svg>
-      ),
-    },
-    {
-      name: 'Orders',
-      route: '/owner/orders',
-      icon: (
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-        >
-          <circle cx="9" cy="21" r="1" />
-          <circle cx="20" cy="21" r="1" />
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-        </svg>
-      ),
-    },
-  ];
-
-  return (
-    <aside
-      style={{
-        width: 72,
-        background: `linear-gradient(180deg,${C.brownDarker},${C.brownDark})`,
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
-        boxShadow: '4px 0 24px rgba(62,26,0,.18)',
-        zIndex: 10,
-      }}
-    >
-      <div
-        style={{
-          padding: '20px 14px',
-          borderBottom: '1px solid rgba(245,200,66,.2)',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 44,
-            height: 44,
-            background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-            borderRadius: 14,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 22,
-          }}
-        >
-          🥭
-        </div>
-      </div>
-      <nav
-        style={{
-          flex: 1,
-          padding: '16px 10px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-        }}
-      >
-        {navItems.map((item) => {
-          const active = activeNav === item.name;
-          return (
-            <button
-              key={item.name}
-              onClick={() => onNav(item.route)}
-              title={item.name}
-              style={{
-                width: '100%',
-                padding: '11px 0',
-                display: 'flex',
-                justifyContent: 'center',
-                borderRadius: 12,
-                border: 'none',
-                cursor: 'pointer',
-                background: active
-                  ? `linear-gradient(90deg,${C.yellow},${C.orange})`
-                  : 'transparent',
-                color: active ? C.brownDarker : 'rgba(245,200,66,.65)',
-                marginBottom: 3,
-                transition: 'all .18s',
-              }}
-              onMouseEnter={(e) => {
-                if (!active)
-                  e.currentTarget.style.background = 'rgba(245,200,66,.1)';
-              }}
-              onMouseLeave={(e) => {
-                if (!active) e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              <span style={{ color: active ? C.brownDarker : 'inherit' }}>
-                {item.icon}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-      <div
-        style={{
-          padding: '14px 10px',
-          borderTop: '1px solid rgba(245,200,66,.2)',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontWeight: 700,
-          }}
-          title={user?.fullName}
-        >
-          {user?.fullName?.charAt(0).toUpperCase()}
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-// ─── PAGE ─────────────────────────────────────────────────────────────────────
-export default function OrdersPage() {
+export default function ProductsPage() {
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -480,8 +307,8 @@ export default function OrdersPage() {
 
   const role = user.role as UserRole;
   const meta = ROLE_META[role];
+  const isFranchiseOwner = role === 'franchise_owner';
 
-  // ─── CART HELPERS ─────────────────────────────────────────────────────────
   const addToCart = (product: Product) => {
     const unitPrice = toNum(product.price);
     setCart((prev) => {
@@ -586,19 +413,22 @@ export default function OrdersPage() {
   return (
     <>
       {toast && <SuccessToast message={toast} onClose={() => setToast('')} />}
+
       <div
         style={{
           display: 'flex',
           height: '100vh',
-          background: C.bg,
           overflow: 'hidden',
-          fontFamily: "'Segoe UI',system-ui,sans-serif",
+          fontFamily: "'Poppins', system-ui, sans-serif",
+          background: PAGE_BG,
+          backgroundAttachment: 'fixed',
         }}
       >
         <OwnerSidebar
-          user={user}
-          activeNav="Orders"
-          onNav={(r) => router.push(r)}
+          activeNav="Products"
+          userName={user.fullName}
+          userRole={role}
+          onCreateAccount={isFranchiseOwner ? () => {} : undefined}
         />
 
         <div
@@ -610,10 +440,12 @@ export default function OrdersPage() {
             minWidth: 0,
           }}
         >
-          {/* Header */}
+          {/* ── Header ── */}
           <header
             style={{
-              background: '#fff',
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               borderBottom: `3px solid ${C.yellow}`,
               padding: '0 28px',
               height: 70,
@@ -621,24 +453,29 @@ export default function OrdersPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
-              boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+              boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
             }}
           >
             <div>
               <div
-                style={{ fontWeight: 800, fontSize: 19, color: C.brownDark }}
+                style={{
+                  fontWeight: 800,
+                  fontSize: 19,
+                  color: C.brownDark,
+                  fontFamily: "'Fredoka', sans-serif",
+                }}
               >
                 Order Products
               </div>
               <div
                 style={{
                   fontSize: 12,
-                  color: C.green,
+                  color: C.textGreen,
                   fontWeight: 600,
                   marginTop: 1,
                 }}
               >
-                {meta.emoji} {meta.label} · {user.branchId ?? 'Your Branch'}
+                {meta.label} · {user.branchId ?? 'Your Branch'}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -647,7 +484,7 @@ export default function OrdersPage() {
                   style={{
                     padding: '7px 14px',
                     borderRadius: 10,
-                    background: `${C.orange}18`,
+                    background: 'rgba(255,140,0,0.12)',
                     border: `1.5px solid ${C.orange}`,
                     fontSize: 12,
                     fontWeight: 700,
@@ -667,7 +504,7 @@ export default function OrdersPage() {
                   padding: '9px 20px',
                   background: `linear-gradient(135deg,${C.brownDark},${C.brownDarker})`,
                   color: C.yellow,
-                  border: '2px solid rgba(245,200,66,.4)',
+                  border: '2px solid rgba(255,225,53,.35)',
                   borderRadius: 10,
                   fontWeight: 700,
                   fontSize: 13,
@@ -679,12 +516,13 @@ export default function OrdersPage() {
             </div>
           </header>
 
+          {/* ── Main ── */}
           <main
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: 28,
-              background: C.bg,
+              padding: 24,
+              background: 'transparent',
             }}
           >
             {/* Tabs */}
@@ -692,11 +530,14 @@ export default function OrdersPage() {
               style={{
                 display: 'flex',
                 gap: 4,
-                marginBottom: 22,
-                background: '#fff',
+                marginBottom: 20,
+                background: 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 borderRadius: 12,
                 padding: 4,
-                boxShadow: '0 2px 10px rgba(0,0,0,.06)',
+                boxShadow: C.cardShadow,
+                border: `1.5px solid ${C.cardBorder}`,
                 width: 'fit-content',
               }}
             >
@@ -717,6 +558,8 @@ export default function OrdersPage() {
                         : 'transparent',
                     color: tab === t ? C.brownDarker : C.brownDark,
                     transition: 'all .18s',
+                    boxShadow:
+                      tab === t ? '0 3px 10px rgba(255,140,0,0.25)' : 'none',
                   }}
                 >
                   {t === 'order' ? '🛒 Place Order' : '📋 Order History'}
@@ -729,36 +572,56 @@ export default function OrdersPage() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 340px',
+                  /* Cart panel is fixed 300px; catalog fills the rest */
+                  gridTemplateColumns: '1fr 300px',
                   gap: 20,
-                  height: 'calc(100vh - 200px)',
+                  /* height fills remaining viewport after header (70px) + padding (48px) + tabs (~52px) */
+                  height: 'calc(100vh - 170px)',
+                  minWidth: 0,
                 }}
               >
-                {/* Left: Product catalog */}
+                {/* ── Left: Product catalog ── */}
                 <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 14,
                     minWidth: 0,
+                    overflow: 'hidden',
                   }}
                 >
                   {/* Filters */}
                   <div
                     style={{
-                      background: '#fff',
+                      background: C.panelBg,
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `1.5px solid ${C.cardBorder}`,
                       borderRadius: 14,
-                      padding: '14px 18px',
-                      boxShadow: '0 2px 10px rgba(0,0,0,.06)',
+                      padding: '12px 16px',
+                      boxShadow: C.cardShadow,
                       display: 'flex',
                       gap: 10,
                       flexWrap: 'wrap',
                       alignItems: 'center',
+                      flexShrink: 0,
                     }}
                   >
                     <div
-                      style={{ position: 'relative', flex: 1, minWidth: 180 }}
+                      style={{ position: 'relative', flex: 1, minWidth: 160 }}
                     >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          left: 10,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          fontSize: 14,
+                          opacity: 0.4,
+                        }}
+                      >
+                        🔍
+                      </span>
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
@@ -770,43 +633,46 @@ export default function OrdersPage() {
                           paddingTop: 8,
                           paddingBottom: 8,
                           borderRadius: 10,
-                          border: '1.5px solid #E5D9C8',
-                          background: '#FDFAF4',
+                          border: `1.5px solid ${C.inputBorder}`,
+                          background: C.inputBg,
                           fontSize: 13,
                           outline: 'none',
-                          color: C.brownDarker,
+                          color: C.textPrimary,
                           boxSizing: 'border-box',
+                          transition: 'border-color .18s',
                         }}
                         onFocus={(e) => (e.target.style.borderColor = C.yellow)}
-                        onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
+                        onBlur={(e) =>
+                          (e.target.style.borderColor = C.inputBorder)
+                        }
                       />
                     </div>
                     <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                      {allCategories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setCategoryFilter(cat)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: 8,
-                            border: `1.5px solid ${categoryFilter === cat ? C.orange : '#E5D9C8'}`,
-                            background:
-                              categoryFilter === cat
-                                ? '#FFF0D9'
-                                : 'transparent',
-                            color:
-                              categoryFilter === cat
-                                ? C.brownDarker
-                                : C.brownDark,
-                            fontWeight: categoryFilter === cat ? 800 : 600,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {cat}
-                        </button>
-                      ))}
+                      {allCategories.map((cat) => {
+                        const active = categoryFilter === cat;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => setCategoryFilter(cat)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 8,
+                              border: `1.5px solid ${active ? C.orange : 'rgba(124,179,66,0.3)'}`,
+                              background: active
+                                ? 'rgba(255,140,0,0.14)'
+                                : 'rgba(255,255,255,0.5)',
+                              color: active ? C.brownDarker : C.brownDark,
+                              fontWeight: active ? 800 : 600,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              transition: 'all .15s',
+                            }}
+                          >
+                            {cat}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -814,7 +680,8 @@ export default function OrdersPage() {
                     <div
                       style={{
                         padding: '14px 18px',
-                        background: '#FFEBEE',
+                        background: 'rgba(255,235,238,0.85)',
+                        backdropFilter: 'blur(8px)',
                         borderRadius: 12,
                         border: '1.5px solid #EF9A9A',
                         color: '#C62828',
@@ -823,6 +690,7 @@ export default function OrdersPage() {
                         display: 'flex',
                         alignItems: 'center',
                         gap: 10,
+                        flexShrink: 0,
                       }}
                     >
                       ⚠️ {productError}
@@ -850,23 +718,29 @@ export default function OrdersPage() {
                       style={{
                         padding: 48,
                         textAlign: 'center',
-                        color: '#AAA',
+                        color: C.brownDark,
                         fontSize: 13,
+                        background: 'rgba(255,255,255,0.5)',
+                        borderRadius: 14,
+                        border: `1.5px solid ${C.cardBorder}`,
+                        flexShrink: 0,
                       }}
                     >
-                      Loading products from HQ…
+                      ⏳ Loading products from HQ…
                     </div>
                   )}
 
-                  {/* Product grid */}
+                  {/* Scrollable product grid */}
                   {!loadingProducts && !productError && (
-                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                    <div
+                      style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}
+                    >
                       <div
                         style={{
                           display: 'grid',
                           gridTemplateColumns:
-                            'repeat(auto-fill,minmax(180px,1fr))',
-                          gap: 14,
+                            'repeat(auto-fill, minmax(160px, 1fr))',
+                          gap: 12,
                         }}
                       >
                         {filtered.map((product) => {
@@ -877,35 +751,37 @@ export default function OrdersPage() {
                             product.image &&
                             (product.image.startsWith('http') ||
                               product.image.startsWith('data:'));
-
                           return (
                             <div
                               key={product.id}
                               style={{
-                                background: '#fff',
+                                background: C.card,
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
                                 borderRadius: 14,
                                 overflow: 'hidden',
-                                border: `1.5px solid ${qty > 0 ? C.yellow : outOfStock ? '#FFCDD2' : '#E8DDD0'}`,
+                                border: `1.5px solid ${qty > 0 ? C.yellow : outOfStock ? 'rgba(255,205,210,0.8)' : C.cardBorder}`,
                                 boxShadow:
                                   qty > 0
-                                    ? '0 4px 16px rgba(245,200,66,.2)'
-                                    : '0 2px 8px rgba(0,0,0,.06)',
+                                    ? '0 4px 16px rgba(255,225,53,0.22)'
+                                    : C.cardShadow,
                                 opacity: outOfStock ? 0.7 : 1,
                                 transition: 'border .2s',
                               }}
                             >
-                              {/* ── IMAGE BAND — same style as admin ── */}
+                              {/* Image */}
                               <div
                                 style={{
-                                  height: 112,
+                                  height: 100,
+                                  position: 'relative',
+                                  overflow: 'hidden',
                                   background: hasImage
                                     ? 'transparent'
-                                    : 'linear-gradient(135deg,#F4EFE6,#EDE5D8)',
+                                    : 'linear-gradient(135deg,rgba(200,238,170,0.6),rgba(168,220,122,0.5))',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  position: 'relative',
-                                  overflow: 'hidden',
+                                  borderBottom: `1px solid ${C.cardBorder}`,
                                 }}
                               >
                                 {hasImage ? (
@@ -920,16 +796,13 @@ export default function OrdersPage() {
                                     }}
                                   />
                                 ) : (
-                                  <div style={{ color: '#C8B89A' }}>
-                                    <ImgPlaceholder size={28} />
-                                  </div>
+                                  <ImgPlaceholder size={28} />
                                 )}
-                                {/* Status badge */}
                                 <div
                                   style={{
                                     position: 'absolute',
-                                    top: 8,
-                                    right: 8,
+                                    top: 6,
+                                    right: 6,
                                     zIndex: 2,
                                   }}
                                 >
@@ -938,7 +811,7 @@ export default function OrdersPage() {
                                       display: 'inline-flex',
                                       alignItems: 'center',
                                       gap: 4,
-                                      padding: '3px 8px',
+                                      padding: '3px 7px',
                                       borderRadius: 20,
                                       background: outOfStock
                                         ? '#FFEBEE'
@@ -950,14 +823,14 @@ export default function OrdersPage() {
                                         : product.status === 'Low Stock'
                                           ? '#E65100'
                                           : '#2E7D32',
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       fontWeight: 700,
                                     }}
                                   >
                                     <span
                                       style={{
-                                        width: 5,
-                                        height: 5,
+                                        width: 4,
+                                        height: 4,
                                         borderRadius: '50%',
                                         background: outOfStock
                                           ? '#EF5350'
@@ -969,13 +842,12 @@ export default function OrdersPage() {
                                     {product.status}
                                   </span>
                                 </div>
-                                {/* Out of stock overlay */}
                                 {outOfStock && (
                                   <div
                                     style={{
                                       position: 'absolute',
                                       inset: 0,
-                                      background: 'rgba(0,0,0,.38)',
+                                      background: 'rgba(0,0,0,.35)',
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
@@ -985,7 +857,7 @@ export default function OrdersPage() {
                                       style={{
                                         color: '#fff',
                                         fontWeight: 700,
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         textTransform: 'uppercase',
                                         letterSpacing: '.06em',
                                       }}
@@ -996,8 +868,8 @@ export default function OrdersPage() {
                                 )}
                               </div>
 
-                              {/* Info */}
-                              <div style={{ padding: '10px 12px' }}>
+                              {/* Content */}
+                              <div style={{ padding: '9px 10px' }}>
                                 <div
                                   style={{
                                     fontSize: 9,
@@ -1014,8 +886,8 @@ export default function OrdersPage() {
                                   style={{
                                     fontWeight: 800,
                                     fontSize: 12,
-                                    color: C.brownDarker,
-                                    marginBottom: 6,
+                                    color: C.textPrimary,
+                                    marginBottom: 5,
                                     lineHeight: 1.3,
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
@@ -1029,25 +901,25 @@ export default function OrdersPage() {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
-                                    marginBottom: 6,
+                                    marginBottom: 5,
                                   }}
                                 >
                                   <span
                                     style={{
                                       fontWeight: 900,
-                                      fontSize: 15,
-                                      color: C.brownDarker,
+                                      fontSize: 14,
+                                      color: C.textPrimary,
                                     }}
                                   >
                                     {formatPHP(unitPrice)}
                                   </span>
                                   <span
                                     style={{
-                                      fontSize: 10,
+                                      fontSize: 9,
                                       color:
                                         product.stock <= 10
                                           ? '#CC7000'
-                                          : '#AAA',
+                                          : C.textMuted,
                                     }}
                                   >
                                     {product.stock <= 10 && product.stock > 0
@@ -1061,7 +933,7 @@ export default function OrdersPage() {
                                 <div
                                   style={{
                                     height: 3,
-                                    background: '#EDE5D8',
+                                    background: 'rgba(124,179,66,0.2)',
                                     borderRadius: 10,
                                     overflow: 'hidden',
                                     marginBottom: 8,
@@ -1083,17 +955,16 @@ export default function OrdersPage() {
                                   />
                                 </div>
 
-                                {/* Add / qty controls */}
                                 {outOfStock ? (
                                   <div
                                     style={{
                                       width: '100%',
-                                      padding: '7px 0',
+                                      padding: '6px 0',
                                       borderRadius: 9,
-                                      background: '#F5F5F5',
+                                      background: 'rgba(245,245,245,0.7)',
                                       color: '#AAA',
                                       fontWeight: 700,
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       textAlign: 'center',
                                     }}
                                   >
@@ -1112,7 +983,18 @@ export default function OrdersPage() {
                                       fontWeight: 700,
                                       fontSize: 12,
                                       cursor: 'pointer',
+                                      boxShadow:
+                                        '0 2px 8px rgba(255,140,0,0.25)',
+                                      transition: 'transform .15s',
                                     }}
+                                    onMouseEnter={(e) =>
+                                      (e.currentTarget.style.transform =
+                                        'scale(1.02)')
+                                    }
+                                    onMouseLeave={(e) =>
+                                      (e.currentTarget.style.transform =
+                                        'scale(1)')
+                                    }
                                   >
                                     + Add to Order
                                   </button>
@@ -1133,7 +1015,7 @@ export default function OrdersPage() {
                                         height: 28,
                                         borderRadius: 8,
                                         border: `1.5px solid ${C.orange}`,
-                                        background: '#FFF0D9',
+                                        background: 'rgba(255,240,217,0.8)',
                                         color: C.brownDarker,
                                         fontWeight: 800,
                                         fontSize: 15,
@@ -1148,7 +1030,7 @@ export default function OrdersPage() {
                                         textAlign: 'center',
                                         fontWeight: 800,
                                         fontSize: 14,
-                                        color: C.brownDarker,
+                                        color: C.textPrimary,
                                       }}
                                     >
                                       {qty}
@@ -1162,7 +1044,7 @@ export default function OrdersPage() {
                                         height: 28,
                                         borderRadius: 8,
                                         border: `1.5px solid ${C.orange}`,
-                                        background: '#FFF0D9',
+                                        background: 'rgba(255,240,217,0.8)',
                                         color: C.brownDarker,
                                         fontWeight: 800,
                                         fontSize: 15,
@@ -1183,7 +1065,7 @@ export default function OrdersPage() {
                               gridColumn: '1 / -1',
                               padding: 48,
                               textAlign: 'center',
-                              color: '#AAA',
+                              color: C.brownDark,
                               fontSize: 13,
                             }}
                           >
@@ -1195,45 +1077,51 @@ export default function OrdersPage() {
                   )}
                 </div>
 
-                {/* Right: Cart panel */}
+                {/* ── Right: Cart panel ── */}
                 <div
                   style={{
-                    background: '#fff',
+                    background: C.panelBg,
+                    backdropFilter: 'blur(14px)',
+                    WebkitBackdropFilter: 'blur(14px)',
                     borderRadius: 18,
-                    boxShadow: '0 2px 16px rgba(0,0,0,.08)',
-                    border: `2px solid ${C.yellow}30`,
+                    boxShadow: '0 4px 24px rgba(34,100,34,0.13)',
+                    border: `1.5px solid ${C.cardBorder}`,
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
+                    /* prevent the cart from shrinking below its content */
+                    minWidth: 0,
                   }}
                 >
-                  {/* Cart header */}
                   <div
                     style={{
-                      padding: '18px 20px',
-                      borderBottom: `2px solid ${C.yellow}30`,
-                      background: `linear-gradient(90deg,${C.yellow}18,${C.orange}10)`,
+                      padding: '16px 18px',
+                      borderBottom: `2px solid rgba(255,225,53,0.25)`,
+                      background: 'rgba(255,255,255,0.28)',
+                      flexShrink: 0,
                     }}
                   >
                     <div
                       style={{
                         fontWeight: 800,
-                        fontSize: 16,
+                        fontSize: 15,
                         color: C.brownDark,
+                        fontFamily: "'Fredoka', sans-serif",
                       }}
                     >
                       🛒 Your Order
                     </div>
-                    <div style={{ fontSize: 11, color: '#AAA', marginTop: 2 }}>
+                    <div
+                      style={{ fontSize: 11, color: C.textGreen, marginTop: 2 }}
+                    >
                       {cart.length === 0
                         ? 'No items yet'
                         : `${cart.length} item${cart.length > 1 ? 's' : ''} selected`}
                     </div>
                   </div>
 
-                  {/* Cart items */}
                   <div
-                    style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}
+                    style={{ flex: 1, overflowY: 'auto', padding: '10px 14px' }}
                   >
                     {cart.length === 0 ? (
                       <div
@@ -1246,7 +1134,7 @@ export default function OrdersPage() {
                           gap: 8,
                         }}
                       >
-                        <div style={{ fontSize: 40 }}>🛒</div>
+                        <div style={{ fontSize: 36, opacity: 0.35 }}>🛒</div>
                         <div
                           style={{
                             fontWeight: 700,
@@ -1259,7 +1147,7 @@ export default function OrdersPage() {
                         <div
                           style={{
                             fontSize: 11,
-                            color: '#AAA',
+                            color: C.textMuted,
                             textAlign: 'center',
                           }}
                         >
@@ -1286,22 +1174,21 @@ export default function OrdersPage() {
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 10,
-                                padding: '10px 12px',
+                                padding: '9px 10px',
                                 borderRadius: 10,
-                                background: '#FDFAF4',
-                                border: '1.5px solid #F0E8D8',
+                                background: 'rgba(255,255,255,0.5)',
+                                border: `1.5px solid rgba(144,238,144,0.25)`,
                               }}
                             >
-                              {/* ── Cart item image — same style as admin ── */}
                               <div
                                 style={{
-                                  width: 42,
-                                  height: 42,
-                                  borderRadius: 10,
+                                  width: 38,
+                                  height: 38,
+                                  borderRadius: 9,
                                   overflow: 'hidden',
                                   background: hasImage
                                     ? 'transparent'
-                                    : 'linear-gradient(135deg,#F4EFE6,#EDE5D8)',
+                                    : 'linear-gradient(135deg,rgba(200,238,170,0.6),rgba(168,220,122,0.5))',
                                   flexShrink: 0,
                                   display: 'flex',
                                   alignItems: 'center',
@@ -1320,7 +1207,7 @@ export default function OrdersPage() {
                                     }}
                                   />
                                 ) : (
-                                  <ImgPlaceholder size={20} />
+                                  <ImgPlaceholder size={18} />
                                 )}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1328,7 +1215,7 @@ export default function OrdersPage() {
                                   style={{
                                     fontWeight: 700,
                                     fontSize: 12,
-                                    color: C.brownDarker,
+                                    color: C.textPrimary,
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
@@ -1339,7 +1226,7 @@ export default function OrdersPage() {
                                 <div
                                   style={{
                                     fontSize: 10,
-                                    color: '#AAA',
+                                    color: C.textGreen,
                                     marginTop: 1,
                                   }}
                                 >
@@ -1352,8 +1239,8 @@ export default function OrdersPage() {
                                 <div
                                   style={{
                                     fontWeight: 800,
-                                    fontSize: 13,
-                                    color: C.brownDarker,
+                                    fontSize: 12,
+                                    color: C.textPrimary,
                                   }}
                                 >
                                   {formatPHP(item.totalPrice)}
@@ -1380,17 +1267,18 @@ export default function OrdersPage() {
                     )}
                   </div>
 
-                  {/* Cart footer */}
                   {cart.length > 0 && (
                     <div
                       style={{
-                        padding: '14px 16px',
-                        borderTop: `2px solid ${C.yellow}30`,
+                        padding: '12px 14px',
+                        borderTop: `2px solid rgba(255,225,53,0.25)`,
+                        background: 'rgba(255,255,255,0.28)',
+                        flexShrink: 0,
                       }}
                     >
                       <div
                         style={{
-                          marginBottom: 8,
+                          marginBottom: 6,
                           display: 'flex',
                           flexDirection: 'column',
                           gap: 3,
@@ -1403,7 +1291,7 @@ export default function OrdersPage() {
                               display: 'flex',
                               justifyContent: 'space-between',
                               fontSize: 11,
-                              color: '#999',
+                              color: C.textGreen,
                             }}
                           >
                             <span>
@@ -1416,7 +1304,7 @@ export default function OrdersPage() {
                       <div
                         style={{
                           height: 1,
-                          background: '#F0E8D8',
+                          background: 'rgba(124,179,66,0.2)',
                           margin: '8px 0',
                         }}
                       />
@@ -1425,13 +1313,13 @@ export default function OrdersPage() {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          marginBottom: 14,
+                          marginBottom: 12,
                         }}
                       >
                         <span
                           style={{
                             fontWeight: 800,
-                            fontSize: 14,
+                            fontSize: 13,
                             color: C.brownDark,
                           }}
                         >
@@ -1440,8 +1328,8 @@ export default function OrdersPage() {
                         <span
                           style={{
                             fontWeight: 900,
-                            fontSize: 20,
-                            color: C.brownDarker,
+                            fontSize: 18,
+                            color: C.textPrimary,
                           }}
                         >
                           {formatPHP(cartTotal)}
@@ -1452,7 +1340,7 @@ export default function OrdersPage() {
                         disabled={placing}
                         style={{
                           width: '100%',
-                          padding: '12px 0',
+                          padding: '11px 0',
                           borderRadius: 12,
                           border: 'none',
                           background: placing
@@ -1462,7 +1350,7 @@ export default function OrdersPage() {
                           fontWeight: 800,
                           fontSize: 14,
                           cursor: placing ? 'not-allowed' : 'pointer',
-                          boxShadow: '0 4px 14px rgba(61,110,39,.3)',
+                          boxShadow: '0 4px 14px rgba(34,139,34,.28)',
                         }}
                       >
                         {placing ? '⏳ Placing Order…' : '✅ Place Order'}
@@ -1470,7 +1358,7 @@ export default function OrdersPage() {
                       <div
                         style={{
                           fontSize: 10,
-                          color: '#AAA',
+                          color: C.textMuted,
                           textAlign: 'center',
                           marginTop: 8,
                         }}
@@ -1493,23 +1381,30 @@ export default function OrdersPage() {
                     style={{
                       textAlign: 'center',
                       padding: 60,
-                      color: '#AAA',
+                      color: C.brownDark,
                       fontSize: 14,
                     }}
                   >
-                    Loading orders…
+                    ⏳ Loading orders…
                   </div>
                 ) : orders.length === 0 ? (
                   <div
                     style={{
-                      background: '#fff',
+                      background: C.panelBg,
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `1.5px solid ${C.cardBorder}`,
                       borderRadius: 18,
                       padding: 60,
                       textAlign: 'center',
-                      boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+                      boxShadow: C.cardShadow,
                     }}
                   >
-                    <div style={{ fontSize: 44, marginBottom: 12 }}>📋</div>
+                    <div
+                      style={{ fontSize: 44, marginBottom: 12, opacity: 0.45 }}
+                    >
+                      📋
+                    </div>
                     <div
                       style={{
                         fontWeight: 700,
@@ -1520,7 +1415,7 @@ export default function OrdersPage() {
                     >
                       No orders yet
                     </div>
-                    <div style={{ fontSize: 12, color: '#AAA' }}>
+                    <div style={{ fontSize: 12, color: C.textMuted }}>
                       Your order history will appear here
                     </div>
                     <button
@@ -1535,6 +1430,7 @@ export default function OrdersPage() {
                         fontWeight: 700,
                         fontSize: 13,
                         cursor: 'pointer',
+                        boxShadow: '0 3px 12px rgba(255,140,0,0.25)',
                       }}
                     >
                       Place First Order
@@ -1545,11 +1441,13 @@ export default function OrdersPage() {
                     <div
                       key={order.id}
                       style={{
-                        background: '#fff',
+                        background: C.card,
+                        backdropFilter: 'blur(12px)',
+                        WebkitBackdropFilter: 'blur(12px)',
                         borderRadius: 16,
                         padding: '18px 22px',
-                        boxShadow: '0 2px 12px rgba(0,0,0,.07)',
-                        border: `2px solid ${order.status === 'processing' ? C.yellow : '#F0E8D8'}`,
+                        boxShadow: C.cardShadow,
+                        border: `2px solid ${order.status === 'processing' ? C.yellow : C.cardBorder}`,
                       }}
                     >
                       <div
@@ -1565,7 +1463,7 @@ export default function OrdersPage() {
                             style={{
                               fontWeight: 800,
                               fontSize: 14,
-                              color: C.brownDarker,
+                              color: C.textPrimary,
                             }}
                           >
                             Order #{order.id.slice(-8).toUpperCase()}
@@ -1573,7 +1471,7 @@ export default function OrdersPage() {
                           <div
                             style={{
                               fontSize: 11,
-                              color: '#AAA',
+                              color: C.textMuted,
                               marginTop: 2,
                             }}
                           >
@@ -1593,10 +1491,10 @@ export default function OrdersPage() {
                       </div>
                       <div
                         style={{
-                          background: '#FDFAF4',
+                          background: 'rgba(255,255,255,0.5)',
                           borderRadius: 10,
                           padding: '10px 14px',
-                          border: '1px solid #F0E8D8',
+                          border: `1px solid rgba(144,238,144,0.25)`,
                           marginBottom: order.adminNote ? 10 : 0,
                         }}
                       >
@@ -1611,7 +1509,7 @@ export default function OrdersPage() {
                               marginBottom: i < order.items.length - 1 ? 6 : 0,
                               borderBottom:
                                 i < order.items.length - 1
-                                  ? '1px solid #F0E8D8'
+                                  ? '1px solid rgba(144,238,144,0.2)'
                                   : 'none',
                             }}
                           >
@@ -1628,7 +1526,7 @@ export default function OrdersPage() {
                               style={{
                                 fontSize: 12,
                                 fontWeight: 700,
-                                color: C.brownDarker,
+                                color: C.textPrimary,
                               }}
                             >
                               {formatPHP(item.totalPrice)}
@@ -1642,7 +1540,7 @@ export default function OrdersPage() {
                             alignItems: 'center',
                             marginTop: 8,
                             paddingTop: 8,
-                            borderTop: `2px solid ${C.yellow}50`,
+                            borderTop: `2px solid rgba(255,225,53,0.35)`,
                           }}
                         >
                           <span
@@ -1658,7 +1556,7 @@ export default function OrdersPage() {
                             style={{
                               fontSize: 15,
                               fontWeight: 900,
-                              color: C.brownDarker,
+                              color: C.textPrimary,
                             }}
                           >
                             {formatPHP(order.totalAmount)}
@@ -1673,8 +1571,8 @@ export default function OrdersPage() {
                             gap: 8,
                             padding: '8px 12px',
                             borderRadius: 10,
-                            background: '#FFFAE0',
-                            border: `1.5px solid ${C.yellow}`,
+                            background: 'rgba(255,250,220,0.85)',
+                            border: `1.5px solid rgba(255,225,53,0.5)`,
                             marginTop: 10,
                           }}
                         >
