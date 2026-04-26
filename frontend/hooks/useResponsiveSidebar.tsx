@@ -1,0 +1,472 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --color-primaryYellow: #ffe135;
+  --color-primaryGreen:  #7cb342;
+  --color-primaryOrange: #ff8c00;
+  --color-darkBg:        #8b4513;
+  --color-darkGreen:     #228b22;
+  --color-lightGreen:    #90ee90;
+  --color-skyBlue:       #87ceeb;
+  --color-sunYellow:     #ffd700;
+  --color-brownDark:     #654321;
+  --color-brownDarker:   #4a2511;
+  --font-family-heading: 'Fredoka', sans-serif;
+  --font-family-body:    'Poppins',  sans-serif;
+}
+
+/* ═══════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES
+═══════════════════════════════════════════════ */
+:root {
+  --primary-yellow: #ffe135;
+  --primary-green:  #7cb342;
+  --primary-orange: #ff8c00;
+  --dark-bg:        #8b4513;
+  --dark-green:     #228b22;
+  --light-green:    #90ee90;
+  --sky-blue:       #87ceeb;
+  --white:          #ffffff;
+  --sun-yellow:     #ffd700;
+  --brown-dark:     #654321;
+  --brown-darker:   #4a2511;
+  --font-heading:   'Fredoka', sans-serif;
+  --font-body:      'Poppins',  sans-serif;
+
+  /* Layout tokens — overridden at each breakpoint */
+  --header-h:         70px;
+  --sidebar-w-open:  256px;
+  --sidebar-w-icon:   72px;
+  --sidebar-w-drawer:260px;
+  --main-pad:          28px;
+}
+
+/* ═══════════════════════════════════════════════
+   BASE RESET
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  background: linear-gradient(
+    180deg,
+    #87ceeb 0%,  #98d8e8 15%,
+    #ffd700 15%, #ffa500 30%,
+    #90ee90 30%, #7cb342 100%
+  );
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(100,67,33,.22); border-radius: 99px; }
+
+/* Admin pages */
+body:has([data-admin]) {
+  background: #f4efe6;
+  min-height: unset;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Owner / franchisee pages */
+body:has([data-owner]) {
+  min-height: unset;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════ */
+@keyframes fadeIn       { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideInLeft  { from{opacity:0;transform:translateX(-50px)} to{opacity:1;transform:translateX(0)} }
+@keyframes slideInRight { from{opacity:0;transform:translateX(50px)}  to{opacity:1;transform:translateX(0)} }
+@keyframes float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+@keyframes bounce { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-15px) rotate(10deg)} }
+@keyframes pulse  { 0%,100%{transform:scale(1);opacity:.5} 50%{transform:scale(1.1);opacity:.7} }
+@keyframes wiggle { 0%,100%{transform:rotate(-3deg)} 50%{transform:rotate(3deg)} }
+
+.animate-fadeIn      { animation: fadeIn      .6s ease; }
+.animate-slideInLeft { animation: slideInLeft  .8s ease; }
+.animate-slideInRight{ animation: slideInRight .8s ease; }
+.animate-float       { animation: float  3s ease-in-out infinite; }
+.animate-bounce      { animation: bounce 3s ease-in-out infinite; }
+.animate-pulse       { animation: pulse  2s ease-in-out infinite; }
+.animate-wiggle      { animation: wiggle 2.5s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════════
+   PUBLIC PAGE HELPERS
+═══════════════════════════════════════════════ */
+.section        { padding: 80px 5%; }
+.section-white  { background: white; }
+.section-green  { background: linear-gradient(135deg,#32cd32,#90ee90); }
+.section-yellow { background: linear-gradient(135deg,#ffe135,#ffd700 50%,#ffa500); }
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR — shared by Admin + Owner
+═══════════════════════════════════════════════ */
+aside[data-sidebar] {
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width .28s cubic-bezier(.4,0,.2,1),
+              transform .28s cubic-bezier(.4,0,.2,1);
+  will-change: width, transform;
+}
+
+/* Backdrop overlay rendered when drawer is open on mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.48);
+  z-index: 40;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+.sidebar-overlay.active { display: block; }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE GRID UTILITY CLASSES
+   Use these className= props in JSX instead of
+   hardcoded gridTemplateColumns style attributes.
+═══════════════════════════════════════════════ */
+
+/* Admin dashboard — 4 stat cards */
+.stat-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
+
+/* Admin products — 5 stat cards */
+.stat-grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+
+/* Owner dashboard — 6 stat cards */
+.stat-grid-6 { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; }
+
+/* Owner orders summary — 3 tiles */
+.stat-grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+
+/* Admin dashboard — 2 charts side by side */
+.chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+
+/* Admin orders — 5 status filter cards */
+.order-status-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+
+/* Product catalog auto-fill grid */
+.product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(196px,1fr)); gap:14px; }
+
+/* Owner products — catalog + cart layout */
+.order-catalog-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; }
+
+/* Horizontally scrollable table wrapper */
+.table-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+/* Filter pill / tab row */
+.filter-pill-row { display:flex; flex-wrap:wrap; gap:6px; }
+
+/* Owner hero banner */
+.owner-hero {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; border-radius:18px; padding:24px 32px; margin-bottom:24px;
+}
+
+/* CreateAccountModal role picker */
+.role-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+
+/* Modal overlay */
+.modal-overlay {
+  position:fixed; inset:0; z-index:200;
+  display:flex; align-items:center; justify-content:center; padding:16px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ███████████████   BREAKPOINTS   ███████████████████████████████
+   xs   0–479     small phones
+   sm   480–639   large phones / phones landscape
+   md   640–767   phones landscape / mini tablets
+   lg   768–1023  tablets portrait
+   xl   1024–1279 tablets landscape / small laptops
+   2xl  1280–1535 laptops (design baseline — no override needed)
+   3xl  ≥1536     large monitors / 4K
+═══════════════════════════════════════════════════════════════════ */
+
+
+/* ─── 3XL ≥ 1536px ── Large monitors ─── */
+@media (min-width: 1536px) {
+  :root { --header-h:76px; --sidebar-w-open:280px; --main-pad:32px; }
+
+  .stat-grid-4  { gap:22px; }
+  .stat-grid-5  { gap:16px; }
+  .stat-grid-6  { gap:16px; }
+  .stat-grid-3  { gap:16px; }
+  .chart-grid-2 { gap:22px; }
+  .product-grid { grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:18px; }
+  .order-catalog-layout { grid-template-columns:1fr 340px; }
+  main[data-main] { padding:32px !important; }
+}
+
+
+/* ─── XL  1024–1279px ── Small laptops / tablets landscape ─── */
+@media (max-width: 1279px) {
+  :root { --sidebar-w-open:220px; --main-pad:20px; }
+
+  .stat-grid-4       { grid-template-columns:repeat(2,1fr); gap:14px; }
+  .stat-grid-5       { grid-template-columns:repeat(3,1fr); gap:10px; }
+  .stat-grid-6       { grid-template-columns:repeat(3,1fr); gap:10px; }
+  .stat-grid-3       { gap:10px; }
+  .order-status-grid { grid-template-columns:repeat(3,1fr); gap:10px; }
+  .product-grid      { grid-template-columns:repeat(auto-fill,minmax(172px,1fr)); }
+  .order-catalog-layout { grid-template-columns:1fr 260px; }
+
+  header[data-topbar] { padding:0 18px !important; }
+  main[data-main]     { padding:20px !important; }
+}
+
+
+/* ─── LG  768–1023px ── Tablets portrait ─── */
+@media (max-width: 1023px) {
+  :root { --header-h:64px; --main-pad:16px; }
+
+  /* Sidebar becomes a fixed overlay drawer */
+  aside[data-sidebar] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: var(--sidebar-w-drawer) !important;
+    z-index: 50 !important;
+    transform: translateX(-100%);
+    box-shadow: 8px 0 40px rgba(0,0,0,.28) !important;
+  }
+  aside[data-sidebar].sidebar-open { transform: translateX(0); }
+
+  /* Grids */
+  .stat-grid-4       { grid-template-columns:repeat(2,1fr); gap:12px; }
+  .stat-grid-5       { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat-grid-6       { grid-template-columns:repeat(3,1fr); gap:10px; }
+  .stat-grid-3       { grid-template-columns:repeat(3,1fr); gap:10px; }
+  .order-status-grid { grid-template-columns:repeat(3,1fr); }
+  .chart-grid-2      { grid-template-columns:1fr; gap:14px; }
+  .product-grid      { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
+
+  /* Owner products page: cart stacks below catalog */
+  .order-catalog-layout { grid-template-columns:1fr; height:auto !important; gap:14px; }
+
+  /* Hide lower-priority table columns */
+  .col-hide-lg { display:none !important; }
+
+  header[data-topbar] { padding:0 16px !important; }
+  main[data-main]     { padding:16px !important; }
+}
+
+
+/* ─── MD  640–767px ── Phones landscape ─── */
+@media (max-width: 767px) {
+  :root { --header-h:60px; --main-pad:12px; }
+
+  body { font-size:14px; }
+  .section { padding:60px 5%; }
+
+  .stat-grid-4       { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat-grid-5       { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat-grid-6       { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .stat-grid-3       { grid-template-columns:repeat(3,1fr); gap:8px; }
+  .order-status-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .chart-grid-2      { grid-template-columns:1fr; }
+  .product-grid      { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+
+  /* Modals: centered, near-full width */
+  .modal-overlay { padding:10px; }
+  .modal-box     { max-width:100% !important; border-radius:16px !important; }
+
+  /* Stat cards */
+  .stat-value { font-size:22px !important; }
+  .stat-label { font-size:11px !important; }
+
+  /* Hide secondary table cols */
+  .col-hide-md { display:none !important; }
+
+  /* Owner hero: vertical stack */
+  .owner-hero {
+    flex-direction:column; align-items:flex-start;
+    padding:18px 20px; gap:12px;
+    border-radius:14px; margin-bottom:16px;
+  }
+  .owner-hero-btn { width:100% !important; }
+
+  main[data-main] { padding:12px !important; }
+}
+
+
+/* ─── SM  480–639px ── Large phones ─── */
+@media (max-width: 639px) {
+  :root { --header-h:56px; --main-pad:10px; }
+
+  /* All stat grids → 2-col */
+  .stat-grid-4,
+  .stat-grid-5,
+  .stat-grid-6,
+  .stat-grid-3 { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .order-status-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+
+  /* Product grid → 2-col */
+  .product-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+
+  /* Filter pills: horizontal scroll */
+  .filter-pill-row {
+    flex-wrap:nowrap !important;
+    overflow-x:auto;
+    padding-bottom:4px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .filter-pill-row::-webkit-scrollbar { display:none; }
+
+  /* Header: hide subtitle line */
+  .topbar-sub         { display:none !important; }
+  /* Header: hide date-range picker */
+  .topbar-date-filter { display:none !important; }
+  /* Sign-out: collapse to icon */
+  .btn-signout-label  { display:none !important; }
+  .btn-signout        { padding:9px !important; min-width:40px; }
+
+  /* ── Table → card stack ──
+     Add className="table-card-stack" to <table>
+     and data-label="Col Name"   to every <td>    */
+  .table-card-stack thead { display:none !important; }
+  .table-card-stack tbody tr {
+    display:flex; flex-direction:column;
+    border:1.5px solid rgba(245,200,66,.3);
+    border-radius:12px; margin-bottom:10px;
+    padding:12px 14px; background:#fff;
+  }
+  .table-card-stack tbody td {
+    border:none !important; padding:4px 0 !important; font-size:13px;
+  }
+  .table-card-stack tbody td::before {
+    content: attr(data-label) ": ";
+    display:block;
+    font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.06em; color:#9a8878;
+  }
+
+  /* Owner orders: item cards full width */
+  .order-item-cards { flex-direction:column !important; }
+  .order-item-card  { min-width:unset !important; width:100% !important; }
+
+  /* Modals: bottom sheet */
+  .modal-overlay { align-items:flex-end !important; padding:0 !important; }
+  .modal-box {
+    border-radius:20px 20px 0 0 !important;
+    max-height:92vh; overflow-y:auto;
+    width:100% !important; max-width:100% !important;
+  }
+
+  /* CreateAccountModal role grid → 1 col */
+  .role-grid { grid-template-columns:1fr; gap:8px; }
+
+  main[data-main] { padding:10px !important; }
+}
+
+
+/* ─── XS  0–479px ── Small phones ─── */
+@media (max-width: 479px) {
+  :root { --header-h:52px; --main-pad:8px; }
+
+  .stat-grid-4,
+  .stat-grid-5,
+  .stat-grid-6,
+  .stat-grid-3 { grid-template-columns:repeat(2,1fr); gap:7px; }
+
+  .product-grid { grid-template-columns:repeat(2,1fr); gap:7px; }
+
+  /* Chart canvas height reduction */
+  .chart-canvas-wrap { height:180px !important; }
+
+  /* Stat card tighter */
+  .stat-card-inner { padding:12px 10px 10px !important; }
+  .stat-value      { font-size:20px !important; }
+  .stat-label      { font-size:10px !important; }
+
+  /* Owner hero compact */
+  .owner-hero { padding:12px 14px; border-radius:12px; }
+
+  /* Hide very low-priority columns */
+  .col-hide-xs { display:none !important; }
+
+  main[data-main] { padding:8px !important; }
+}
+
+
+/* ═══════════════════════════════════════════════
+   TOUCH TARGETS — minimum 44×44px
+═══════════════════════════════════════════════ */
+@media (max-width: 1023px) {
+  button, [role="button"], a, select { min-height:44px; }
+  /* Exempt decorative elements */
+  button.icon-btn,
+  span[role="button"] { min-height:unset; }
+}
+
+
+/* ═══════════════════════════════════════════════
+   SAFE AREA — iPhone notch / home-bar
+═══════════════════════════════════════════════ */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-top    { padding-top:    env(safe-area-inset-top); }
+
+  header[data-topbar] {
+    padding-left:  max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  @media (max-width:639px) {
+    .modal-box {
+      padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    }
+  }
+}
+
+
+/* ═══════════════════════════════════════════════
+   REDUCED MOTION
+═══════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        .01ms !important;
+    animation-iteration-count: 1     !important;
+    transition-duration:       .01ms !important;
+    scroll-behavior:           auto  !important;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════
+   HIGH CONTRAST
+═══════════════════════════════════════════════ */
+@media (prefers-contrast: high) {
+  :root { --primary-yellow:#ffcc00; --primary-orange:#e06000; }
+  button { border-width:2px !important; }
+}
+
+
+/* ═══════════════════════════════════════════════
+   PRINT
+═══════════════════════════════════════════════ */
+@media print {
+  aside[data-sidebar],
+  header[data-topbar],
+  .sidebar-overlay { display:none !important; }
+
+  main[data-main]  { padding:0 !important; overflow:visible !important; }
+  body             { background:#fff !important; height:auto !important; }
+  [data-admin],
+  [data-owner]     { height:auto !important; overflow:visible !important; }
+}
