@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getStoredToken, clearAuth } from '@/lib/auth';
-import { AdminSidebar } from '@/app/admin/dashboard/page';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import CreateAccountModal, {
   type CreatedAccountData,
 } from '@/components/admin/CreateAccountModal';

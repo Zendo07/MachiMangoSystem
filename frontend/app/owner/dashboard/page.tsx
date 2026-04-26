@@ -2,20 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  getStoredUser,
-  getStoredToken,
-  clearAuth,
-  ROLE_META,
-  type UserRole,
-} from '@/lib/auth';
+import { clearAuth, ROLE_META, type UserRole } from '@/lib/auth';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 import CreateAccountModal, {
   type CreatedAccountData,
 } from '@/components/admin/CreateAccountModal';
 import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
 import OwnerSidebar from '@/components/owner/OwnerSidebar';
 
-// ─── PALETTE — matches Products page exactly ─────────────────────────────────
 const C = {
   brownDarker: '#4a2511',
   brownDark: '#654321',
@@ -23,65 +17,51 @@ const C = {
   orange: '#ff8c00',
   green: '#7cb342',
   darkGreen: '#228b22',
-  skyBlue: '#87ceeb',
-
-  // Surfaces — frosted glass over the gradient
   card: 'rgba(255,255,255,0.72)',
   cardBorder: 'rgba(255,255,255,0.55)',
   cardShadow: '0 2px 14px rgba(0,80,40,0.10)',
   panelBg: 'rgba(255,255,255,0.68)',
-  inputBg: 'rgba(255,255,255,0.85)',
-  inputBorder: 'rgba(124,179,66,0.30)',
-
-  // Text
   textPrimary: '#4a2511',
-  textSecondary: '#654321',
   textMuted: '#999',
   textGreen: '#3d7a1c',
 };
 
 const PAGE_BG =
-  'linear-gradient(180deg, #87ceeb 0%, #98d8e8 18%, #c8eeaa 42%, #a8dc7a 68%, #7cb342 100%)';
+  'linear-gradient(180deg,#87ceeb 0%,#98d8e8 18%,#c8eeaa 42%,#a8dc7a 68%,#7cb342 100%)';
 
-// ─── ORDER STATUS BADGE ───────────────────────────────────────────────────────
 const STATUS_META: Record<
   string,
-  { label: string; bg: string; color: string; dot: string; icon: string }
+  { label: string; bg: string; color: string; dot: string }
 > = {
   pending: {
     label: 'Pending',
     bg: '#FFF0D9',
     color: '#CC7000',
     dot: '#FF8C00',
-    icon: '⏳',
   },
   processing: {
     label: 'Processing',
     bg: '#E0F2FA',
     color: '#2E7BAD',
     dot: '#4A9ECA',
-    icon: '⚙️',
   },
   shipped: {
     label: 'Shipped',
     bg: '#F3E5FF',
     color: '#7B3FA0',
     dot: '#9C4DC4',
-    icon: '🚚',
   },
   delivered: {
     label: 'Delivered',
     bg: '#E8F5E1',
     color: '#3D6E27',
     dot: '#5A9E3A',
-    icon: '✅',
   },
   cancelled: {
     label: 'Cancelled',
     bg: '#FFEBEE',
     color: '#C62828',
     dot: '#EF5350',
-    icon: '❌',
   },
 };
 
@@ -104,147 +84,110 @@ function StatusBadge({ status }: { status: string }) {
       <span
         style={{ width: 6, height: 6, borderRadius: '50%', background: m.dot }}
       />
-      {m.icon} {m.label}
+      {m.label}
     </span>
   );
 }
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export default function OwnerDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+
+  const { user, ready, authFetch } = useAuthGuard(
+    ['franchise_owner', 'franchisee'],
+    {
+      hq_admin: '/admin/dashboard',
+      crew: '/crew/dashboard',
+    },
+  );
+
   const [loaded, setLoaded] = useState(false);
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [createModal, setCreateModal] = useState(false);
   const [successModal, setSuccessModal] = useState(false);
   const [createdAccount, setCreatedAccount] =
     useState<CreatedAccountData | null>(null);
 
   useEffect(() => {
-    const u = getStoredUser();
-    const t = getStoredToken();
-    if (!u || !t) {
-      router.replace('/login');
-      return;
-    }
-    if (u.role === 'hq_admin') {
-      router.replace('/admin/dashboard');
-      return;
-    }
-    if (u.role === 'crew') {
-      router.replace('/crew/dashboard');
-      return;
-    }
-    setUser(u);
-    setTimeout(() => setLoaded(true), 80);
-  }, [router]);
+    if (ready) setTimeout(() => setLoaded(true), 80);
+  }, [ready]);
 
   const fetchOrders = useCallback(async () => {
-    const token = getStoredToken();
-    if (!token) return;
-    setLoadingOrders(true);
+    setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/orders/my-orders', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch('/orders/my-orders');
       const data = (await res.json()) as { success: boolean; data: any[] };
-      if (data.success) setRecentOrders(data.data.slice(0, 5));
+      if (data.success) setAllOrders(data.data);
     } catch {
-      /* ignore */
     } finally {
-      setLoadingOrders(false);
+      setLoading(false);
     }
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
-    if (user) void fetchOrders();
-  }, [user, fetchOrders]);
+    if (ready) void fetchOrders();
+  }, [ready, fetchOrders]);
 
-  if (!user) return null;
+  if (!ready) return null;
 
-  const role = user.role as UserRole;
+  const role = user!.role as UserRole;
   const meta = ROLE_META[role];
-  const isFranchiseOwner = role === 'franchise_owner';
-  const firstName = user.fullName?.split(' ')[0] ?? 'there';
-  const branchLabel =
-    user.branchId ?? (isFranchiseOwner ? 'All Branches' : 'Your Branch');
+  const isFO = role === 'franchise_owner';
+  const firstName = user!.fullName?.split(' ')[0] ?? 'there';
+  const branchLabel = user!.branchId ?? (isFO ? 'All Branches' : 'Your Branch');
 
-  const handleAccountCreated = (data: CreatedAccountData) => {
-    setCreatedAccount(data);
-    setCreateModal(false);
-    setTimeout(() => setSuccessModal(true), 320);
-  };
-  const handleCreateAnother = () => {
-    setSuccessModal(false);
-    setTimeout(() => setCreateModal(true), 320);
-  };
-
-  const totalOrders = recentOrders.length;
-  const pendingOrders = recentOrders.filter(
-    (o) => o.status === 'pending',
-  ).length;
-  const deliveredOrders = recentOrders.filter(
+  const totalOrders = allOrders.length;
+  const pendingOrders = allOrders.filter((o) => o.status === 'pending').length;
+  const shippedOrders = allOrders.filter((o) => o.status === 'shipped').length;
+  const deliveredOrders = allOrders.filter(
     (o) => o.status === 'delivered',
   ).length;
+  const cancelledOrders = allOrders.filter(
+    (o) => o.status === 'cancelled',
+  ).length;
+  const totalDeliveredValue = allOrders
+    .filter((o) => o.status === 'delivered')
+    .reduce((s, o) => s + parseFloat(String(o.totalAmount ?? 0)), 0);
+  const recentOrders = allOrders.slice(0, 5);
 
-  const quickActions = [
+  const statCards = [
+    { label: 'Total Orders', value: totalOrders, note: 'All time' },
+    { label: 'Pending', value: pendingOrders, note: 'Awaiting HQ' },
+    { label: 'Shipped', value: shippedOrders, note: 'On the way' },
+    { label: 'Delivered', value: deliveredOrders, note: 'Completed' },
+    { label: 'Cancelled', value: cancelledOrders, note: 'All time' },
     {
-      label: 'Place an Order',
-      desc: 'Order ingredients from HQ',
-      icon: '🛒',
-      route: '/owner/orders',
-      color: C.orange,
-    },
-    {
-      label: 'View Products',
-      desc: 'Browse available items',
-      icon: '📦',
-      route: '/owner/products',
-      color: C.green,
-    },
-    {
-      label: 'Order History',
-      desc: 'Track all your orders',
-      icon: '📋',
-      route: '/owner/orders',
-      color: '#4A9ECA',
+      label: 'Total Delivered Value',
+      value: `₱${totalDeliveredValue.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`,
+      note: 'Excl. cancelled',
     },
   ];
 
-  const perms = isFranchiseOwner
-    ? [
-        { label: 'View Dashboard', ok: true },
-        { label: 'View Products', ok: true },
-        { label: 'Place Orders', ok: true },
-        { label: 'Order History', ok: true },
-        { label: 'Create Accounts', ok: true },
-        { label: 'Manage HQ Settings', ok: false },
-      ]
-    : [
-        { label: 'View Dashboard', ok: true },
-        { label: 'View Products', ok: true },
-        { label: 'Place Orders', ok: true },
-        { label: 'Order History', ok: true },
-        { label: 'Create Accounts', ok: false },
-        { label: 'Manage Settings', ok: false },
-      ];
-
   return (
     <>
-      {isFranchiseOwner && (
+      {isFO && (
         <CreateAccountModal
           isOpen={createModal}
           onClose={() => setCreateModal(false)}
-          onSuccess={handleAccountCreated}
+          onSuccess={(d: CreatedAccountData) => {
+            setCreatedAccount(d);
+            setCreateModal(false);
+            setTimeout(() => setSuccessModal(true), 320);
+          }}
         />
       )}
-      {isFranchiseOwner && (
+      {isFO && (
         <SuccessCredentialModal
           isOpen={successModal}
           data={createdAccount}
           onClose={() => setSuccessModal(false)}
-          onCreateAnother={handleCreateAnother}
+          onCreateAnother={() => {
+            setSuccessModal(false);
+            setTimeout(() => setCreateModal(true), 320);
+          }}
         />
       )}
 
@@ -258,14 +201,11 @@ export default function OwnerDashboard() {
           fontFamily: "'Poppins', system-ui, sans-serif",
         }}
       >
-        {/* ── Shared Sidebar ── */}
         <OwnerSidebar
           activeNav="Dashboard"
-          userName={user.fullName}
+          userName={user!.fullName}
           userRole={role}
-          onCreateAccount={
-            isFranchiseOwner ? () => setCreateModal(true) : undefined
-          }
+          onCreateAccount={isFO ? () => setCreateModal(true) : undefined}
         />
 
         <div
@@ -293,66 +233,51 @@ export default function OwnerDashboard() {
               boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 19,
-                      color: C.brownDark,
-                      fontFamily: "'Fredoka', sans-serif",
-                    }}
-                  >
-                    {meta.emoji} {meta.label} Dashboard
-                  </div>
-                  <span
-                    style={{
-                      padding: '3px 10px',
-                      borderRadius: 20,
-                      background: meta.badgeBg,
-                      color: meta.badgeColor,
-                      fontSize: 10,
-                      fontWeight: 800,
-                      border: `1.5px solid ${meta.badgeColor}40`,
-                      textTransform: 'uppercase',
-                      letterSpacing: '.04em',
-                    }}
-                  >
-                    {meta.label}
-                  </span>
-                </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div
                   style={{
-                    fontSize: 12,
-                    color: C.textGreen,
-                    fontWeight: 600,
-                    marginTop: 1,
+                    fontWeight: 800,
+                    fontSize: 19,
+                    color: C.brownDark,
+                    fontFamily: "'Fredoka', sans-serif",
                   }}
                 >
-                  {branchLabel} ·{' '}
-                  {new Date().toLocaleDateString('en-PH', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {meta.label} Dashboard
                 </div>
+                <span
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: 20,
+                    background: meta.badgeBg,
+                    color: meta.badgeColor,
+                    fontSize: 10,
+                    fontWeight: 800,
+                    border: `1.5px solid ${meta.badgeColor}40`,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.04em',
+                  }}
+                >
+                  {meta.label}
+                </span>
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.textGreen,
+                  fontWeight: 600,
+                  marginTop: 1,
+                }}
+              >
+                {branchLabel} ·{' '}
+                {new Date().toLocaleDateString('en-PH', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: 10,
-                  background: 'rgba(200,238,170,0.5)',
-                  border: `1.5px solid ${C.green}`,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: C.darkGreen,
-                }}
-              >
-                👋 Hi, {firstName}!
-              </div>
               <button
                 onClick={() => {
                   clearAuth();
@@ -368,53 +293,40 @@ export default function OwnerDashboard() {
                   fontSize: 13,
                   cursor: 'pointer',
                 }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.borderColor = C.yellow)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.borderColor = 'rgba(255,225,53,.35)')
-                }
               >
                 Sign Out
               </button>
             </div>
           </header>
 
-          {/* ── Body ── */}
-          <main
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: 28,
-              background: 'transparent',
-            }}
-          >
-            {/* Welcome Banner */}
+          {/* ── Main ── */}
+          <main style={{ flex: 1, overflowY: 'auto', padding: 28 }}>
+            {/* Hero Banner */}
             <div
               style={{
-                background: `linear-gradient(135deg,${C.brownDarker},${C.brownDark})`,
+                background: `linear-gradient(135deg,${C.darkGreen},${C.green})`,
                 borderRadius: 18,
                 padding: '24px 32px',
                 marginBottom: 24,
-                border: '2px solid rgba(255,225,53,.20)',
+                border: '2px solid rgba(255,255,255,.20)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                boxShadow: '0 4px 20px rgba(74,37,17,0.25)',
+                boxShadow: '0 4px 20px rgba(34,100,34,0.25)',
               }}
             >
               <div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: C.yellow }}>
-                  Good day, {firstName}! 🥭
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>
+                  Good day, {firstName}!
                 </div>
                 <div
                   style={{
                     fontSize: 13,
-                    color: 'rgba(255,225,53,.7)',
+                    color: 'rgba(255,255,255,.80)',
                     marginTop: 4,
                   }}
                 >
-                  {isFranchiseOwner
+                  {isFO
                     ? 'Manage your franchise operations and place orders from HQ below.'
                     : 'Place your ingredient orders and track their status from HQ below.'}
                 </div>
@@ -430,25 +342,9 @@ export default function OwnerDashboard() {
                   fontWeight: 800,
                   fontSize: 14,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(255,140,0,.35)',
                   flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
                 }}
               >
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.8"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="9" cy="21" r="1" />
-                  <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                </svg>
                 Place Order
               </button>
             </div>
@@ -457,47 +353,30 @@ export default function OwnerDashboard() {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3,1fr)',
-                gap: 16,
+                gridTemplateColumns: 'repeat(6,1fr)',
+                gap: 12,
                 marginBottom: 24,
               }}
             >
-              {[
-                {
-                  label: 'Total Orders',
-                  grad: `linear-gradient(135deg,${C.orange},#CC7000)`,
-                  value: totalOrders,
-                  note: 'All time',
-                },
-                {
-                  label: 'Pending Orders',
-                  grad: `linear-gradient(135deg,#FF8C00,#E65100)`,
-                  value: pendingOrders,
-                  note: 'Awaiting HQ',
-                },
-                {
-                  label: 'Delivered',
-                  grad: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-                  value: deliveredOrders,
-                  note: 'Completed',
-                },
-              ].map((card, i) => (
+              {statCards.map((card, i) => (
                 <div
                   key={i}
                   style={{
                     background: C.card,
                     backdropFilter: 'blur(12px)',
                     WebkitBackdropFilter: 'blur(12px)',
-                    borderRadius: 16,
-                    padding: '22px',
+                    borderRadius: 14,
+                    padding: '18px 12px',
                     boxShadow: C.cardShadow,
                     border: `1.5px solid ${C.cardBorder}`,
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    textAlign: 'center',
+                    gap: 4,
                     opacity: loaded ? 1 : 0,
                     transform: loaded ? 'translateY(0)' : 'translateY(14px)',
-                    transition: `opacity .4s ${i * 0.08}s, transform .4s ${i * 0.08}s`,
+                    transition: `opacity .4s ${i * 0.06}s, transform .4s ${i * 0.06}s`,
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.transform =
@@ -514,285 +393,40 @@ export default function OwnerDashboard() {
                 >
                   <div
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      gap: 4,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: C.brownDark,
+                      textTransform: 'uppercase',
+                      letterSpacing: '.06em',
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: C.brownDark,
-                      }}
-                    >
-                      {card.label}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 30,
-                        fontWeight: 900,
-                        color: C.brownDarker,
-                        letterSpacing: '-0.5px',
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      {loadingOrders ? '—' : card.value}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        color: C.textMuted,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {card.note}
-                    </div>
+                    {card.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: i === 5 ? 15 : 30,
+                      fontWeight: 900,
+                      color: C.brownDarker,
+                      lineHeight: 1.1,
+                      marginTop: 2,
+                    }}
+                  >
+                    {loading ? '—' : card.value}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: C.textMuted,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {card.note}
                   </div>
                 </div>
               ))}
             </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 18,
-                marginBottom: 18,
-              }}
-            >
-              {/* Quick Actions */}
-              <div
-                style={{
-                  background: C.panelBg,
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  borderRadius: 16,
-                  padding: '22px',
-                  boxShadow: C.cardShadow,
-                  border: `1.5px solid ${C.cardBorder}`,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 16,
-                    color: C.brownDark,
-                    marginBottom: 16,
-                    fontFamily: "'Fredoka', sans-serif",
-                  }}
-                >
-                  Quick Actions
-                </div>
-                <div
-                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
-                >
-                  {quickActions.map((action, i) => (
-                    <button
-                      key={i}
-                      onClick={() => router.push(action.route)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 14,
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        border: `1.5px solid rgba(255,255,255,0.55)`,
-                        background: 'rgba(255,255,255,0.50)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        opacity: loaded ? 1 : 0,
-                        transform: loaded
-                          ? 'translateY(0)'
-                          : 'translateY(10px)',
-                        transition: `all .18s, opacity .4s ${i * 0.07}s, transform .4s ${i * 0.07}s`,
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.borderColor =
-                          C.yellow;
-                        (e.currentTarget as HTMLElement).style.background =
-                          'rgba(255,225,53,0.15)';
-                        (e.currentTarget as HTMLElement).style.transform =
-                          'translateX(4px)';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.borderColor =
-                          'rgba(255,255,255,0.55)';
-                        (e.currentTarget as HTMLElement).style.background =
-                          'rgba(255,255,255,0.50)';
-                        (e.currentTarget as HTMLElement).style.transform =
-                          'translateX(0)';
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 44,
-                          height: 44,
-                          borderRadius: 12,
-                          background: `${action.color}18`,
-                          border: `2px solid ${action.color}30`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 20,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {action.icon}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: 13.5,
-                            color: C.brownDarker,
-                          }}
-                        >
-                          {action.label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: C.textMuted,
-                            marginTop: 2,
-                          }}
-                        >
-                          {action.desc}
-                        </div>
-                      </div>
-                      <svg
-                        style={{ color: '#CCC', flexShrink: 0 }}
-                        width="14"
-                        height="14"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        viewBox="0 0 24 24"
-                      >
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Access Level */}
-              <div
-                style={{
-                  background: C.panelBg,
-                  backdropFilter: 'blur(12px)',
-                  WebkitBackdropFilter: 'blur(12px)',
-                  borderRadius: 16,
-                  padding: '22px',
-                  boxShadow: C.cardShadow,
-                  border: `1.5px solid ${C.cardBorder}`,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 16,
-                    color: C.brownDark,
-                    marginBottom: 16,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    fontFamily: "'Fredoka', sans-serif",
-                  }}
-                >
-                  <svg
-                    width="15"
-                    height="15"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    viewBox="0 0 24 24"
-                  >
-                    <rect x="3" y="11" width="18" height="11" rx="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                  Your Access Level
-                </div>
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 12,
-                    background: `${meta.badgeBg}`,
-                    border: `2px solid ${meta.badgeColor}30`,
-                    marginBottom: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 14,
-                      color: meta.badgeColor,
-                    }}
-                  >
-                    {meta.emoji} {meta.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: meta.badgeColor,
-                      opacity: 0.8,
-                      marginTop: 2,
-                    }}
-                  >
-                    {meta.description}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 8,
-                  }}
-                >
-                  {perms.map((p, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 7,
-                        padding: '8px 10px',
-                        borderRadius: 9,
-                        background: p.ok
-                          ? 'rgba(200,238,170,0.55)'
-                          : 'rgba(255,255,255,0.40)',
-                        border: `1.5px solid ${p.ok ? C.green + '40' : 'rgba(255,255,255,0.45)'}`,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 800,
-                          color: p.ok ? C.darkGreen : '#C62828',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {p.ok ? '✓' : '✕'}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          color: C.brownDark,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {p.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Orders */}
+            {/* Recent Orders Table */}
             <div
               style={{
                 background: C.card,
@@ -810,8 +444,9 @@ export default function OwnerDashboard() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '18px 24px',
-                  background: `linear-gradient(90deg,rgba(255,225,53,0.22),rgba(255,140,0,0.14))`,
-                  borderBottom: `2px solid rgba(255,225,53,0.35)`,
+                  background:
+                    'linear-gradient(90deg,rgba(255,225,53,0.22),rgba(255,140,0,0.14))',
+                  borderBottom: '2px solid rgba(255,225,53,0.35)',
                 }}
               >
                 <div>
@@ -834,7 +469,9 @@ export default function OwnerDashboard() {
                       marginTop: 2,
                     }}
                   >
-                    Your latest ingredient orders from HQ
+                    {totalOrders > 5
+                      ? `Showing 5 of ${totalOrders} orders`
+                      : 'Your latest ingredient orders from HQ'}
                   </div>
                 </div>
                 <button
@@ -848,16 +485,13 @@ export default function OwnerDashboard() {
                     fontWeight: 700,
                     fontSize: 13,
                     cursor: 'pointer',
-                    boxShadow: '0 3px 10px rgba(34,139,34,.28)',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
                 >
                   View All Orders
                 </button>
               </div>
 
-              {loadingOrders ? (
+              {loading ? (
                 <div
                   style={{
                     padding: 48,
@@ -870,11 +504,6 @@ export default function OwnerDashboard() {
                 </div>
               ) : recentOrders.length === 0 ? (
                 <div style={{ padding: 56, textAlign: 'center' }}>
-                  <div
-                    style={{ fontSize: 40, marginBottom: 10, opacity: 0.45 }}
-                  >
-                    📋
-                  </div>
                   <div
                     style={{
                       fontWeight: 700,
@@ -905,10 +534,9 @@ export default function OwnerDashboard() {
                       fontWeight: 700,
                       fontSize: 13,
                       cursor: 'pointer',
-                      boxShadow: '0 3px 12px rgba(255,140,0,0.25)',
                     }}
                   >
-                    🛒 Place First Order
+                    Place First Order
                   </button>
                 </div>
               ) : (
@@ -950,7 +578,7 @@ export default function OwnerDashboard() {
                         <tr
                           key={order.id}
                           style={{
-                            borderBottom: `1.5px solid rgba(255,225,53,0.20)`,
+                            borderBottom: '1.5px solid rgba(255,225,53,0.20)',
                             background:
                               idx % 2 === 0
                                 ? 'rgba(255,255,255,0.55)'

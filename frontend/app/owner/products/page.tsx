@@ -562,7 +562,7 @@ export default function ProductsPage() {
                       tab === t ? '0 3px 10px rgba(255,140,0,0.25)' : 'none',
                   }}
                 >
-                  {t === 'order' ? '🛒 Place Order' : '📋 Order History'}
+                  {t === 'order' ? ' Place Order' : ' Order History'}
                 </button>
               ))}
             </div>
@@ -1353,7 +1353,7 @@ export default function ProductsPage() {
                           boxShadow: '0 4px 14px rgba(34,139,34,.28)',
                         }}
                       >
-                        {placing ? '⏳ Placing Order…' : '✅ Place Order'}
+                        {placing ? ' Placing Order…' : ' Place Order'}
                       </button>
                       <div
                         style={{

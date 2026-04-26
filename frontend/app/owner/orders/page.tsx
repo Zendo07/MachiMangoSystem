@@ -19,6 +19,8 @@ const C = {
   brownMid: '#654321',
   yellow: '#ffe135',
   orange: '#ff8c00',
+  green: '#7cb342',
+  darkGreen: '#228b22',
   textGreen: '#3d7a1c',
   muted: '#9a8478',
   rowBg: 'rgba(255,255,255,0.92)',
@@ -91,12 +93,14 @@ const ALL_STATUSES = [
   'delivered',
   'cancelled',
 ] as const;
-const COLS = '160px 1fr 120px 130px 140px 40px';
+
+const COLS = '160px 1fr 130px 140px 150px 36px';
 
 function toNum(v: number | string | undefined | null): number {
   const n = parseFloat(String(v ?? 0));
   return isNaN(n) ? 0 : Math.round(n * 100) / 100;
 }
+
 function formatPHP(v: number | string): string {
   return (
     '₱' +
@@ -115,13 +119,14 @@ function StatusBadge({ status }: { status: string }) {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 5,
-        padding: '4px 10px',
+        padding: '5px 12px',
         borderRadius: 20,
         background: m.bg,
         color: m.color,
         fontSize: 11,
         fontWeight: 700,
         whiteSpace: 'nowrap',
+        border: `1px solid ${m.dot}30`,
       }}
     >
       <span
@@ -150,7 +155,7 @@ function Chevron({ open }: { open: boolean }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{
-        transition: 'transform .2s',
+        transition: 'transform .22s ease',
         transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
         flexShrink: 0,
       }}
@@ -216,6 +221,17 @@ export default function OrdersPage() {
   const filtered =
     filter === 'all' ? orders : orders.filter((o) => o.status === filter);
 
+  /* Summary stats */
+  const totalSpent = orders
+    .filter((o) => o.status === 'delivered')
+    .reduce((s, o) => s + toNum(o.totalAmount), 0);
+  const activeCount = orders.filter(
+    (o) =>
+      o.status === 'pending' ||
+      o.status === 'processing' ||
+      o.status === 'shipped',
+  ).length;
+
   return (
     <div
       style={{
@@ -231,15 +247,18 @@ export default function OrdersPage() {
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fredoka:wght@600;700&family=JetBrains+Mono:wght@500&display=swap');
         * { box-sizing: border-box; }
 
-        .order-row { transition: background .15s, border-left .15s; cursor: pointer; }
+        .order-row { transition: background .15s, border-left-color .15s; cursor: pointer; }
         .order-row:hover { background: ${C.rowHover} !important; }
 
-        .pill { transition: all .15s; border: none; cursor: pointer; }
-        .pill:hover { opacity: .85; }
+        .pill-btn { transition: all .15s; border: none; cursor: pointer; }
+        .pill-btn:hover { opacity: .85; transform: translateY(-1px); }
 
         .hdr-btn { transition: all .13s; border: none; cursor: pointer; }
         .hdr-btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
         .hdr-btn:active { transform: translateY(0); }
+
+        .item-card { transition: transform .14s, box-shadow .14s; }
+        .item-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.08) !important; }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(100,67,33,.22); border-radius: 99px; }
@@ -277,7 +296,7 @@ export default function OrdersPage() {
             backdropFilter: 'blur(18px)',
             WebkitBackdropFilter: 'blur(18px)',
             borderBottom: `3px solid ${C.yellow}`,
-            height: 68,
+            height: 70,
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
@@ -291,7 +310,7 @@ export default function OrdersPage() {
               style={{
                 fontFamily: "'Fredoka', sans-serif",
                 fontWeight: 700,
-                fontSize: 20,
+                fontSize: 21,
                 color: C.brownMid,
                 lineHeight: 1.1,
               }}
@@ -323,7 +342,7 @@ export default function OrdersPage() {
                 boxShadow: '0 3px 10px rgba(255,140,0,.25)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 7,
               }}
             >
               <svg
@@ -366,6 +385,95 @@ export default function OrdersPage() {
           className="main-pad"
           style={{ flex: 1, overflowY: 'auto', padding: '22px 26px' }}
         >
+          {/* ── Summary stat tiles ── */}
+          {!loading && orders.length > 0 && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 12,
+                marginBottom: 20,
+              }}
+            >
+              {[
+                {
+                  label: 'Active Orders',
+                  value: activeCount,
+                  sub: 'in progress',
+                  accent: '#1B6899',
+                  accentBg: '#E8F3FB',
+                },
+                {
+                  label: 'Delivered',
+                  value: orders.filter((o) => o.status === 'delivered').length,
+                  sub: 'completed',
+                  accent: '#2E6020',
+                  accentBg: '#EBF5E5',
+                },
+                {
+                  label: 'Total Spent',
+                  value: formatPHP(totalSpent),
+                  sub: 'delivered orders',
+                  accent: C.brown,
+                  accentBg: 'rgba(255,225,53,0.18)',
+                  large: true,
+                },
+              ].map((tile, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: 'rgba(255,255,255,0.82)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                    borderRadius: 14,
+                    padding: '16px 18px',
+                    border: `1.5px solid rgba(255,255,255,0.6)`,
+                    boxShadow: C.shadow,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: C.muted,
+                      textTransform: 'uppercase',
+                      letterSpacing: '.07em',
+                    }}
+                  >
+                    {tile.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: tile.large ? 18 : 28,
+                      fontWeight: 900,
+                      color: tile.accent,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {tile.value}
+                  </div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignSelf: 'flex-start',
+                      padding: '2px 8px',
+                      borderRadius: 20,
+                      background: tile.accentBg,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: tile.accent,
+                    }}
+                  >
+                    {tile.sub}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* ── Filter pills ── */}
           <div
             className="filter-row"
@@ -373,7 +481,7 @@ export default function OrdersPage() {
               display: 'flex',
               gap: 6,
               flexWrap: 'wrap',
-              marginBottom: 18,
+              marginBottom: 16,
             }}
           >
             {ALL_STATUSES.map((s) => {
@@ -386,7 +494,7 @@ export default function OrdersPage() {
               return (
                 <button
                   key={s}
-                  className="pill"
+                  className="pill-btn"
                   onClick={() => setFilter(s)}
                   style={{
                     padding: '6px 14px',
@@ -403,7 +511,13 @@ export default function OrdersPage() {
                         ? C.brown
                         : m.color
                       : C.brownMid,
-                    border: `1.5px solid ${active ? (s === 'all' ? C.orange : m.dot + '70') : 'rgba(255,255,255,0.55)'}`,
+                    border: `1.5px solid ${
+                      active
+                        ? s === 'all'
+                          ? C.orange
+                          : m.dot + '70'
+                        : 'rgba(255,255,255,0.55)'
+                    }`,
                     backdropFilter: 'blur(8px)',
                     boxShadow: active ? C.shadow : 'none',
                     display: 'flex',
@@ -469,7 +583,6 @@ export default function OrdersPage() {
                 boxShadow: C.shadow,
               }}
             >
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
               <div
                 style={{
                   fontWeight: 700,
@@ -549,6 +662,11 @@ export default function OrdersPage() {
               {/* Rows */}
               {filtered.map((order, idx) => {
                 const isOpen = expanded === order.id;
+                const itemsTotal = order.items.reduce(
+                  (s, item) => s + toNum(item.totalPrice),
+                  0,
+                );
+
                 return (
                   <div key={order.id}>
                     <div
@@ -664,16 +782,17 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* Expanded panel */}
+                    {/* ── Expanded panel ── */}
                     {isOpen && (
                       <div
                         style={{
                           background: C.panelBg,
                           borderBottom: `1px solid ${C.rowDivider}`,
                           borderLeft: `3px solid ${C.orange}`,
-                          padding: '16px 20px 18px',
+                          padding: '20px 22px 22px',
                         }}
                       >
+                        {/* Section label */}
                         <div
                           style={{
                             fontSize: 10,
@@ -681,40 +800,56 @@ export default function OrdersPage() {
                             color: C.muted,
                             textTransform: 'uppercase',
                             letterSpacing: '.08em',
-                            marginBottom: 10,
+                            marginBottom: 12,
                           }}
                         >
-                          Order Items
+                          Order Breakdown
                         </div>
 
+                        {/* Item cards */}
                         <div
                           style={{
                             display: 'flex',
                             flexWrap: 'wrap',
                             gap: 8,
-                            marginBottom: order.adminNote ? 14 : 0,
+                            marginBottom: 16,
                           }}
                         >
                           {order.items.map((item, i) => (
                             <div
                               key={i}
+                              className="item-card"
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 12,
-                                background: 'rgba(255,255,255,0.90)',
-                                border: '1px solid rgba(255,225,53,0.35)',
-                                borderRadius: 10,
-                                padding: '9px 14px',
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                                gap: 14,
+                                background: 'rgba(255,255,255,0.92)',
+                                border: '1.5px solid rgba(255,225,53,0.30)',
+                                borderRadius: 11,
+                                padding: '10px 16px',
+                                boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
+                                minWidth: 200,
                               }}
                             >
-                              <div>
+                              {/* Item color indicator */}
+                              <div
+                                style={{
+                                  width: 4,
+                                  height: 36,
+                                  borderRadius: 99,
+                                  background: `linear-gradient(180deg,${C.yellow},${C.orange})`,
+                                  flexShrink: 0,
+                                }}
+                              />
+                              <div style={{ flex: 1, minWidth: 0 }}>
                                 <div
                                   style={{
                                     fontSize: 12,
                                     fontWeight: 700,
                                     color: C.brown,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
                                   }}
                                 >
                                   {item.name}
@@ -723,7 +858,7 @@ export default function OrdersPage() {
                                   style={{
                                     fontSize: 11,
                                     color: C.muted,
-                                    marginTop: 1,
+                                    marginTop: 2,
                                   }}
                                 >
                                   {item.quantity} {item.unit}
@@ -734,6 +869,7 @@ export default function OrdersPage() {
                                   fontSize: 13,
                                   fontWeight: 800,
                                   color: C.brownMid,
+                                  flexShrink: 0,
                                 }}
                               >
                                 {formatPHP(item.totalPrice)}
@@ -742,6 +878,101 @@ export default function OrdersPage() {
                           ))}
                         </div>
 
+                        {/* Order total summary row */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: `linear-gradient(135deg,rgba(255,225,53,0.18),rgba(255,140,0,0.12))`,
+                            border: `1.5px solid rgba(255,225,53,0.45)`,
+                            borderRadius: 12,
+                            padding: '14px 20px',
+                            marginBottom: order.adminNote ? 12 : 0,
+                          }}
+                        >
+                          <div style={{ display: 'flex', gap: 24 }}>
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  color: C.muted,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '.06em',
+                                  marginBottom: 3,
+                                }}
+                              >
+                                Items
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 800,
+                                  color: C.brownMid,
+                                }}
+                              >
+                                {order.items.length} product
+                                {order.items.length !== 1 ? 's' : ''}
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                width: 1,
+                                background: 'rgba(74,37,17,0.12)',
+                                alignSelf: 'stretch',
+                              }}
+                            />
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  color: C.muted,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '.06em',
+                                  marginBottom: 3,
+                                }}
+                              >
+                                Subtotal
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 800,
+                                  color: C.brownMid,
+                                }}
+                              >
+                                {formatPHP(itemsTotal)}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: C.muted,
+                                textTransform: 'uppercase',
+                                letterSpacing: '.06em',
+                                marginBottom: 3,
+                              }}
+                            >
+                              Order Total
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 20,
+                                fontWeight: 900,
+                                color: C.brown,
+                              }}
+                            >
+                              {formatPHP(order.totalAmount)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Admin note */}
                         {order.adminNote && (
                           <div
                             style={{
