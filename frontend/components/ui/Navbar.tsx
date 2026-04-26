@@ -15,7 +15,7 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-4">
           <div className="relative w-[50px] h-[50px] rounded-lg shadow-lg overflow-hidden">
             <Image
-              src="/images/machiMangoLogo.webp"
+              src="/images/machimangologo.webp"
               alt="Machi Mango Logo"
               fill
               className="object-cover"
