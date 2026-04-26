@@ -4,7 +4,6 @@ import { API_BASE } from '@/lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { getStoredToken } from '@/lib/auth';
 
-// ── Same tokens as OwnerDashboard ──────────────────────────────────────────
 const C = {
   brownDarker: '#4a2511',
   brownDark: '#654321',
@@ -12,13 +11,10 @@ const C = {
   orange: '#ff8c00',
   green: '#7cb342',
   darkGreen: '#228b22',
-  // Card surface — frosted white, matching dashboard stat cards on the gradient bg
   card: 'rgba(255,255,255,0.92)',
   cardBorder: 'rgba(255,255,255,0.70)',
-  // Inputs — clean white
   inputBg: '#ffffff',
   inputBorder: '#d1d5db',
-  // Text
   textDark: '#1e293b',
   textMid: '#475569',
   textMuted: '#94a3b8',
@@ -36,7 +32,7 @@ export interface CreatedAccountData {
   fullName: string;
   email: string;
   tempPassword: string;
-  role: 'franchise_owner' | 'franchisee' | 'crew';
+  role: 'franchisee' | 'crew';
   branch: string;
 }
 
@@ -46,14 +42,9 @@ interface Props {
   onSuccess: (data: CreatedAccountData) => void;
 }
 
-type Role = 'franchise_owner' | 'franchisee' | 'crew';
+type Role = 'franchisee' | 'crew';
 
 const ROLES: { value: Role; label: string; sub: string }[] = [
-  {
-    value: 'franchise_owner',
-    label: 'Franchise Owner',
-    sub: 'Full access + analytics',
-  },
   {
     value: 'franchisee',
     label: 'Franchisee',
@@ -63,7 +54,6 @@ const ROLES: { value: Role; label: string; sub: string }[] = [
 ];
 
 const PERM: Record<Role, string> = {
-  franchise_owner: 'Full access: Dashboard, Products, Orders, Analytics',
   franchisee: 'Can place ingredient orders and view products',
   crew: 'View-only: Dashboard and Products only',
 };
@@ -147,7 +137,7 @@ export default function CreateAccountModal({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [role, setRole] = useState<Role>('franchise_owner');
+  const [role, setRole] = useState<Role>('franchisee');
   const [branch, setBranch] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverErr, setServerErr] = useState('');
@@ -166,7 +156,7 @@ export default function CreateAccountModal({
     setEmail('');
     setPassword(genPassword());
     setShowPw(false);
-    setRole('franchise_owner');
+    setRole('franchisee');
     setBranch('');
     setErrors({});
     setServerErr('');
@@ -195,7 +185,7 @@ export default function CreateAccountModal({
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       e.email = 'Valid email required';
     if (password.length < 8) e.password = 'Min 8 characters';
-    if (role !== 'franchise_owner' && !branch) e.branch = 'Select a branch';
+    if (!branch) e.branch = 'Select a branch';
     setErrors(e);
     return !Object.keys(e).length;
   };
@@ -278,7 +268,6 @@ export default function CreateAccountModal({
           maxWidth: 520,
           borderRadius: 20,
           overflow: 'hidden',
-          // Frosted white card — same as dashboard stat cards sitting on the gradient
           background:
             'linear-gradient(160deg,#f0f9e8 0%,#fdfaf4 60%,#f5f0e8 100%)',
           backdropFilter: 'blur(16px)',
@@ -294,7 +283,7 @@ export default function CreateAccountModal({
           fontFamily: "'Poppins', sans-serif",
         }}
       >
-        {/* ── HEADER — yellow bottom border like the dashboard header ── */}
+        {/* HEADER */}
         <div
           style={{
             background: 'linear-gradient(135deg,#e8f5d0,#f5f0e0)',
@@ -317,7 +306,7 @@ export default function CreateAccountModal({
               Create Account
             </div>
             <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
-              Add a Franchise Owner, Franchisee, or Crew member
+              Add a Franchisee or Crew member
             </div>
           </div>
           <button
@@ -342,7 +331,7 @@ export default function CreateAccountModal({
           </button>
         </div>
 
-        {/* ── BODY ── */}
+        {/* BODY */}
         <div
           style={{
             padding: '20px 24px',
@@ -354,7 +343,6 @@ export default function CreateAccountModal({
             background: 'transparent',
           }}
         >
-          {/* Server error */}
           {serverErr && (
             <div
               style={{
@@ -523,7 +511,6 @@ export default function CreateAccountModal({
             {errors.password && <p style={errStyle}>{errors.password}</p>}
           </div>
 
-          {/* Divider */}
           <div style={{ height: 1, background: 'rgba(0,0,0,0.06)' }} />
 
           {/* Role */}
@@ -534,7 +521,7 @@ export default function CreateAccountModal({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3,1fr)',
+                gridTemplateColumns: 'repeat(2,1fr)',
                 gap: 10,
               }}
             >
@@ -544,11 +531,7 @@ export default function CreateAccountModal({
                   <button
                     key={r.value}
                     type="button"
-                    onClick={() => {
-                      setRole(r.value);
-                      if (r.value === 'franchise_owner')
-                        setErrors((p) => ({ ...p, branch: '' }));
-                    }}
+                    onClick={() => setRole(r.value)}
                     style={{
                       padding: '14px 10px',
                       borderRadius: 12,
@@ -604,7 +587,6 @@ export default function CreateAccountModal({
               })}
             </div>
 
-            {/* Permission note */}
             <div
               style={{
                 marginTop: 10,
@@ -623,22 +605,7 @@ export default function CreateAccountModal({
           {/* Branch */}
           <div>
             <label style={labelStyle}>
-              Assign Branch{' '}
-              {role === 'franchise_owner' ? (
-                <span
-                  style={{
-                    color: C.textMuted,
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    letterSpacing: 0,
-                    fontSize: 10,
-                  }}
-                >
-                  (optional)
-                </span>
-              ) : (
-                <span style={{ color: C.orange }}>*</span>
-              )}
+              Assign Branch <span style={{ color: C.orange }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
               <select
@@ -656,11 +623,7 @@ export default function CreateAccountModal({
                 onFocus={(e) => onFocus(e, !!errors.branch)}
                 onBlur={(e) => onBlur(e, !!errors.branch)}
               >
-                <option value="">
-                  {role === 'franchise_owner'
-                    ? 'Pampanga branches'
-                    : 'Select a branch…'}
-                </option>
+                <option value="">Select a branch…</option>
                 {BRANCHES.map((b) => (
                   <option key={b} value={b}>
                     {b}
@@ -690,7 +653,7 @@ export default function CreateAccountModal({
           </div>
         </div>
 
-        {/* ── FOOTER ── */}
+        {/* FOOTER */}
         <div
           style={{
             padding: '14px 24px 20px',
@@ -718,7 +681,6 @@ export default function CreateAccountModal({
           >
             Cancel
           </button>
-          {/* CTA — yellow→orange gradient matching the dashboard Place Order button */}
           <button
             onClick={handleSubmit}
             disabled={submitting}
