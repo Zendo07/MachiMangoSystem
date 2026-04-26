@@ -45,6 +45,9 @@ export const C = {
   bg: '#F2EAD8',
 };
 
+const PAGE_BG =
+  'linear-gradient(180deg,#87ceeb 0%,#98d8e8 18%,#c8eeaa 42%,#a8dc7a 68%,#7cb342 100%)';
+
 // ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const router = useRouter();
@@ -308,7 +311,8 @@ export default function AdminDashboard() {
         style={{
           display: 'flex',
           height: '100vh',
-          background: C.bg,
+          background: PAGE_BG,
+          backgroundAttachment: 'fixed',
           overflow: 'hidden',
           fontFamily: "'Segoe UI', system-ui, sans-serif",
         }}
@@ -333,7 +337,9 @@ export default function AdminDashboard() {
           {/* Header */}
           <header
             style={{
-              background: '#fff',
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               borderBottom: `3px solid ${C.yellow}`,
               padding: '0 28px',
               height: 70,
@@ -341,7 +347,7 @@ export default function AdminDashboard() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
-              boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+              boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -519,7 +525,7 @@ export default function AdminDashboard() {
               flex: 1,
               overflowY: 'auto',
               padding: 28,
-              background: C.bg,
+              background: 'transparent',
             }}
           >
             {/* Stat cards */}
@@ -535,21 +541,24 @@ export default function AdminDashboard() {
                 <div
                   key={i}
                   style={{
-                    background: '#fff',
+                    background: 'rgba(255,255,255,0.72)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
                     borderRadius: 16,
                     padding: '22px 22px 18px',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+                    boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
+                    border: '1.5px solid rgba(255,255,255,0.55)',
                     transition: 'transform 0.2s, box-shadow 0.2s',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-3px)';
                     e.currentTarget.style.boxShadow =
-                      '0 8px 24px rgba(0,0,0,0.11)';
+                      '0 8px 24px rgba(34,100,34,0.18)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
                     e.currentTarget.style.boxShadow =
-                      '0 2px 12px rgba(0,0,0,0.07)';
+                      '0 2px 14px rgba(34,100,34,0.10)';
                   }}
                 >
                   <div
@@ -633,10 +642,13 @@ export default function AdminDashboard() {
             >
               <div
                 style={{
-                  background: '#fff',
+                  background: 'rgba(255,255,255,0.72)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
                   borderRadius: 16,
                   padding: '22px 22px 18px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+                  boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
+                  border: '1.5px solid rgba(255,255,255,0.55)',
                 }}
               >
                 <div
@@ -688,10 +700,13 @@ export default function AdminDashboard() {
               </div>
               <div
                 style={{
-                  background: '#fff',
+                  background: 'rgba(255,255,255,0.72)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
                   borderRadius: 16,
                   padding: '22px 22px 18px',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
+                  boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
+                  border: '1.5px solid rgba(255,255,255,0.55)',
                 }}
               >
                 <div
@@ -746,9 +761,11 @@ export default function AdminDashboard() {
             {/* Branch table */}
             <div
               style={{
-                background: '#fff',
+                background: 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
                 borderRadius: 18,
-                boxShadow: '0 2px 16px rgba(0,0,0,0.09)',
+                boxShadow: '0 4px 24px rgba(34,100,34,0.13)',
                 overflow: 'hidden',
                 border: `3px solid ${C.yellow}`,
               }}
@@ -844,13 +861,20 @@ export default function AdminDashboard() {
                         key={idx}
                         style={{
                           borderBottom: `1.5px solid ${C.yellow}30`,
+                          background:
+                            idx % 2 === 0
+                              ? 'rgba(255,255,255,0.55)'
+                              : 'rgba(200,238,170,0.25)',
                           transition: 'background 0.15s',
                         }}
                         onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = `${C.yellow}12`)
+                          (e.currentTarget.style.background = `${C.yellow}18`)
                         }
                         onMouseLeave={(e) =>
-                          (e.currentTarget.style.background = 'transparent')
+                          (e.currentTarget.style.background =
+                            idx % 2 === 0
+                              ? 'rgba(255,255,255,0.55)'
+                              : 'rgba(200,238,170,0.25)')
                         }
                       >
                         <td style={{ padding: '14px 22px' }}>

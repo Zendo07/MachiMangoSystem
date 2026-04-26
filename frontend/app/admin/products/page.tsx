@@ -26,6 +26,9 @@ const C = {
   textSub: '#B5A595',
 };
 
+const PAGE_BG =
+  'linear-gradient(180deg,#87ceeb 0%,#98d8e8 18%,#c8eeaa 42%,#a8dc7a 68%,#7cb342 100%)';
+
 const CATEGORIES = [
   'All',
   'Fruits',
@@ -389,20 +392,20 @@ const Icon = {
 // ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
 const globalStyles = `
   .prod-card {
-    background: #fff;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 14px;
     overflow: hidden;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
-    border: 1.5px solid #E8DDD0;
+    border: 1.5px solid rgba(255,255,255,0.55);
   }
   .prod-card:hover {
-    box-shadow: 0 12px 32px rgba(62,26,0,0.12);
+    box-shadow: 0 12px 32px rgba(34,100,34,0.18);
     border-color: #F5C842;
   }
-  .prod-card img {
-  display: block;
-}
+  .prod-card img { display: block; }
 
   .prod-img-band {
     height: 112px;
@@ -412,39 +415,23 @@ const globalStyles = `
     justify-content: center;
     position: relative;
   }
-  .prod-img-band.has-image {
-    background: transparent;
-  }
-
+  .prod-img-band.has-image { background: transparent; }
   .prod-img-band.out-of-stock::after {
     content: 'Out of Stock';
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     background: rgba(0,0,0,0.38);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 700;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
 
   .prod-img-overlay {
-    position: absolute;
-    inset: 0;
+    position: absolute; inset: 0;
     background: rgba(0,0,0,0);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
     transition: background 0.18s;
   }
-  .prod-img-overlay button {
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
+  .prod-img-overlay button { opacity: 0; transition: opacity 0.15s; }
   .prod-img-overlay:hover { background: rgba(0,0,0,0.45); }
   .prod-img-overlay:hover button { opacity: 1; }
 
@@ -452,7 +439,7 @@ const globalStyles = `
     display: inline-flex; align-items: center; gap: 5px;
     padding: 6px 11px; border-radius: 8px;
     border: 1.5px solid #E8DDD0;
-    background: #FAFAF8; color: #6B3A2A;
+    background: rgba(255,255,255,0.72); color: #6B3A2A;
     font-weight: 600; font-size: 12px; cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
@@ -467,7 +454,7 @@ const globalStyles = `
   .btn-stock {
     display: inline-flex; align-items: center; justify-content: center;
     width: 32px; height: 32px; border-radius: 8px;
-    border: 1.5px solid #E8DDD0; background: #FAFAF8; color: #6B3A2A;
+    border: 1.5px solid #E8DDD0; background: rgba(255,255,255,0.72); color: #6B3A2A;
     cursor: pointer; transition: border-color 0.15s;
   }
   .btn-stock:hover { border-color: #FF8C00; }
@@ -477,8 +464,8 @@ const globalStyles = `
     border: 1.5px solid transparent;
   }
   .filter-tab.active { background: #FFF0D9; border-color: #FF8C00; color: #3E1A00; font-weight: 700; }
-  .filter-tab:not(.active) { background: transparent; border-color: #E8DDD0; color: #6B3A2A; }
-  .filter-tab:not(.active):hover { border-color: #D4C4B0; background: #F8F4EE; }
+  .filter-tab:not(.active) { background: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.55); color: #6B3A2A; }
+  .filter-tab:not(.active):hover { border-color: #D4C4B0; background: rgba(255,255,255,0.80); }
   .sort-btn {
     display: inline-flex; align-items: center; gap: 4px;
     padding: 5px 10px; border-radius: 7px; font-size: 12px; font-weight: 600;
@@ -486,7 +473,7 @@ const globalStyles = `
     background: transparent; color: #6B3A2A;
   }
   .sort-btn.active { background: #FFFAE8; border-color: #F5C842; color: #3E1A00; font-weight: 700; }
-  .sort-btn:not(.active):hover { background: #F8F4EE; }
+  .sort-btn:not(.active):hover { background: rgba(255,255,255,0.72); }
   .view-btn {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 7px 13px; font-size: 12px; font-weight: 600;
@@ -494,22 +481,24 @@ const globalStyles = `
   }
   .view-btn.active { background: linear-gradient(135deg,#F5C842,#FF8C00); color: #3E1A00; font-weight: 700; }
   .view-btn:not(.active) { background: transparent; color: #6B3A2A; }
-  .view-btn:not(.active):hover { background: #F8F4EE; }
+  .view-btn:not(.active):hover { background: rgba(255,255,255,0.55); }
   .add-card {
-    border-radius: 14px; border: 2px dashed #D4C4B0;
+    border-radius: 14px; border: 2px dashed rgba(255,255,255,0.65);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 8px; padding: 28px; cursor: pointer; transition: border-color 0.2s, background 0.2s; min-height: 240px;
-    background: transparent;
+    background: rgba(255,255,255,0.35);
   }
-  .add-card:hover { border-color: #FF8C00; background: #FFF8F0; }
+  .add-card:hover { border-color: #FF8C00; background: rgba(255,248,240,0.80); }
   .tr-product { transition: background 0.12s; }
-  .tr-product:hover { background: rgba(245,200,66,0.07) !important; }
+  .tr-product:hover { background: rgba(245,200,66,0.12) !important; }
   .stat-card {
-    background: #fff;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: 12px;
     padding: 16px 18px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    border: 1.5px solid #EDE5D8;
+    box-shadow: 0 2px 14px rgba(34,100,34,0.10);
+    border: 1.5px solid rgba(255,255,255,0.55);
   }
   .header-btn {
     display: inline-flex; align-items: center; gap: 7px;
@@ -519,7 +508,7 @@ const globalStyles = `
   .header-btn:hover { opacity: 0.85; }
   .inp-field {
     width: 100%; padding: 10px 14px; border-radius: 10px;
-    border: 1.5px solid #E8DDD0; background: #FAFAF8;
+    border: 1.5px solid #E8DDD0; background: rgba(255,255,255,0.72);
     color: #3E1A00; font-size: 13px; outline: none;
     transition: border-color 0.15s; font-family: inherit;
     box-sizing: border-box;
@@ -611,7 +600,19 @@ function StockPopover({
   onSave: (n: number) => void;
   onClose: () => void;
 }) {
-  const [v, setV] = useState(value);
+  const [raw, setRaw] = useState(String(value));
+
+  const handleChange = (val: string) => {
+    if (val === '' || /^\d+$/.test(val)) setRaw(val);
+  };
+
+  const commit = () => {
+    const num = parseInt(raw, 10);
+    const safe = isNaN(num) || num < 0 ? 0 : num;
+    onSave(safe);
+    onClose();
+  };
+
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -641,67 +642,30 @@ function StockPopover({
       >
         Update Stock
       </div>
-      <div
+      <input
+        type="text"
+        inputMode="numeric"
+        value={raw}
+        onChange={(e) => handleChange(e.target.value)}
+        onBlur={() => {
+          const n = parseInt(raw, 10);
+          if (isNaN(n) || raw === '') setRaw('0');
+        }}
+        autoFocus
         style={{
-          display: 'flex',
-          gap: 6,
-          alignItems: 'center',
+          width: '100%',
+          textAlign: 'center',
+          border: `1.5px solid ${C.yellow}`,
+          borderRadius: 8,
+          padding: '8px 10px',
+          fontWeight: 700,
+          color: C.brownDarker,
+          outline: 'none',
+          fontSize: 15,
+          boxSizing: 'border-box',
           marginBottom: 10,
         }}
-      >
-        <button
-          className="btn-stock"
-          onClick={() => setV((x) => Math.max(0, x - 1))}
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            border: '1.5px solid #E8DDD0',
-            background: '#FAFAF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: C.brownDarker,
-          }}
-        >
-          <Icon.Minus />
-        </button>
-        <input
-          type="number"
-          value={v}
-          onChange={(e) => setV(Math.max(0, +e.target.value))}
-          style={{
-            width: 62,
-            textAlign: 'center',
-            border: `1.5px solid ${C.yellow}`,
-            borderRadius: 8,
-            padding: '5px 6px',
-            fontWeight: 700,
-            color: C.brownDarker,
-            outline: 'none',
-            fontSize: 14,
-          }}
-        />
-        <button
-          className="btn-stock"
-          onClick={() => setV((x) => x + 1)}
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            border: '1.5px solid #E8DDD0',
-            background: '#FAFAF8',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: C.brownDarker,
-          }}
-        >
-          <Icon.PlusSmall />
-        </button>
-      </div>
+      />
       <div style={{ display: 'flex', gap: 6 }}>
         <button
           onClick={onClose}
@@ -720,10 +684,7 @@ function StockPopover({
           Cancel
         </button>
         <button
-          onClick={() => {
-            onSave(v);
-            onClose();
-          }}
+          onClick={commit}
           style={{
             flex: 1,
             padding: '7px',
@@ -798,7 +759,11 @@ function ImageUploader({
         style={{
           border: `2px dashed ${dragging ? C.orange : hasImage ? C.green : '#D4C4B0'}`,
           borderRadius: 12,
-          background: dragging ? '#FFF8F0' : hasImage ? '#F2FAF0' : '#FAFAF8',
+          background: dragging
+            ? '#FFF8F0'
+            : hasImage
+              ? '#F2FAF0'
+              : 'rgba(255,255,255,0.55)',
           padding: hasImage ? 0 : '24px 20px',
           display: 'flex',
           flexDirection: 'column',
@@ -942,6 +907,8 @@ function ProductModal({
       image: '',
     },
   );
+  const [rawPrice, setRawPrice] = useState(String(product?.price ?? ''));
+  const [rawStock, setRawStock] = useState(String(product?.stock ?? ''));
   const [vis, setVis] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -954,11 +921,30 @@ function ProductModal({
     setTimeout(onClose, 240);
   };
 
+  // Allow digits + one optional decimal point; reject negatives
+  const handlePriceChange = (val: string) => {
+    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+      setRawPrice(val);
+      const num = parseFloat(val);
+      setForm((f) => ({ ...f, price: isNaN(num) || num < 0 ? 0 : num }));
+    }
+  };
+
+  // Integers only, no negatives
+  const handleStockChange = (val: string) => {
+    if (val === '' || /^\d+$/.test(val)) {
+      setRawStock(val);
+      const num = parseInt(val, 10);
+      setForm((f) => ({ ...f, stock: isNaN(num) || num < 0 ? 0 : num }));
+    }
+  };
+
   return (
     <div
       className="modal-overlay"
       style={{
-        background: vis ? 'rgba(20,8,0,0.55)' : 'rgba(20,8,0,0)',
+        background: vis ? 'rgba(0,60,30,0.45)' : 'rgba(0,60,30,0)',
+        backdropFilter: 'blur(6px)',
         transition: 'background .24s',
       }}
       onClick={(e) => e.target === e.currentTarget && close()}
@@ -967,22 +953,25 @@ function ProductModal({
         style={{
           width: '100%',
           maxWidth: 540,
-          background: '#fff',
-          borderRadius: 18,
+          background: 'rgba(255,255,255,0.90)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderRadius: 20,
           overflow: 'hidden',
           transform: vis
             ? 'scale(1) translateY(0)'
             : 'scale(0.97) translateY(16px)',
           opacity: vis ? 1 : 0,
           transition: 'all .26s cubic-bezier(.4,0,.2,1)',
-          boxShadow: '0 24px 64px rgba(30,10,0,.28)',
+          boxShadow: '0 24px 64px rgba(34,100,34,0.22)',
+          border: '1.5px solid rgba(255,255,255,0.65)',
         }}
       >
         <div
           style={{
             padding: '18px 24px',
-            background: `linear-gradient(135deg,${C.brownDarker},#5A2800)`,
-            borderBottom: `2px solid ${C.yellow}`,
+            background: 'linear-gradient(135deg,#4a9e6a 0%,#2e7d4f 100%)',
+            borderBottom: '2px solid rgba(255,255,255,0.30)',
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -993,24 +982,26 @@ function ProductModal({
               width: 40,
               height: 40,
               borderRadius: 10,
-              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              background: 'rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(8px)',
+              border: '1.5px solid rgba(255,255,255,0.45)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
-              color: C.brownDarker,
+              color: '#fff',
             }}
           >
             {isNew ? <Icon.Plus size={18} /> : <Icon.Edit />}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 16, color: C.yellow }}>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#fff' }}>
               {isNew ? 'Add New Ingredient' : 'Edit Ingredient'}
             </div>
             <div
               style={{
                 fontSize: 11,
-                color: 'rgba(245,200,66,.55)',
+                color: 'rgba(255,255,255,0.72)',
                 marginTop: 1,
               }}
             >
@@ -1023,9 +1014,9 @@ function ProductModal({
               width: 28,
               height: 28,
               borderRadius: '50%',
-              border: '1.5px solid rgba(245,200,66,.3)',
-              background: 'rgba(245,200,66,.1)',
-              color: C.yellow,
+              border: '1.5px solid rgba(255,255,255,0.4)',
+              background: 'rgba(255,255,255,0.18)',
+              color: '#fff',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -1149,14 +1140,22 @@ function ProductModal({
                 Price per unit (₱) <span style={{ color: C.orange }}>*</span>
               </div>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 className="inp-field"
-                value={form.price ?? ''}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, price: +e.target.value }))
-                }
+                value={rawPrice}
+                onChange={(e) => handlePriceChange(e.target.value)}
+                onBlur={() => {
+                  const num = parseFloat(rawPrice);
+                  if (isNaN(num) || rawPrice === '') {
+                    setRawPrice('0');
+                    setForm((f) => ({ ...f, price: 0 }));
+                  } else setRawPrice(String(num));
+                }}
                 placeholder="0.00"
-                min="0"
+                style={{
+                  border: `1.5px solid ${!rawPrice || rawPrice === '0' ? '#E8DDD0' : C.green}`,
+                }}
               />
             </div>
           </div>
@@ -1174,14 +1173,22 @@ function ProductModal({
               Stock Quantity <span style={{ color: C.orange }}>*</span>
             </div>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
               className="inp-field"
-              value={form.stock ?? ''}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, stock: +e.target.value }))
-              }
+              value={rawStock}
+              onChange={(e) => handleStockChange(e.target.value)}
+              onBlur={() => {
+                const num = parseInt(rawStock, 10);
+                if (isNaN(num) || rawStock === '') {
+                  setRawStock('0');
+                  setForm((f) => ({ ...f, stock: 0 }));
+                } else setRawStock(String(num));
+              }}
               placeholder="0"
-              min="0"
+              style={{
+                border: `1.5px solid ${rawStock && rawStock !== '0' ? C.green : '#E8DDD0'}`,
+              }}
             />
           </div>
         </div>
@@ -1269,104 +1276,116 @@ function DeleteModal({
     <div
       className="modal-overlay"
       style={{
-        background: vis ? 'rgba(20,8,0,0.55)' : 'rgba(20,8,0,0)',
+        background: vis ? 'rgba(0,60,30,0.45)' : 'rgba(0,60,30,0)',
+        backdropFilter: 'blur(6px)',
         transition: 'background .24s',
       }}
       onClick={(e) => e.target === e.currentTarget && close()}
     >
       <div
         style={{
-          background: '#fff',
-          borderRadius: 18,
+          borderRadius: 20,
           maxWidth: 380,
           width: '100%',
           transform: vis ? 'scale(1)' : 'scale(0.94)',
           opacity: vis ? 1 : 0,
           transition: 'all .26s',
-          boxShadow: '0 24px 60px rgba(30,10,0,.25)',
-          padding: 28,
-          textAlign: 'center',
+          boxShadow: '0 24px 60px rgba(34,100,34,0.22)',
+          overflow: 'hidden',
+          border: '1.5px solid rgba(255,255,255,0.65)',
+          background: 'rgba(255,255,255,0.90)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
         }}
       >
+        {/* Green header strip */}
         <div
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 14,
-            background: '#FFEBEE',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px',
-            color: '#C62828',
+            background: 'linear-gradient(135deg,#e8f8ed,#c8eeaa)',
+            padding: '20px 28px 18px',
+            borderBottom: '1.5px solid rgba(34,100,34,0.12)',
+            textAlign: 'center',
           }}
         >
-          <Icon.Trash />
-        </div>
-        <div
-          style={{
-            fontWeight: 800,
-            fontSize: 17,
-            color: C.brownDarker,
-            marginBottom: 6,
-          }}
-        >
-          Remove Ingredient?
-        </div>
-        <div
-          style={{
-            fontWeight: 600,
-            fontSize: 14,
-            color: C.brownDarker,
-            marginBottom: 8,
-          }}
-        >
-          {product.name}
-        </div>
-        <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 24 }}>
-          This will remove it from the database and the franchisee order
-          catalog.
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button
-            onClick={close}
+          <div
             style={{
-              flex: 1,
-              padding: 11,
-              borderRadius: 10,
-              border: '1.5px solid #D4C4B0',
-              background: 'transparent',
-              color: C.brownDark,
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: 'pointer',
+              width: 56,
+              height: 56,
+              borderRadius: 14,
+              background: 'linear-gradient(135deg,#FFEBEE,#ffcdd2)',
+              border: '1.5px solid #EF9A9A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px',
+              color: '#C62828',
             }}
           >
-            Cancel
-          </button>
-          <button
-            disabled={deleting}
-            onClick={async () => {
-              setDeleting(true);
-              await onConfirm();
-              close();
-            }}
+            <Icon.Trash />
+          </div>
+          <div
             style={{
-              flex: 1,
-              padding: 11,
-              borderRadius: 10,
-              border: 'none',
-              background: deleting
-                ? '#CCC'
-                : 'linear-gradient(135deg,#C62828,#B71C1C)',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: deleting ? 'not-allowed' : 'pointer',
+              fontWeight: 800,
+              fontSize: 17,
+              color: C.brownDarker,
+              marginBottom: 4,
             }}
           >
-            {deleting ? 'Removing…' : 'Remove'}
-          </button>
+            Remove Ingredient?
+          </div>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: C.brownDark }}>
+            {product.name}
+          </div>
+        </div>
+        <div style={{ padding: '18px 28px 24px', textAlign: 'center' }}>
+          <div style={{ color: C.textMuted, fontSize: 13, marginBottom: 22 }}>
+            This will remove it from the database and the franchisee order
+            catalog.
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              onClick={close}
+              style={{
+                flex: 1,
+                padding: 11,
+                borderRadius: 10,
+                border: '1.5px solid rgba(34,100,34,0.25)',
+                background: 'rgba(200,238,170,0.3)',
+                color: C.brownDark,
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              disabled={deleting}
+              onClick={async () => {
+                setDeleting(true);
+                await onConfirm();
+                close();
+              }}
+              style={{
+                flex: 1,
+                padding: 11,
+                borderRadius: 10,
+                border: 'none',
+                background: deleting
+                  ? '#CCC'
+                  : 'linear-gradient(135deg,#C62828,#B71C1C)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: deleting ? 'not-allowed' : 'pointer',
+                boxShadow: deleting
+                  ? 'none'
+                  : '0 4px 14px rgba(198,40,40,0.30)',
+              }}
+            >
+              {deleting ? 'Removing…' : 'Remove'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1378,31 +1397,19 @@ function ProductCard({
   p,
   onEdit,
   onDelete,
-  onStock,
 }: {
   p: Product;
   onEdit: () => void;
   onDelete: () => void;
-  onStock: (n: number) => void;
 }) {
-  const [pop, setPop] = useState(false);
   const hasImage =
     p.image && (p.image.startsWith('http') || p.image.startsWith('data:'));
 
   return (
     <div className="prod-card">
-      {/*
-        IMAGE BAND — THE KEY FIX IS HERE:
-        - No overflow:hidden (parent .prod-card handles clipping)
-        - No border-radius (parent .prod-card handles it)
-        - Class-based conditionals instead of inline style logic
-        Removing the nested overflow:hidden eliminates the nested clip context
-        that was being recalculated on every scroll frame.
-      */}
       <div
         className={`prod-img-band${hasImage ? ' has-image' : ''}${p.status === 'Out of Stock' ? ' out-of-stock' : ''}`}
       >
-        // AFTER
         {hasImage && (
           <img
             src={p.image}
@@ -1424,7 +1431,6 @@ function ProductCard({
           <StatusBadge status={p.status} />
         </div>
       </div>
-
       <div style={{ padding: '12px 14px' }}>
         <div
           style={{
@@ -1515,33 +1521,6 @@ function ProductCard({
           <button className="btn-edit" onClick={onEdit} style={{ flex: 1 }}>
             <Icon.Edit /> Edit
           </button>
-          <div style={{ position: 'relative' }}>
-            <button
-              className="btn-stock"
-              onClick={() => setPop((v) => !v)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                border: '1.5px solid #E8DDD0',
-                background: '#FAFAF8',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: C.brownDarker,
-              }}
-            >
-              <Icon.PlusSmall />
-            </button>
-            {pop && (
-              <StockPopover
-                value={p.stock}
-                onSave={onStock}
-                onClose={() => setPop(false)}
-              />
-            )}
-          </div>
           <button className="btn-delete" onClick={onDelete}>
             <Icon.Trash />
           </button>
@@ -1778,7 +1757,8 @@ export default function AdminProductsPage() {
         style={{
           display: 'flex',
           height: '100vh',
-          background: C.bg,
+          background: PAGE_BG,
+          backgroundAttachment: 'fixed',
           overflow: 'hidden',
           fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
@@ -1803,7 +1783,9 @@ export default function AdminProductsPage() {
           {/* Header */}
           <header
             style={{
-              background: C.surface,
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               borderBottom: `2px solid ${C.yellow}`,
               padding: '0 28px',
               height: 68,
@@ -1811,7 +1793,7 @@ export default function AdminProductsPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
-              boxShadow: '0 1px 8px rgba(0,0,0,.06)',
+              boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -1878,18 +1860,6 @@ export default function AdminProductsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
                 className="header-btn"
-                onClick={() => setEdit(null)}
-                style={{
-                  background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                  color: C.brownDarker,
-                  border: 'none',
-                  boxShadow: '0 3px 12px rgba(255,140,0,.28)',
-                }}
-              >
-                <Icon.Plus /> Add Ingredient
-              </button>
-              <button
-                className="header-btn"
                 onClick={() => void fetchProducts()}
                 style={{
                   background: `${C.yellow}18`,
@@ -1913,20 +1883,13 @@ export default function AdminProductsPage() {
             </div>
           </header>
 
-          {/*
-            MAIN SCROLL CONTAINER:
-            transform:translateZ(0) forces this onto its own GPU compositing
-            layer so scroll compositing is isolated here and doesn't propagate
-            repaint signals up to parent stacking contexts.
-            isolation:isolate creates a new stacking context for z-index safety.
-          */}
           <main
             style={{
               flex: 1,
               overflowY: 'auto',
               overflowX: 'hidden',
               padding: 24,
-              background: C.bg,
+              background: 'transparent',
               transform: 'translateZ(0)',
               isolation: 'isolate',
             }}
@@ -1988,12 +1951,14 @@ export default function AdminProductsPage() {
             {/* Filter bar */}
             <div
               style={{
-                background: C.surface,
+                background: 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 borderRadius: 12,
                 padding: '12px 16px',
                 marginBottom: 14,
-                boxShadow: '0 1px 4px rgba(0,0,0,.05)',
-                border: `1.5px solid ${C.border}`,
+                boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
+                border: '1.5px solid rgba(255,255,255,0.55)',
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: 10,
@@ -2109,7 +2074,7 @@ export default function AdminProductsPage() {
                   display: 'flex',
                   borderRadius: 8,
                   overflow: 'hidden',
-                  border: `1.5px solid ${C.border}`,
+                  border: '1.5px solid rgba(255,255,255,0.55)',
                   marginLeft: 'auto',
                 }}
               >
@@ -2210,7 +2175,6 @@ export default function AdminProductsPage() {
                     p={p}
                     onEdit={() => setEdit(p)}
                     onDelete={() => setDel(p)}
-                    onStock={(n) => void apiUpdateStock(p.id, n)}
                   />
                 ))}
                 <div className="add-card" onClick={() => setEdit(null)}>
@@ -2278,10 +2242,12 @@ export default function AdminProductsPage() {
             {!loading && viewMode === 'table' && (
               <div
                 style={{
-                  background: C.surface,
+                  background: 'rgba(255,255,255,0.72)',
+                  backdropFilter: 'blur(14px)',
+                  WebkitBackdropFilter: 'blur(14px)',
                   borderRadius: 14,
                   overflow: 'hidden',
-                  boxShadow: '0 1px 8px rgba(0,0,0,.07)',
+                  boxShadow: '0 4px 24px rgba(34,100,34,0.13)',
                   border: `2px solid ${C.yellow}`,
                 }}
               >
@@ -2330,7 +2296,10 @@ export default function AdminProductsPage() {
                           className="tr-product"
                           style={{
                             borderBottom: `1px solid ${C.border}`,
-                            background: idx % 2 === 0 ? '#fff' : '#FDFAF8',
+                            background:
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)',
                           }}
                         >
                           <td style={{ padding: '12px 18px' }}>

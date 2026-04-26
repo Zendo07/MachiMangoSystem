@@ -3,22 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// ─── SHARED PALETTE — matches Owner sidebar exactly ───────────────────────────
 const C = {
-  // Same sky→green gradient as OwnerSidebar
   sidebarBg:
     'linear-gradient(180deg, #5bafd6 0%, #4a9ec4 30%, #5aab35 72%, #3d8c1e 100%)',
   surface1: 'rgba(255,255,255,0.18)',
-
   textPrimary: '#ffffff',
   textSecondary: 'rgba(255,255,255,0.78)',
   textMuted: 'rgba(255,255,255,0.48)',
-
   border1: 'rgba(255,255,255,0.22)',
-
   yellow: '#ffe135',
   orange: '#ff8c00',
   brownDarker: '#4a2511',
-
   activeBg: 'linear-gradient(90deg, #ffe135, #ff8c00)',
   activeColor: '#4a2511',
   hoverBg: 'rgba(255,255,255,0.15)',
@@ -147,7 +143,6 @@ export function AdminSidebar({
                   fontWeight: 700,
                   fontSize: 18,
                   color: C.textPrimary,
-                  letterSpacing: '0.2px',
                   lineHeight: 1.2,
                   textShadow: '0 1px 4px rgba(0,0,0,0.15)',
                 }}
@@ -268,7 +263,6 @@ export function AdminSidebar({
           );
         })}
 
-        {/* ── Administration section ── */}
         {sidebarOpen && (
           <div
             style={{
@@ -390,7 +384,7 @@ export function AdminSidebar({
               <div
                 style={{ fontSize: 11, color: C.textSecondary, marginTop: 1 }}
               >
-                HQ Administrator
+                👑 HQ Administrator
               </div>
             </div>
           )}
@@ -400,10 +394,6 @@ export function AdminSidebar({
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   Standalone collapsible wrapper — drop-in replacement for pages
-   that manage their own sidebarOpen state (dashboard, orders, products)
-───────────────────────────────────────────────────────────────── */
 export default function AdminSidebarWrapper({
   activeNav,
   adminName,

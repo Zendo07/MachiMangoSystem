@@ -18,7 +18,19 @@ const C = {
   green: '#5A9E3A',
   darkGreen: '#3D6E27',
   bg: '#F2EAD8',
+  // Sky-green theme for modal
+  sky: '#87CEEB',
+  skyDark: '#5BA8CC',
+  skyDeep: '#2E7BAD',
+  mint: '#C8EEAA',
+  mintDark: '#7CB342',
+  teal: '#3D8B6E',
+  tealLight: '#E0F5EE',
+  tealMid: '#A8D5C2',
 };
+
+const PAGE_BG =
+  'linear-gradient(180deg,#87ceeb 0%,#98d8e8 18%,#c8eeaa 42%,#a8dc7a 68%,#7cb342 100%)';
 
 type OrderStatus =
   | 'pending'
@@ -50,42 +62,37 @@ interface Order {
 
 const STATUS_META: Record<
   OrderStatus,
-  { label: string; bg: string; color: string; dot: string; icon: string }
+  { label: string; bg: string; color: string; dot: string }
 > = {
   pending: {
     label: 'Pending',
     bg: '#FFF0D9',
     color: '#CC7000',
     dot: '#FF8C00',
-    icon: '⏳',
   },
   processing: {
     label: 'Processing',
     bg: '#E0F2FA',
     color: '#2E7BAD',
     dot: '#4A9ECA',
-    icon: '⚙️',
   },
   shipped: {
     label: 'Shipped',
     bg: '#F3E5FF',
     color: '#7B3FA0',
     dot: '#9C4DC4',
-    icon: '🚚',
   },
   delivered: {
     label: 'Delivered',
     bg: '#E8F5E1',
     color: '#3D6E27',
     dot: '#5A9E3A',
-    icon: '✅',
   },
   cancelled: {
     label: 'Cancelled',
     bg: '#FFEBEE',
     color: '#C62828',
     dot: '#EF5350',
-    icon: '❌',
   },
 };
 
@@ -108,7 +115,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
       <span
         style={{ width: 6, height: 6, borderRadius: '50%', background: m.dot }}
       />
-      {m.icon} {m.label}
+      {m.label}
     </span>
   );
 }
@@ -186,8 +193,8 @@ function UpdateStatusModal({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,
-        background: visible ? 'rgba(30,10,0,.55)' : 'rgba(30,10,0,0)',
-        backdropFilter: visible ? 'blur(3px)' : 'none',
+        background: visible ? 'rgba(14,40,60,.6)' : 'rgba(14,40,60,0)',
+        backdropFilter: visible ? 'blur(6px)' : 'none',
         transition: 'all .24s',
       }}
       onClick={(e) => e.target === e.currentTarget && close()}
@@ -195,165 +202,310 @@ function UpdateStatusModal({
       <div
         style={{
           width: '100%',
-          maxWidth: 480,
-          background: '#fff',
-          borderRadius: 20,
+          maxWidth: 520,
+          background: '#F0FAF6',
+          borderRadius: 24,
           overflow: 'hidden',
-          transform: visible ? 'scale(1)' : 'scale(0.96)',
+          transform: visible
+            ? 'scale(1) translateY(0)'
+            : 'scale(0.95) translateY(12px)',
           opacity: visible ? 1 : 0,
-          transition: 'all .28s cubic-bezier(.4,0,.2,1)',
-          boxShadow: '0 32px 80px rgba(62,26,0,.3)',
+          transition: 'all .3s cubic-bezier(.4,0,.2,1)',
+          boxShadow:
+            '0 24px 80px rgba(14,80,60,.22), 0 0 0 1px rgba(168,213,194,.4)',
         }}
       >
+        {/* Header */}
         <div
           style={{
-            padding: '20px 26px',
-            background: `linear-gradient(135deg,${C.brownDarker},${C.brownDark})`,
-            borderBottom: `3px solid ${C.yellow}`,
+            padding: '22px 28px 20px',
+            background: `linear-gradient(135deg, ${C.skyDeep} 0%, ${C.teal} 100%)`,
             display: 'flex',
             alignItems: 'center',
-            gap: 12,
+            gap: 14,
           }}
         >
           <div
             style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
-              background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              width: 46,
+              height: 46,
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 18,
+              flexShrink: 0,
             }}
           >
-            📦
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M20 7H4C2.9 7 2 7.9 2 9v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M16 7V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 12v4M10 14h4"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 16, color: C.yellow }}>
+            <div
+              style={{
+                fontWeight: 800,
+                fontSize: 17,
+                color: '#fff',
+                letterSpacing: '-0.01em',
+              }}
+            >
               Update Order Status
             </div>
             <div
               style={{
-                fontSize: 11,
-                color: 'rgba(245,200,66,.6)',
-                marginTop: 2,
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.65)',
+                marginTop: 3,
+                fontWeight: 500,
               }}
             >
-              Order #{order.id.slice(-8).toUpperCase()} · {order.franchiseeName}
+              Order #{order.id.slice(-8).toUpperCase()} &middot;{' '}
+              {order.franchiseeName}
             </div>
           </div>
           <button
             onClick={close}
             style={{
-              width: 28,
-              height: 28,
+              width: 32,
+              height: 32,
               borderRadius: '50%',
-              border: '2px solid rgba(245,200,66,.3)',
-              background: 'rgba(245,200,66,.1)',
-              color: C.yellow,
+              border: '1.5px solid rgba(255,255,255,0.3)',
+              background: 'rgba(255,255,255,0.12)',
+              color: '#fff',
               cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 800,
+              fontSize: 13,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.25)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
             }}
           >
-            ✕
+            X
           </button>
         </div>
 
+        {/* Thin accent bar */}
         <div
           style={{
-            padding: '22px 26px',
+            height: 3,
+            background: `linear-gradient(90deg, ${C.sky}, ${C.mint}, ${C.mintDark})`,
+          }}
+        />
+
+        {/* Body */}
+        <div
+          style={{
+            padding: '24px 28px',
             display: 'flex',
             flexDirection: 'column',
-            gap: 16,
+            gap: 20,
           }}
         >
           {error && (
             <div
               style={{
-                padding: '10px 14px',
+                padding: '11px 15px',
                 borderRadius: 10,
-                background: '#FFEBEE',
-                border: '1.5px solid #EF9A9A',
+                background: '#FFF0F0',
+                border: '1.5px solid #FFCDD2',
                 color: '#C62828',
                 fontSize: 12,
                 fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
               }}
             >
-              ⚠️ {error}
+              <span
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  background: '#EF5350',
+                  color: '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 10,
+                  fontWeight: 900,
+                  flexShrink: 0,
+                }}
+              >
+                !
+              </span>
+              {error}
             </div>
           )}
+
+          {/* Status selector */}
           <div>
             <div
               style={{
                 fontSize: 11,
-                fontWeight: 700,
+                fontWeight: 800,
                 textTransform: 'uppercase',
-                letterSpacing: '.08em',
-                color: C.brownDark,
-                marginBottom: 10,
+                letterSpacing: '.09em',
+                color: C.teal,
+                marginBottom: 12,
               }}
             >
-              Set Status
+              Select New Status
             </div>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: 'repeat(5, 1fr)',
                 gap: 8,
               }}
             >
               {(Object.keys(STATUS_META) as OrderStatus[]).map((s) => {
                 const m = STATUS_META[s];
+                const isSelected = status === s;
                 return (
                   <button
                     key={s}
                     onClick={() => setStatus(s)}
                     style={{
-                      padding: '10px 8px',
-                      borderRadius: 10,
-                      border: `2px solid ${status === s ? m.dot : '#E5D9C8'}`,
-                      background: status === s ? m.bg : '#FDFAF4',
-                      color: status === s ? m.color : C.brownDark,
-                      fontWeight: status === s ? 800 : 600,
-                      fontSize: 12,
+                      padding: '12px 6px',
+                      borderRadius: 12,
+                      border: `2px solid ${isSelected ? m.dot : '#D4EDE2'}`,
+                      background: isSelected ? m.bg : '#F7FDFB',
+                      color: isSelected ? m.color : '#6B8F80',
+                      fontWeight: isSelected ? 800 : 600,
+                      fontSize: 11,
                       cursor: 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: 4,
+                      gap: 7,
                       transition: 'all .15s',
+                      boxShadow: isSelected ? `0 2px 10px ${m.dot}30` : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = m.dot;
+                        e.currentTarget.style.background = m.bg;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.borderColor = '#D4EDE2';
+                        e.currentTarget.style.background = '#F7FDFB';
+                      }
                     }}
                   >
-                    <span style={{ fontSize: 18 }}>{m.icon}</span>
                     {m.label}
                   </button>
                 );
               })}
             </div>
           </div>
+
+          {/* Current vs new */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '12px 16px',
+              borderRadius: 12,
+              background: `linear-gradient(90deg, ${C.tealLight}, rgba(200,238,170,0.3))`,
+              border: `1px solid ${C.tealMid}`,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: C.teal,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.08em',
+                  marginBottom: 4,
+                }}
+              >
+                Current
+              </div>
+              <StatusBadge status={order.status} />
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M5 12h14M13 6l6 6-6 6"
+                stroke={C.teal}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <div style={{ flex: 1, textAlign: 'right' }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: C.teal,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.08em',
+                  marginBottom: 4,
+                }}
+              >
+                New
+              </div>
+              <StatusBadge status={status} />
+            </div>
+          </div>
+
+          {/* Note */}
           <div>
             <div
               style={{
                 fontSize: 11,
-                fontWeight: 700,
+                fontWeight: 800,
                 textTransform: 'uppercase',
-                letterSpacing: '.08em',
-                color: C.brownDark,
-                marginBottom: 6,
+                letterSpacing: '.09em',
+                color: C.teal,
+                marginBottom: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              Note to Franchisee{' '}
+              <span>Note to Franchisee</span>
               <span
                 style={{
-                  color: '#AAA',
+                  color: '#A8C4B8',
                   fontWeight: 500,
                   textTransform: 'none',
                   letterSpacing: 0,
+                  fontSize: 11,
                 }}
               >
-                (optional)
+                Optional
               </span>
             </div>
             <textarea
@@ -363,43 +515,54 @@ function UpdateStatusModal({
               placeholder="e.g. Your order will arrive Thursday morning."
               style={{
                 width: '100%',
-                padding: '10px 14px',
-                borderRadius: 11,
-                border: '2px solid #E5D9C8',
-                background: '#FDFAF4',
+                padding: '11px 14px',
+                borderRadius: 12,
+                border: `2px solid #C4DDD5`,
+                background: '#F7FDFB',
                 color: C.brownDarker,
                 fontSize: 13,
                 outline: 'none',
                 resize: 'none',
                 fontFamily: 'inherit',
                 boxSizing: 'border-box',
+                transition: 'border-color .15s',
+                lineHeight: 1.5,
               }}
-              onFocus={(e) => (e.target.style.borderColor = C.yellow)}
-              onBlur={(e) => (e.target.style.borderColor = '#E5D9C8')}
+              onFocus={(e) => (e.target.style.borderColor = C.skyDark)}
+              onBlur={(e) => (e.target.style.borderColor = '#C4DDD5')}
             />
           </div>
         </div>
 
+        {/* Footer */}
         <div
           style={{
-            padding: '14px 26px 22px',
+            padding: '16px 28px 24px',
             display: 'flex',
             justifyContent: 'flex-end',
             gap: 10,
-            borderTop: '1px solid #F0E8D8',
+            borderTop: '1px solid #D4EDE2',
+            background: 'rgba(240,250,246,0.6)',
           }}
         >
           <button
             onClick={close}
             style={{
-              padding: '10px 20px',
+              padding: '10px 22px',
               borderRadius: 11,
-              border: '2px solid #D0BFA8',
+              border: `2px solid #C4DDD5`,
               background: 'transparent',
-              color: C.brownDark,
+              color: C.teal,
               fontWeight: 700,
               fontSize: 13,
               cursor: 'pointer',
+              transition: 'all .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#E0F5EE';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
             }}
           >
             Cancel
@@ -408,20 +571,39 @@ function UpdateStatusModal({
             onClick={save}
             disabled={saving}
             style={{
-              padding: '10px 24px',
+              padding: '10px 26px',
               borderRadius: 11,
               border: 'none',
               background: saving
-                ? '#CCC'
-                : `linear-gradient(135deg,${C.yellow},${C.orange})`,
-              color: C.brownDarker,
+                ? '#B0CFCA'
+                : `linear-gradient(135deg, ${C.skyDeep}, ${C.teal})`,
+              color: '#fff',
               fontWeight: 800,
               fontSize: 13,
               cursor: saving ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 14px rgba(255,140,0,.3)',
+              boxShadow: saving ? 'none' : `0 4px 16px rgba(46,123,173,.35)`,
+              transition: 'all .15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
             }}
           >
-            {saving ? 'Saving…' : '✓ Update Status'}
+            {saving ? (
+              'Saving...'
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M20 6L9 17l-5-5"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Update Status
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -556,7 +738,8 @@ export default function AdminOrdersPage() {
         style={{
           display: 'flex',
           height: '100vh',
-          background: C.bg,
+          background: PAGE_BG,
+          backgroundAttachment: 'fixed',
           overflow: 'hidden',
           fontFamily: "'Segoe UI',system-ui,sans-serif",
         }}
@@ -580,7 +763,9 @@ export default function AdminOrdersPage() {
         >
           <header
             style={{
-              background: '#fff',
+              background: 'rgba(255,255,255,0.68)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
               borderBottom: `3px solid ${C.yellow}`,
               padding: '0 28px',
               height: 70,
@@ -588,7 +773,7 @@ export default function AdminOrdersPage() {
               alignItems: 'center',
               justifyContent: 'space-between',
               flexShrink: 0,
-              boxShadow: '0 2px 12px rgba(0,0,0,.07)',
+              boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -641,8 +826,8 @@ export default function AdminOrdersPage() {
                   }}
                 >
                   {counts.pending > 0
-                    ? `⚠️ ${counts.pending} pending order${counts.pending > 1 ? 's' : ''} need attention`
-                    : 'All orders up to date ✓'}
+                    ? `${counts.pending} pending order${counts.pending > 1 ? 's' : ''} need attention`
+                    : 'All orders up to date'}
                 </div>
               </div>
             </div>
@@ -660,7 +845,7 @@ export default function AdminOrdersPage() {
                   cursor: 'pointer',
                 }}
               >
-                ↺ Refresh
+                Refresh
               </button>
               <button
                 onClick={() => {
@@ -688,7 +873,7 @@ export default function AdminOrdersPage() {
               flex: 1,
               overflowY: 'auto',
               padding: 28,
-              background: C.bg,
+              background: 'transparent',
             }}
           >
             {/* Summary cards */}
@@ -707,13 +892,17 @@ export default function AdminOrdersPage() {
                     key={s}
                     onClick={() => setFilter(filter === s ? 'all' : s)}
                     style={{
-                      background: filter === s ? m.bg : '#fff',
-                      border: `2px solid ${filter === s ? m.dot : '#F0E8D8'}`,
+                      background:
+                        filter === s ? m.bg : 'rgba(255,255,255,0.72)',
+                      backdropFilter: 'blur(12px)',
+                      WebkitBackdropFilter: 'blur(12px)',
+                      border: `2px solid ${filter === s ? m.dot : 'rgba(255,255,255,0.55)'}`,
                       borderRadius: 14,
                       padding: '14px 16px',
                       cursor: 'pointer',
+                      textAlign: 'center',
                       transition: 'all .18s',
-                      boxShadow: '0 2px 8px rgba(0,0,0,.06)',
+                      boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.transform =
@@ -724,11 +913,13 @@ export default function AdminOrdersPage() {
                         'translateY(0)';
                     }}
                   >
-                    <div style={{ fontSize: 20, marginBottom: 6 }}>
-                      {m.icon}
-                    </div>
                     <div
-                      style={{ fontSize: 22, fontWeight: 900, color: m.color }}
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 900,
+                        color: m.color,
+                        textAlign: 'center',
+                      }}
                     >
                       {counts[s]}
                     </div>
@@ -738,6 +929,7 @@ export default function AdminOrdersPage() {
                         fontWeight: 700,
                         color: C.brownDark,
                         marginTop: 2,
+                        textAlign: 'center',
                       }}
                     >
                       {m.label}
@@ -750,10 +942,12 @@ export default function AdminOrdersPage() {
             {/* Orders table */}
             <div
               style={{
-                background: '#fff',
+                background: 'rgba(255,255,255,0.72)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
                 borderRadius: 18,
                 overflow: 'hidden',
-                boxShadow: '0 2px 16px rgba(0,0,0,.08)',
+                boxShadow: '0 4px 24px rgba(34,100,34,0.13)',
                 border: `3px solid ${C.yellow}`,
               }}
             >
@@ -768,7 +962,6 @@ export default function AdminOrdersPage() {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 18 }}>🏪</span>
                   <div
                     style={{
                       fontWeight: 800,
@@ -803,7 +996,7 @@ export default function AdminOrdersPage() {
                       fontWeight: 700,
                     }}
                   >
-                    Clear filter ✕
+                    Clear filter X
                   </button>
                 )}
               </div>
@@ -818,7 +1011,6 @@ export default function AdminOrdersPage() {
                     gap: 12,
                   }}
                 >
-                  <div style={{ fontSize: 36 }}>⚠️</div>
                   <div
                     style={{ fontWeight: 700, fontSize: 14, color: '#C62828' }}
                   >
@@ -852,13 +1044,12 @@ export default function AdminOrdersPage() {
                     fontSize: 14,
                   }}
                 >
-                  Loading franchisee orders…
+                  Loading franchisee orders...
                 </div>
               )}
 
               {!loading && !fetchError && filtered.length === 0 && (
                 <div style={{ padding: 60, textAlign: 'center' }}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>🏪</div>
                   <div
                     style={{
                       fontWeight: 700,
@@ -922,15 +1113,20 @@ export default function AdminOrdersPage() {
                           key={order.id}
                           style={{
                             borderBottom: `1.5px solid ${C.yellow}30`,
-                            background: idx % 2 === 0 ? '#fff' : '#FDFAF4',
+                            background:
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)',
                             transition: 'background .15s',
                           }}
                           onMouseEnter={(e) =>
-                            (e.currentTarget.style.background = `${C.yellow}12`)
+                            (e.currentTarget.style.background = `${C.yellow}18`)
                           }
                           onMouseLeave={(e) =>
                             (e.currentTarget.style.background =
-                              idx % 2 === 0 ? '#fff' : '#FDFAF4')
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)')
                           }
                         >
                           <td
@@ -1005,14 +1201,14 @@ export default function AdminOrdersPage() {
                                   style={{
                                     padding: '2px 8px',
                                     borderRadius: 20,
-                                    background: '#F2EAD8',
+                                    background: 'rgba(200,238,170,0.6)',
                                     fontSize: 10,
                                     fontWeight: 600,
                                     color: C.brownDark,
                                     whiteSpace: 'nowrap',
                                   }}
                                 >
-                                  {item.name} ×{item.quantity}
+                                  {item.name} x{item.quantity}
                                 </span>
                               ))}
                               {order.items.length > 3 && (
@@ -1020,7 +1216,7 @@ export default function AdminOrdersPage() {
                                   style={{
                                     padding: '2px 8px',
                                     borderRadius: 20,
-                                    background: '#F2EAD8',
+                                    background: 'rgba(200,238,170,0.6)',
                                     fontSize: 10,
                                     fontWeight: 600,
                                     color: '#AAA',
@@ -1039,7 +1235,7 @@ export default function AdminOrdersPage() {
                               color: C.brownDarker,
                             }}
                           >
-                            ₱{Number(order.totalAmount).toLocaleString()}
+                            P{Number(order.totalAmount).toLocaleString()}
                           </td>
                           <td style={{ padding: '14px 18px' }}>
                             <StatusBadge status={order.status} />
@@ -1072,7 +1268,7 @@ export default function AdminOrdersPage() {
                                 background:
                                   order.status === 'pending'
                                     ? '#FFF0D9'
-                                    : '#FDFAF4',
+                                    : 'rgba(255,255,255,0.72)',
                                 color:
                                   order.status === 'pending'
                                     ? '#CC7000'
@@ -1095,12 +1291,12 @@ export default function AdminOrdersPage() {
                                 e.currentTarget.style.background =
                                   order.status === 'pending'
                                     ? '#FFF0D9'
-                                    : '#FDFAF4';
+                                    : 'rgba(255,255,255,0.72)';
                               }}
                             >
                               {order.status === 'pending'
-                                ? '⚡ Process'
-                                : '✏️ Update'}
+                                ? 'Process'
+                                : 'Update'}
                             </button>
                           </td>
                         </tr>

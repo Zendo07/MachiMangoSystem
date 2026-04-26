@@ -3,6 +3,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getStoredToken } from '@/lib/auth';
 
+// ── Same tokens as OwnerDashboard ──────────────────────────────────────────
+const C = {
+  brownDarker: '#4a2511',
+  brownDark: '#654321',
+  yellow: '#ffe135',
+  orange: '#ff8c00',
+  green: '#7cb342',
+  darkGreen: '#228b22',
+  // Card surface — frosted white, matching dashboard stat cards on the gradient bg
+  card: 'rgba(255,255,255,0.92)',
+  cardBorder: 'rgba(255,255,255,0.70)',
+  // Inputs — clean white
+  inputBg: '#ffffff',
+  inputBorder: '#d1d5db',
+  // Text
+  textDark: '#1e293b',
+  textMid: '#475569',
+  textMuted: '#94a3b8',
+};
+
 const BRANCHES = [
   'Florida Blanca — Pampanga',
   'Porac — Pampanga',
@@ -27,39 +47,25 @@ interface Props {
 
 type Role = 'franchise_owner' | 'franchisee' | 'crew';
 
-const ROLES: {
-  value: Role;
-  label: string;
-  sub: string;
-  emoji: string;
-  grad: string;
-  color: string;
-}[] = [
+const ROLES: { value: Role; label: string; sub: string }[] = [
   {
     value: 'franchise_owner',
     label: 'Franchise Owner',
-    sub: 'Full branch access + analytics',
-    emoji: '🏪',
-    grad: 'from-purple-400 to-purple-600',
-    color: '#7B3FA0',
+    sub: 'Full access + analytics',
   },
   {
     value: 'franchisee',
     label: 'Franchisee',
-    sub: 'Can place orders + view products',
-    emoji: '🤝',
-    grad: 'from-blue-300 to-blue-500',
-    color: '#2E7BAD',
+    sub: 'Place orders, view products',
   },
-  {
-    value: 'crew',
-    label: 'Crew Member',
-    sub: 'View-only access',
-    emoji: '👷',
-    grad: 'from-green-300 to-green-600',
-    color: '#3D6E27',
-  },
+  { value: 'crew', label: 'Crew Member', sub: 'View-only access' },
 ];
+
+const PERM: Record<Role, string> = {
+  franchise_owner: 'Full access: Dashboard, Products, Orders, Analytics',
+  franchisee: 'Can place ingredient orders and view products',
+  crew: 'View-only: Dashboard and Products only',
+};
 
 function genPassword(): string {
   const u = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -77,6 +83,58 @@ function genPassword(): string {
     .split('')
     .sort(() => Math.random() - 0.5)
     .join('');
+}
+
+const fieldBase: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 14px',
+  borderRadius: 10,
+  border: `1.5px solid ${C.inputBorder}`,
+  background: C.inputBg,
+  fontSize: 13,
+  color: C.textDark,
+  fontFamily: "'Poppins', sans-serif",
+  outline: 'none',
+  transition: 'border-color .15s, box-shadow .15s',
+};
+const fieldErr: React.CSSProperties = {
+  ...fieldBase,
+  border: '1.5px solid #EF5350',
+  background: '#FFF5F5',
+};
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 10,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '.07em',
+  color: C.textMid,
+  marginBottom: 6,
+  fontFamily: "'Poppins', sans-serif",
+};
+const errStyle: React.CSSProperties = {
+  fontSize: 10,
+  color: '#C62828',
+  fontWeight: 600,
+  marginTop: 4,
+  fontFamily: "'Poppins', sans-serif",
+};
+
+function onFocus(
+  e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
+  hasErr: boolean,
+) {
+  if (!hasErr) {
+    e.currentTarget.style.borderColor = C.green;
+    e.currentTarget.style.boxShadow = `0 0 0 3px rgba(124,179,66,0.15)`;
+  }
+}
+function onBlur(
+  e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
+  hasErr: boolean,
+) {
+  e.currentTarget.style.borderColor = hasErr ? '#EF5350' : C.inputBorder;
+  e.currentTarget.style.boxShadow = 'none';
 }
 
 export default function CreateAccountModal({
@@ -99,9 +157,7 @@ export default function CreateAccountModal({
     if (isOpen) {
       setPassword(genPassword());
       requestAnimationFrame(() => setVisible(true));
-    } else {
-      setVisible(false);
-    }
+    } else setVisible(false);
   }, [isOpen]);
 
   const reset = useCallback(() => {
@@ -138,7 +194,6 @@ export default function CreateAccountModal({
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       e.email = 'Valid email required';
     if (password.length < 8) e.password = 'Min 8 characters';
-    // Branch is required for franchisee and crew, optional for franchise_owner
     if (role !== 'franchise_owner' && !branch) e.branch = 'Select a branch';
     setErrors(e);
     return !Object.keys(e).length;
@@ -148,7 +203,6 @@ export default function CreateAccountModal({
     if (!validate()) return;
     setSubmitting(true);
     setServerErr('');
-
     try {
       const token = getStoredToken();
       const res = await fetch('http://localhost:3000/api/auth/create-account', {
@@ -170,7 +224,6 @@ export default function CreateAccountModal({
         message?: string | string[];
         error?: string;
       };
-
       if (res.ok && data.success) {
         onSuccess({
           fullName: fullName.trim(),
@@ -202,150 +255,242 @@ export default function CreateAccountModal({
 
   if (!isOpen) return null;
 
-  const base =
-    'w-full px-4 py-3 rounded-xl border-2 text-sm text-brownDarker bg-[#FDFAF4] outline-none transition-all placeholder:text-[#BBA98A] font-body';
-  const ok =
-    'border-[#E5D9C8] focus:border-primaryYellow focus:ring-2 focus:ring-primaryYellow/20';
-  const errCls =
-    'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-400/20';
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={(e) => e.target === e.currentTarget && close()}
       style={{
-        background: visible ? 'rgba(30,10,0,0.55)' : 'rgba(30,10,0,0)',
-        backdropFilter: visible ? 'blur(3px)' : 'none',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        background: visible ? 'rgba(0,30,10,0.45)' : 'rgba(0,30,10,0)',
+        backdropFilter: visible ? 'blur(4px)' : 'none',
         transition: 'all .25s',
       }}
-      onClick={(e) => e.target === e.currentTarget && close()}
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white overflow-hidden"
         style={{
+          width: '100%',
+          maxWidth: 520,
+          borderRadius: 20,
+          overflow: 'hidden',
+          // Frosted white card — same as dashboard stat cards sitting on the gradient
+          background:
+            'linear-gradient(160deg,#f0f9e8 0%,#fdfaf4 60%,#f5f0e8 100%)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: `2px solid rgba(124,179,66,0.55)`,
+          boxShadow:
+            '0 20px 60px rgba(0,60,20,0.22), 0 4px 24px rgba(0,0,0,0.10), 0 0 0 5px rgba(124,179,66,0.10)',
           transform: visible
             ? 'translateY(0) scale(1)'
-            : 'translateY(24px) scale(0.96)',
+            : 'translateY(22px) scale(0.96)',
           opacity: visible ? 1 : 0,
           transition: 'transform .28s cubic-bezier(.4,0,.2,1), opacity .25s',
-          boxShadow:
-            '0 32px 80px rgba(62,26,0,.28), 0 0 0 1.5px rgba(245,200,66,.3)',
+          fontFamily: "'Poppins', sans-serif",
         }}
       >
-        {/* ── HEADER ── */}
-        <div className="bg-gradient-to-r from-brownDarker to-brownDark px-7 py-5 border-b-[3px] border-primaryYellow flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primaryYellow to-primaryOrange flex items-center justify-center text-xl shadow-lg flex-shrink-0">
-            👤
-          </div>
-          <div className="flex-1">
-            <h2 className="font-heading font-bold text-xl text-primaryYellow leading-tight">
+        {/* ── HEADER — yellow bottom border like the dashboard header ── */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg,#e8f5d0,#f5f0e0)',
+            borderBottom: `3px solid ${C.yellow}`,
+            padding: '18px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: "'Fredoka', sans-serif",
+                fontWeight: 700,
+                fontSize: 20,
+                color: C.brownDark,
+              }}
+            >
               Create Account
-            </h2>
-            <p className="text-xs text-primaryYellow/60 mt-0.5 font-body">
+            </div>
+            <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>
               Add a Franchise Owner, Franchisee, or Crew member
-            </p>
+            </div>
           </div>
           <button
             onClick={close}
-            className="w-8 h-8 rounded-full border-2 border-primaryYellow/30 bg-primaryYellow/10 text-primaryYellow hover:bg-primaryYellow/20 flex items-center justify-center text-sm font-bold transition-all"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: `1.5px solid #e2e8f0`,
+              background: 'rgba(255,255,255,0.80)',
+              color: C.textMid,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
           >
             ✕
           </button>
         </div>
 
         {/* ── BODY ── */}
-        <div className="px-7 py-5 flex flex-col gap-4 max-h-[72vh] overflow-y-auto">
+        <div
+          style={{
+            padding: '20px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            maxHeight: '68vh',
+            overflowY: 'auto',
+            background: 'transparent',
+          }}
+        >
           {/* Server error */}
           {serverErr && (
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 border border-red-300">
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: '#FFF5F5',
+                border: '1px solid #EF9A9A',
+              }}
+            >
               <svg
-                width="15"
-                height="15"
+                width="14"
+                height="14"
                 fill="none"
                 stroke="#C62828"
                 strokeWidth="2.5"
                 viewBox="0 0 24 24"
-                className="flex-shrink-0 mt-0.5"
+                style={{ flexShrink: 0, marginTop: 1 }}
               >
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
-              <p className="text-xs font-semibold text-red-700">{serverErr}</p>
+              <p style={{ fontSize: 12, color: '#C62828', fontWeight: 600 }}>
+                {serverErr}
+              </p>
             </div>
           )}
 
           {/* Name + Email */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark flex items-center gap-1">
-                Full Name <span className="text-primaryOrange">*</span>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}
+          >
+            <div>
+              <label style={labelStyle}>
+                Full Name <span style={{ color: C.orange }}>*</span>
               </label>
               <input
                 type="text"
                 value={fullName}
+                placeholder="e.g. Juan Dela Cruz"
+                style={errors.fullName ? fieldErr : fieldBase}
                 onChange={(e) => {
                   setFullName(e.target.value);
                   clr('fullName');
                 }}
-                placeholder="e.g. Juan Dela Cruz"
-                className={`${base} ${errors.fullName ? errCls : ok}`}
+                onFocus={(e) => onFocus(e, !!errors.fullName)}
+                onBlur={(e) => onBlur(e, !!errors.fullName)}
               />
-              {errors.fullName && (
-                <p className="text-[10px] text-red-600 font-semibold">
-                  {errors.fullName}
-                </p>
-              )}
+              {errors.fullName && <p style={errStyle}>{errors.fullName}</p>}
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark flex items-center gap-1">
-                Email <span className="text-primaryOrange">*</span>
+            <div>
+              <label style={labelStyle}>
+                Email <span style={{ color: C.orange }}>*</span>
               </label>
               <input
                 type="email"
                 value={email}
+                placeholder="juan@example.com"
+                style={errors.email ? fieldErr : fieldBase}
                 onChange={(e) => {
                   setEmail(e.target.value);
                   clr('email');
                 }}
-                placeholder="juan@example.com"
-                className={`${base} ${errors.email ? errCls : ok}`}
+                onFocus={(e) => onFocus(e, !!errors.email)}
+                onBlur={(e) => onBlur(e, !!errors.email)}
               />
-              {errors.email && (
-                <p className="text-[10px] text-red-600 font-semibold">
-                  {errors.email}
-                </p>
-              )}
+              {errors.email && <p style={errStyle}>{errors.email}</p>}
             </div>
           </div>
 
           {/* Password */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                Temp Password <span className="text-primaryOrange">*</span>
+          <div>
+            <label
+              style={{
+                ...labelStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>
+                Temp Password <span style={{ color: C.orange }}>*</span>
               </span>
               <button
                 type="button"
                 onClick={() => setPassword(genPassword())}
-                className="text-[10px] font-bold text-primaryOrange hover:text-brownDark transition-colors underline underline-offset-2"
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: C.darkGreen,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontFamily: "'Poppins', sans-serif",
+                  textTransform: 'none',
+                  letterSpacing: 0,
+                }}
               >
-                ↺ Regenerate
+                Regenerate
               </button>
             </label>
-            <div className="relative">
+            <div style={{ position: 'relative' }}>
               <input
                 type={showPw ? 'text' : 'password'}
                 value={password}
+                style={{
+                  ...(errors.password ? fieldErr : fieldBase),
+                  paddingRight: 44,
+                  fontFamily: 'monospace',
+                  letterSpacing: '.08em',
+                }}
                 onChange={(e) => {
                   setPassword(e.target.value);
                   clr('password');
                 }}
-                className={`${base} pr-12 font-mono tracking-wider ${errors.password ? errCls : ok}`}
+                onFocus={(e) => onFocus(e, !!errors.password)}
+                onBlur={(e) => onBlur(e, !!errors.password)}
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-brownDark/40 hover:text-brownDark transition-colors p-1"
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: C.textMuted,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
               >
                 {showPw ? (
                   <svg
@@ -374,116 +519,145 @@ export default function CreateAccountModal({
                 )}
               </button>
             </div>
-            {errors.password && (
-              <p className="text-[10px] text-red-600 font-semibold">
-                {errors.password}
-              </p>
-            )}
+            {errors.password && <p style={errStyle}>{errors.password}</p>}
           </div>
 
-          <div className="h-px bg-gradient-to-r from-transparent via-[#E5D9C8] to-transparent" />
+          {/* Divider */}
+          <div style={{ height: 1, background: 'rgba(0,0,0,0.06)' }} />
 
-          {/* Role — all 3 roles */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark">
-              Role <span className="text-primaryOrange">*</span>
+          {/* Role */}
+          <div>
+            <label style={labelStyle}>
+              Role <span style={{ color: C.orange }}>*</span>
             </label>
-            <div className="grid grid-cols-3 gap-3">
-              {ROLES.map((r) => (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => {
-                    setRole(r.value);
-                    // Clear branch error when switching to franchise_owner
-                    if (r.value === 'franchise_owner') {
-                      setErrors((prev) => ({ ...prev, branch: '' }));
-                    }
-                  }}
-                  className={`flex flex-col items-center gap-2 px-3 py-4 rounded-xl border-2 text-center transition-all ${
-                    role === r.value
-                      ? 'border-primaryOrange bg-orange-50 shadow-sm'
-                      : 'border-[#E5D9C8] bg-[#FDFAF4] hover:border-primaryYellow hover:bg-yellow-50/40'
-                  }`}
-                >
-                  <div
-                    className={`w-11 h-11 rounded-xl bg-gradient-to-br ${r.grad} flex items-center justify-center text-2xl shadow-sm`}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3,1fr)',
+                gap: 10,
+              }}
+            >
+              {ROLES.map((r) => {
+                const active = role === r.value;
+                return (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => {
+                      setRole(r.value);
+                      if (r.value === 'franchise_owner')
+                        setErrors((p) => ({ ...p, branch: '' }));
+                    }}
+                    style={{
+                      padding: '14px 10px',
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 8,
+                      border: active
+                        ? `2px solid ${C.orange}`
+                        : `1.5px solid rgba(0,0,0,0.10)`,
+                      background: active
+                        ? `rgba(255,225,53,0.16)`
+                        : 'rgba(255,255,255,0.70)',
+                      transition: 'all .15s',
+                    }}
                   >
-                    {r.emoji}
-                  </div>
-                  <div>
-                    <div className="font-bold text-xs text-brownDark leading-tight">
+                    <div
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        border: active
+                          ? `5px solid ${C.orange}`
+                          : `2px solid #d1d5db`,
+                        background: '#fff',
+                        transition: 'all .15s',
+                      }}
+                    />
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: 12,
+                        color: C.brownDark,
+                        lineHeight: 1.3,
+                      }}
+                    >
                       {r.label}
                     </div>
-                    <div className="text-[9px] text-brownDark/55 mt-0.5 leading-tight">
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: C.textMuted,
+                        lineHeight: 1.4,
+                      }}
+                    >
                       {r.sub}
                     </div>
-                  </div>
-                  <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                      role === r.value
-                        ? 'border-primaryOrange bg-primaryOrange'
-                        : 'border-[#C8B8A0]'
-                    }`}
-                  >
-                    {role === r.value && (
-                      <svg
-                        width="8"
-                        height="8"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="3"
-                        viewBox="0 0 24 24"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Permission summary for selected role */}
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-[#FDFAF4] border border-[#E5D9C8]">
-              <span className="text-base flex-shrink-0">
-                {ROLES.find((r) => r.value === role)?.emoji}
-              </span>
-              <div>
-                <p className="text-[10px] font-bold text-brownDark">
-                  {role === 'franchise_owner' &&
-                    'Full access: Dashboard, Products (edit), Orders, Analytics'}
-                  {role === 'franchisee' &&
-                    'Can place ingredient orders and view products'}
-                  {role === 'crew' && 'View-only: Dashboard and Products only'}
-                </p>
-              </div>
+            {/* Permission note */}
+            <div
+              style={{
+                marginTop: 10,
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: 'rgba(124,179,66,0.10)',
+                border: `1px solid rgba(124,179,66,0.25)`,
+              }}
+            >
+              <p style={{ fontSize: 11, color: C.darkGreen, fontWeight: 600 }}>
+                {PERM[role]}
+              </p>
             </div>
           </div>
 
-          {/* Branch — required for franchisee/crew, optional for franchise_owner */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-brownDark flex items-center gap-1">
+          {/* Branch */}
+          <div>
+            <label style={labelStyle}>
               Assign Branch{' '}
               {role === 'franchise_owner' ? (
-                <span className="text-brownDark/40 font-normal normal-case tracking-normal">
+                <span
+                  style={{
+                    color: C.textMuted,
+                    fontWeight: 500,
+                    textTransform: 'none',
+                    letterSpacing: 0,
+                    fontSize: 10,
+                  }}
+                >
                   (optional)
                 </span>
               ) : (
-                <span className="text-primaryOrange">*</span>
+                <span style={{ color: C.orange }}>*</span>
               )}
             </label>
-            <div className="relative">
+            <div style={{ position: 'relative' }}>
               <select
                 value={branch}
+                style={{
+                  ...(errors.branch ? fieldErr : fieldBase),
+                  paddingRight: 36,
+                  appearance: 'none',
+                  cursor: 'pointer',
+                }}
                 onChange={(e) => {
                   setBranch(e.target.value);
                   clr('branch');
                 }}
-                className={`${base} pr-10 appearance-none cursor-pointer ${errors.branch ? errCls : ok}`}
+                onFocus={(e) => onFocus(e, !!errors.branch)}
+                onBlur={(e) => onBlur(e, !!errors.branch)}
               >
                 <option value="">
                   {role === 'franchise_owner'
-                    ? 'All branches (no restriction)…'
+                    ? 'Pampanga branches'
                     : 'Select a branch…'}
                 </option>
                 {BRANCHES.map((b) => (
@@ -493,7 +667,14 @@ export default function CreateAccountModal({
                 ))}
               </select>
               <svg
-                className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-brownDark/50"
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                  color: C.textMuted,
+                }}
                 width="14"
                 height="14"
                 fill="none"
@@ -504,36 +685,72 @@ export default function CreateAccountModal({
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </div>
-            {errors.branch && (
-              <p className="text-[10px] text-red-600 font-semibold">
-                {errors.branch}
-              </p>
-            )}
+            {errors.branch && <p style={errStyle}>{errors.branch}</p>}
           </div>
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="px-7 pb-6 pt-3 flex items-center justify-end gap-3 border-t border-[#F0E8D8]">
+        <div
+          style={{
+            padding: '14px 24px 20px',
+            borderTop: '1px solid rgba(0,0,0,0.07)',
+            background: 'rgba(255,255,255,0.80)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 10,
+          }}
+        >
           <button
             onClick={close}
-            className="px-5 py-2.5 rounded-xl border-2 border-[#D0BFA8] text-brownDark font-bold text-sm hover:border-brownDark hover:bg-[#F5EDE3] transition-all"
+            style={{
+              padding: '9px 20px',
+              borderRadius: 10,
+              border: '1.5px solid #d1d5db',
+              background: 'transparent',
+              color: C.textMid,
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: 'pointer',
+              fontFamily: "'Poppins', sans-serif",
+            }}
           >
             Cancel
           </button>
+          {/* CTA — yellow→orange gradient matching the dashboard Place Order button */}
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primaryYellow to-primaryOrange text-brownDarker font-heading font-bold text-sm flex items-center gap-2 shadow-lg hover:opacity-90 hover:-translate-y-px transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{
+              padding: '9px 26px',
+              borderRadius: 10,
+              border: 'none',
+              background: submitting
+                ? '#ccc'
+                : `linear-gradient(135deg,${C.yellow},${C.orange})`,
+              color: C.brownDarker,
+              fontWeight: 800,
+              fontSize: 14,
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              fontFamily: "'Fredoka', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: submitting ? 'none' : '0 2px 8px rgba(255,140,0,0.28)',
+              transition: 'opacity .15s',
+            }}
           >
             {submitting ? (
               <>
                 <svg
-                  className="animate-spin w-4 h-4"
+                  width="14"
+                  height="14"
                   fill="none"
                   viewBox="0 0 24 24"
+                  style={{ animation: 'spin 1s linear infinite' }}
                 >
                   <circle
-                    className="opacity-25"
+                    style={{ opacity: 0.25 }}
                     cx="12"
                     cy="12"
                     r="10"
@@ -541,7 +758,7 @@ export default function CreateAccountModal({
                     strokeWidth="4"
                   />
                   <path
-                    className="opacity-75"
+                    style={{ opacity: 0.75 }}
                     fill="currentColor"
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
@@ -549,22 +766,7 @@ export default function CreateAccountModal({
                 Creating…
               </>
             ) : (
-              <>
-                <svg
-                  width="15"
-                  height="15"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.8"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                  <line x1="18" y1="8" x2="23" y2="8" />
-                  <line x1="20.5" y1="5.5" x2="20.5" y2="10.5" />
-                </svg>
-                Create Account
-              </>
+              'Create Account'
             )}
           </button>
         </div>

@@ -227,6 +227,78 @@ function SuccessToast({
   );
 }
 
+// ─── QUANTITY INPUT ────────────────────────────────────────────────────────────
+// Replaces the +/− buttons with a plain typeable number field.
+function QtyInput({
+  qty,
+  onUpdate,
+}: {
+  qty: number;
+  onUpdate: (n: number) => void;
+}) {
+  const [raw, setRaw] = useState(String(qty));
+
+  // Keep raw in sync when parent qty changes (e.g. addToCart increments)
+  useEffect(() => {
+    setRaw(String(qty));
+  }, [qty]);
+
+  const handleChange = (val: string) => {
+    // Allow empty or digits only — no negatives, no letters
+    if (val === '' || /^\d+$/.test(val)) {
+      setRaw(val);
+      const n = parseInt(val, 10);
+      if (!isNaN(n)) onUpdate(n); // 0 → removeFromCart handled by updateQty
+    }
+  };
+
+  const handleBlur = () => {
+    const n = parseInt(raw, 10);
+    if (isNaN(n) || raw === '') {
+      setRaw('0');
+      onUpdate(0);
+    } else {
+      setRaw(String(n));
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={raw}
+      onChange={(e) => handleChange(e.target.value)}
+      onBlur={handleBlur}
+      style={{
+        width: '100%',
+        textAlign: 'center',
+        fontWeight: 800,
+        fontSize: 14,
+        color: C.textPrimary,
+        border: `1.5px solid ${C.orange}`,
+        borderRadius: 9,
+        padding: '6px 4px',
+        outline: 'none',
+        background: 'rgba(255,240,217,0.8)',
+        boxSizing: 'border-box',
+        cursor: 'text',
+        transition: 'border-color .15s, box-shadow .15s',
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.borderColor = C.yellow;
+        e.currentTarget.style.boxShadow = `0 0 0 3px rgba(255,225,53,0.22)`;
+        e.currentTarget.select();
+      }}
+      onMouseLeave={(e) => {
+        if (document.activeElement !== e.currentTarget) {
+          e.currentTarget.style.borderColor = C.orange;
+          e.currentTarget.style.boxShadow = 'none';
+        }
+      }}
+    />
+  );
+}
+
 export default function ProductsPage() {
   const router = useRouter();
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
@@ -572,10 +644,8 @@ export default function ProductsPage() {
               <div
                 style={{
                   display: 'grid',
-                  /* Cart panel is fixed 300px; catalog fills the rest */
                   gridTemplateColumns: '1fr 300px',
                   gap: 20,
-                  /* height fills remaining viewport after header (70px) + padding (48px) + tabs (~52px) */
                   height: 'calc(100vh - 170px)',
                   minWidth: 0,
                 }}
@@ -751,6 +821,7 @@ export default function ProductsPage() {
                             product.image &&
                             (product.image.startsWith('http') ||
                               product.image.startsWith('data:'));
+
                           return (
                             <div
                               key={product.id}
@@ -929,6 +1000,7 @@ export default function ProductsPage() {
                                         : `${product.stock} in stock`}
                                   </span>
                                 </div>
+
                                 {/* Stock bar */}
                                 <div
                                   style={{
@@ -999,61 +1071,11 @@ export default function ProductsPage() {
                                     + Add to Order
                                   </button>
                                 ) : (
-                                  <div
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 6,
-                                    }}
-                                  >
-                                    <button
-                                      onClick={() =>
-                                        updateQty(product.id, qty - 1)
-                                      }
-                                      style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: 8,
-                                        border: `1.5px solid ${C.orange}`,
-                                        background: 'rgba(255,240,217,0.8)',
-                                        color: C.brownDarker,
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      −
-                                    </button>
-                                    <span
-                                      style={{
-                                        flex: 1,
-                                        textAlign: 'center',
-                                        fontWeight: 800,
-                                        fontSize: 14,
-                                        color: C.textPrimary,
-                                      }}
-                                    >
-                                      {qty}
-                                    </span>
-                                    <button
-                                      onClick={() =>
-                                        updateQty(product.id, qty + 1)
-                                      }
-                                      style={{
-                                        width: 28,
-                                        height: 28,
-                                        borderRadius: 8,
-                                        border: `1.5px solid ${C.orange}`,
-                                        background: 'rgba(255,240,217,0.8)',
-                                        color: C.brownDarker,
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      +
-                                    </button>
-                                  </div>
+                                  /* ── Quantity input replaces the +/− buttons ── */
+                                  <QtyInput
+                                    qty={qty}
+                                    onUpdate={(n) => updateQty(product.id, n)}
+                                  />
                                 )}
                               </div>
                             </div>
@@ -1089,7 +1111,6 @@ export default function ProductsPage() {
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
-                    /* prevent the cart from shrinking below its content */
                     minWidth: 0,
                   }}
                 >
