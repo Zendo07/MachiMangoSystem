@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -20,6 +20,7 @@ import CreateAccountModal, {
   type CreatedAccountData,
 } from '@/components/admin/CreateAccountModal';
 import SuccessCredentialModal from '@/components/admin/SuccessCredentialModal';
+import { getStoredToken, getStoredUser, clearAuth } from '@/lib/auth';
 
 ChartJS.register(
   CategoryScale,
@@ -33,7 +34,6 @@ ChartJS.register(
   Filler,
 );
 
-// ─── SHARED COLORS ────────────────────────────────────────────────────────────
 export const C = {
   brownDarker: '#3E1A00',
   brownDark: '#6B3A2A',
@@ -48,39 +48,99 @@ export const C = {
 const PAGE_BG =
   'linear-gradient(180deg,#87ceeb 0%,#98d8e8 18%,#c8eeaa 42%,#a8dc7a 68%,#7cb342 100%)';
 
-// ─── DASHBOARD PAGE ───────────────────────────────────────────────────────────
+interface BranchStat {
+  branch: string;
+  orders: number;
+  sales: number;
+}
+
+interface DashboardStats {
+  totalSales: number;
+  totalOrders: number;
+  activeUsers: number;
+  branchStats: BranchStat[];
+}
+
+const EMPTY_STATS: DashboardStats = {
+  totalSales: 0,
+  totalOrders: 0,
+  activeUsers: 0,
+  branchStats: [],
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [adminName, setAdminName] = useState('Admin');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [dateRange, setDateRange] = useState('Last 30 Days');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [createdAccount, setCreatedAccount] =
     useState<CreatedAccountData | null>(null);
+  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    try {
-      const u = localStorage.getItem('user');
-      if (u)
-        setAdminName(
-          (JSON.parse(u) as { fullName?: string }).fullName ?? 'Admin',
-        );
-    } catch {
-      /* ignore */
+    const u = getStoredUser();
+    const t = getStoredToken();
+    if (!u || !t) {
+      router.replace('/login');
+      return;
     }
-  }, []);
+    if (u.role !== 'hq_admin') {
+      router.replace('/login');
+      return;
+    }
+    setAdminName(u.fullName ?? 'Admin');
+  }, [router]);
+
+  const fetchStats = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('http://localhost:3000/api/dashboard/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        clearAuth();
+        router.replace('/login');
+        return;
+      }
+      const json = (await res.json()) as {
+        success: boolean;
+        data: DashboardStats;
+        message?: string;
+      };
+      if (json.success) {
+        setStats(json.data);
+      } else {
+        setError(json.message ?? 'Failed to load stats');
+        setStats(EMPTY_STATS);
+      }
+    } catch {
+      setError('Cannot reach backend. Make sure it is running on port 3000.');
+      setStats(EMPTY_STATS);
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    void fetchStats();
+  }, [fetchStats]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+    clearAuth();
+    router.replace('/login');
   };
 
   const handleAccountCreated = (data: CreatedAccountData) => {
     setCreatedAccount(data);
     setCreateModalOpen(false);
     setTimeout(() => setSuccessModalOpen(true), 320);
+    void fetchStats();
   };
 
   const handleCreateAnother = () => {
@@ -88,17 +148,23 @@ export default function AdminDashboard() {
     setTimeout(() => setCreateModalOpen(true), 320);
   };
 
-  const handleNav = (route: string) => {
-    router.push(route);
-  };
+  const branchLabels =
+    stats.branchStats.length > 0
+      ? stats.branchStats.map((b) => b.branch)
+      : ['No Data'];
 
-  // Chart data
-  const salesData = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  const branchOrderCounts =
+    stats.branchStats.length > 0 ? stats.branchStats.map((b) => b.orders) : [0];
+
+  const branchSalesAmounts =
+    stats.branchStats.length > 0 ? stats.branchStats.map((b) => b.sales) : [0];
+
+  const salesLineData = {
+    labels: branchLabels,
     datasets: [
       {
-        label: 'Sales',
-        data: [12000, 19000, 15000, 25000, 22000, 30000, 28000],
+        label: 'Sales (PHP)',
+        data: branchSalesAmounts,
         borderColor: C.green,
         backgroundColor: 'rgba(90,158,58,0.12)',
         fill: true,
@@ -113,12 +179,12 @@ export default function AdminDashboard() {
     ],
   };
 
-  const branchData = {
-    labels: ['Fla. Blanca', 'Porac', 'Sta. Rita', 'Angeles', 'San Fernando'],
+  const branchBarData = {
+    labels: branchLabels,
     datasets: [
       {
         label: 'Orders',
-        data: [450, 380, 520, 290, 410],
+        data: branchOrderCounts,
         backgroundColor: C.orange,
         borderRadius: 6,
         barThickness: 36,
@@ -157,13 +223,20 @@ export default function AdminDashboard() {
   const statCards = [
     {
       label: 'Total Sales',
-      value: '₱0.00',
-      subtext: 'Sample: ₱548,920',
-      badge: '0%',
+      value: loading
+        ? '...'
+        : `P${stats.totalSales.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      subtext:
+        stats.totalSales === 0 && !loading
+          ? 'No orders yet'
+          : `From ${stats.totalOrders} order${stats.totalOrders !== 1 ? 's' : ''}`,
       grad: 'linear-gradient(135deg,#5A9E3A,#3D6E27)',
       badgeBg: '#E8F5E1',
       badgeColor: '#3D6E27',
       subtextColor: '#3D6E27',
+      badge: loading
+        ? '...'
+        : `${stats.branchStats.length} branch${stats.branchStats.length !== 1 ? 'es' : ''}`,
       icon: (
         <svg
           width="22"
@@ -180,13 +253,20 @@ export default function AdminDashboard() {
     },
     {
       label: 'Total Orders',
-      value: '0',
-      subtext: 'Sample: 2,050',
-      badge: '0%',
+      value: loading ? '...' : stats.totalOrders.toLocaleString(),
+      subtext:
+        stats.totalOrders === 0 && !loading
+          ? 'No orders placed yet'
+          : 'Across all branches',
       grad: 'linear-gradient(135deg,#FF8C00,#CC7000)',
       badgeBg: '#FFF0D9',
       badgeColor: '#CC7000',
       subtextColor: '#CC7000',
+      badge: loading
+        ? '...'
+        : stats.totalOrders === 0
+          ? '0'
+          : `+${stats.totalOrders}`,
       icon: (
         <svg
           width="22"
@@ -204,13 +284,13 @@ export default function AdminDashboard() {
     },
     {
       label: 'Active Users',
-      value: '1',
-      subtext: 'Admin only',
-      badge: '1',
+      value: loading ? '...' : stats.activeUsers.toLocaleString(),
+      subtext: loading ? '' : 'Admin + crew accounts',
       grad: 'linear-gradient(135deg,#F5C842,#E0A800)',
       badgeBg: '#FFFAE0',
       badgeColor: '#6B3A2A',
       subtextColor: '#6B3A2A',
+      badge: loading ? '...' : `${stats.activeUsers}`,
       icon: (
         <svg
           width="22"
@@ -227,14 +307,22 @@ export default function AdminDashboard() {
       ),
     },
     {
-      label: 'Net Revenue',
-      value: '₱0.00',
-      subtext: 'Sample: ₱428,340',
-      badge: '0%',
+      label: 'Top Branch Orders',
+      value: loading
+        ? '...'
+        : stats.branchStats.length > 0
+          ? stats.branchStats[0].orders.toLocaleString()
+          : '0',
+      subtext: loading
+        ? ''
+        : stats.branchStats.length > 0
+          ? stats.branchStats[0].branch
+          : 'No branch data yet',
       grad: 'linear-gradient(135deg,#4A9ECA,#2E7BAD)',
       badgeBg: '#E0F2FA',
       badgeColor: '#2E7BAD',
       subtextColor: '#2E7BAD',
+      badge: stats.branchStats.length > 0 ? '#1' : '—',
       icon: (
         <svg
           width="22"
@@ -247,49 +335,6 @@ export default function AdminDashboard() {
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
         </svg>
       ),
-    },
-  ];
-
-  const branches = [
-    {
-      name: 'Florida Blanca',
-      location: 'Pampanga',
-      sales: '₱125,450',
-      orders: 450,
-      trend: '+12%',
-      status: 'High',
-    },
-    {
-      name: 'Porac',
-      location: 'Pampanga',
-      sales: '₱98,230',
-      orders: 380,
-      trend: '+8%',
-      status: 'High',
-    },
-    {
-      name: 'Sta. Rita',
-      location: 'Pampanga',
-      sales: '₱142,890',
-      orders: 520,
-      trend: '+15%',
-      status: 'High',
-    },
-    {
-      name: 'Angeles',
-      location: 'Pampanga',
-      sales: '₱76,120',
-      orders: 290,
-      trend: '-3%',
-      status: 'Low',
-    },
-    {
-      name: 'San Fernando',
-      location: 'Pampanga',
-      sales: '₱105,340',
-      orders: 410,
-      trend: '+9%',
-      status: 'Average',
     },
   ];
 
@@ -320,7 +365,7 @@ export default function AdminDashboard() {
         <AdminSidebar
           sidebarOpen={sidebarOpen}
           activeNav="Dashboard"
-          onNav={handleNav}
+          onNav={(route) => router.push(route)}
           adminName={adminName}
           onCreateAccount={() => setCreateModalOpen(true)}
         />
@@ -404,95 +449,29 @@ export default function AdminDashboard() {
                     marginTop: 1,
                   }}
                 >
-                  Real-time franchise analytics · Pampanga Region
+                  {loading
+                    ? 'Loading data...'
+                    : error
+                      ? 'Backend connection issue'
+                      : 'Live franchise analytics'}
                 </div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
+              <button
+                onClick={() => void fetchStats()}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '8px 14px',
+                  padding: '9px 16px',
+                  border: `2px solid ${C.yellow}`,
                   borderRadius: 10,
                   background: `${C.yellow}22`,
-                  border: `2px solid ${C.yellow}`,
-                }}
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={C.brown}
-                  strokeWidth="2.5"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <select
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: C.brownDark,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <option>Last 7 Days</option>
-                  <option>Last 30 Days</option>
-                  <option>Last 90 Days</option>
-                  <option>This Year</option>
-                </select>
-              </div>
-              <button
-                style={{
-                  position: 'relative',
-                  padding: '9px 10px',
-                  border: '2px solid transparent',
-                  borderRadius: 10,
-                  background: 'transparent',
+                  color: C.brownDark,
+                  fontWeight: 700,
+                  fontSize: 13,
                   cursor: 'pointer',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `${C.yellow}22`;
-                  e.currentTarget.style.borderColor = C.yellow;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.borderColor = 'transparent';
-                }}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={C.brown}
-                  strokeWidth="2.5"
-                >
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    width: 8,
-                    height: 8,
-                    background: C.orange,
-                    borderRadius: '50%',
-                    border: '2px solid #fff',
-                  }}
-                />
+                Refresh
               </button>
               <button
                 onClick={handleLogout}
@@ -519,7 +498,7 @@ export default function AdminDashboard() {
             </div>
           </header>
 
-          {/* Scrollable body */}
+          {/* Body */}
           <main
             style={{
               flex: 1,
@@ -528,6 +507,40 @@ export default function AdminDashboard() {
               background: 'transparent',
             }}
           >
+            {/* Error banner */}
+            {error && !loading && (
+              <div
+                style={{
+                  marginBottom: 18,
+                  padding: '12px 18px',
+                  borderRadius: 12,
+                  background: '#FFEBEE',
+                  border: '1.5px solid #EF9A9A',
+                  color: '#C62828',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span>{error}</span>
+                <button
+                  onClick={() => void fetchStats()}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#C62828',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    fontSize: 13,
+                  }}
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
             {/* Stat cards */}
             <div
               style={{
@@ -549,6 +562,7 @@ export default function AdminDashboard() {
                     boxShadow: '0 2px 14px rgba(34,100,34,0.10)',
                     border: '1.5px solid rgba(255,255,255,0.55)',
                     transition: 'transform 0.2s, box-shadow 0.2s',
+                    opacity: loading ? 0.6 : 1,
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-3px)';
@@ -677,27 +691,17 @@ export default function AdminDashboard() {
                         marginTop: 2,
                       }}
                     >
-                      7-day trend · Sample Data
+                      {loading
+                        ? 'Loading...'
+                        : `Sales per branch · ${stats.branchStats.length} active`}
                     </div>
                   </div>
-                  <span
-                    style={{
-                      padding: '5px 12px',
-                      background: '#E8F5E1',
-                      color: C.darkGreen,
-                      borderRadius: 8,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      border: `1.5px solid ${C.green}`,
-                    }}
-                  >
-                    LIVE SAMPLE
-                  </span>
                 </div>
                 <div style={{ height: 250 }}>
-                  <Line data={salesData} options={chartOptions} />
+                  <Line data={salesLineData} options={chartOptions} />
                 </div>
               </div>
+
               <div
                 style={{
                   background: 'rgba(255,255,255,0.72)',
@@ -735,25 +739,12 @@ export default function AdminDashboard() {
                         marginTop: 2,
                       }}
                     >
-                      Pampanga branches · Sample Data
+                      {loading ? 'Loading...' : 'Orders per branch'}
                     </div>
                   </div>
-                  <span
-                    style={{
-                      padding: '5px 12px',
-                      background: '#FFF0D9',
-                      color: C.orange,
-                      borderRadius: 8,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      border: `1.5px solid ${C.orange}`,
-                    }}
-                  >
-                    TOP 5
-                  </span>
                 </div>
                 <div style={{ height: 250 }}>
-                  <Bar data={branchData} options={chartOptions} />
+                  <Bar data={branchBarData} options={chartOptions} />
                 </div>
               </div>
             </div>
@@ -788,7 +779,7 @@ export default function AdminDashboard() {
                       color: C.brownDark,
                     }}
                   >
-                    Pampanga Branch Analytics
+                    Branch Analytics
                   </div>
                   <div
                     style={{
@@ -799,111 +790,121 @@ export default function AdminDashboard() {
                       marginTop: 2,
                     }}
                   >
-                    Performance metrics across all franchise locations (Sample
-                    Data)
+                    Live order and sales data across all franchise locations
                   </div>
                 </div>
-                <button
-                  style={{
-                    padding: '9px 20px',
-                    background: `linear-gradient(135deg,${C.green},${C.darkGreen})`,
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 10,
-                    fontWeight: 700,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    boxShadow: '0 3px 10px rgba(61,110,39,0.3)',
-                    transition: 'opacity 0.2s',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-                >
-                  Export Data
-                </button>
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr
-                      style={{
-                        background: `linear-gradient(90deg,${C.brownDarker},${C.brownDark})`,
-                      }}
-                    >
-                      {[
-                        'Branch Location',
-                        'Sales',
-                        'Orders',
-                        'Growth',
-                        'Status',
-                      ].map((col) => (
-                        <th
-                          key={col}
-                          style={{
-                            padding: '13px 22px',
-                            textAlign: 'left',
-                            fontSize: 11,
-                            fontWeight: 800,
-                            color: C.yellow,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.07em',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {branches.map((b, idx) => (
+
+              {loading && (
+                <div
+                  style={{
+                    padding: 48,
+                    textAlign: 'center',
+                    color: '#AAA',
+                    fontSize: 14,
+                  }}
+                >
+                  Loading branch data...
+                </div>
+              )}
+
+              {!loading && stats.branchStats.length === 0 && (
+                <div style={{ padding: 60, textAlign: 'center' }}>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: C.brownDark,
+                      marginBottom: 6,
+                    }}
+                  >
+                    No branch data yet
+                  </div>
+                  <div style={{ fontSize: 12, color: '#AAA' }}>
+                    Branch analytics will appear here once franchisees place
+                    orders
+                  </div>
+                </div>
+              )}
+
+              {!loading && stats.branchStats.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
                       <tr
-                        key={idx}
                         style={{
-                          borderBottom: `1.5px solid ${C.yellow}30`,
-                          background:
-                            idx % 2 === 0
-                              ? 'rgba(255,255,255,0.55)'
-                              : 'rgba(200,238,170,0.25)',
-                          transition: 'background 0.15s',
+                          background: `linear-gradient(90deg,${C.brownDarker},${C.brownDark})`,
                         }}
-                        onMouseEnter={(e) =>
-                          (e.currentTarget.style.background = `${C.yellow}18`)
-                        }
-                        onMouseLeave={(e) =>
-                          (e.currentTarget.style.background =
-                            idx % 2 === 0
-                              ? 'rgba(255,255,255,0.55)'
-                              : 'rgba(200,238,170,0.25)')
-                        }
                       >
-                        <td style={{ padding: '14px 22px' }}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 12,
-                            }}
-                          >
-                            <div
+                        {['Branch Location', 'Total Sales', 'Total Orders'].map(
+                          (col) => (
+                            <th
+                              key={col}
                               style={{
-                                width: 38,
-                                height: 38,
-                                flexShrink: 0,
-                                background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
-                                borderRadius: 10,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
+                                padding: '13px 22px',
+                                textAlign: 'left',
+                                fontSize: 11,
                                 fontWeight: 800,
-                                fontSize: 15,
-                                color: C.brownDarker,
-                                boxShadow: '0 2px 6px rgba(255,140,0,0.25)',
+                                color: C.yellow,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.07em',
+                                whiteSpace: 'nowrap',
                               }}
                             >
-                              {idx + 1}
-                            </div>
-                            <div>
+                              {col}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.branchStats.map((b, idx) => (
+                        <tr
+                          key={idx}
+                          style={{
+                            borderBottom: `1.5px solid ${C.yellow}30`,
+                            background:
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)',
+                            transition: 'background 0.15s',
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background = `${C.yellow}18`)
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background =
+                              idx % 2 === 0
+                                ? 'rgba(255,255,255,0.55)'
+                                : 'rgba(200,238,170,0.25)')
+                          }
+                        >
+                          <td style={{ padding: '14px 22px' }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 38,
+                                  height: 38,
+                                  flexShrink: 0,
+                                  background: `linear-gradient(135deg,${C.yellow},${C.orange})`,
+                                  borderRadius: 10,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 800,
+                                  fontSize: 15,
+                                  color: C.brownDarker,
+                                  boxShadow: '0 2px 6px rgba(255,140,0,0.25)',
+                                }}
+                              >
+                                {idx + 1}
+                              </div>
                               <div
                                 style={{
                                   fontWeight: 700,
@@ -911,91 +912,40 @@ export default function AdminDashboard() {
                                   color: C.brownDark,
                                 }}
                               >
-                                {b.name}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: 11,
-                                  color: C.green,
-                                  fontWeight: 600,
-                                  marginTop: 1,
-                                }}
-                              >
-                                {b.location}
+                                {b.branch}
                               </div>
                             </div>
-                          </div>
-                        </td>
-                        <td
-                          style={{
-                            padding: '14px 22px',
-                            fontWeight: 800,
-                            fontSize: 14,
-                            color: C.brownDarker,
-                          }}
-                        >
-                          {b.sales}
-                        </td>
-                        <td
-                          style={{
-                            padding: '14px 22px',
-                            fontWeight: 700,
-                            fontSize: 14,
-                            color: C.brownDark,
-                          }}
-                        >
-                          {b.orders}
-                        </td>
-                        <td style={{ padding: '14px 22px' }}>
-                          <span
+                          </td>
+                          <td
                             style={{
+                              padding: '14px 22px',
                               fontWeight: 800,
-                              fontSize: 13.5,
-                              color: b.trend.startsWith('+')
-                                ? C.green
-                                : '#D32F2F',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
+                              fontSize: 14,
+                              color: C.brownDarker,
                             }}
                           >
-                            {b.trend.startsWith('+') ? '↗' : '↘'} {b.trend}
-                          </span>
-                        </td>
-                        <td style={{ padding: '14px 22px' }}>
-                          <span
+                            P
+                            {b.sales.toLocaleString('en-PH', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </td>
+                          <td
                             style={{
-                              padding: '5px 13px',
-                              borderRadius: 8,
-                              fontSize: 11,
-                              fontWeight: 800,
-                              ...(b.status === 'High'
-                                ? {
-                                    background: '#E8F5E1',
-                                    color: C.darkGreen,
-                                    border: `1.5px solid ${C.green}`,
-                                  }
-                                : b.status === 'Average'
-                                  ? {
-                                      background: '#FFFAE0',
-                                      color: C.brownDark,
-                                      border: `1.5px solid ${C.yellow}`,
-                                    }
-                                  : {
-                                      background: '#FFEBEE',
-                                      color: '#C62828',
-                                      border: '1.5px solid #EF9A9A',
-                                    }),
+                              padding: '14px 22px',
+                              fontWeight: 700,
+                              fontSize: 14,
+                              color: C.brownDark,
                             }}
                           >
-                            {b.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            {b.orders.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </main>
         </div>

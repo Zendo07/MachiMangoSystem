@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { ProductsModule } from './modules/products/products.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { seedProducts } from './database/seeds/products.seed';
 
 @Module({
@@ -27,6 +28,7 @@ import { seedProducts } from './database/seeds/products.seed';
     AuthModule,
     OrdersModule,
     ProductsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -35,7 +37,6 @@ export class AppModule implements OnApplicationBootstrap {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    // Auto-seed products on first run (skips existing rows)
     await seedProducts(this.dataSource);
   }
 }

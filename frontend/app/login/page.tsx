@@ -228,12 +228,9 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-end">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-primaryGreen hover:text-darkGreen font-semibold transition-colors"
-                >
+                <span className="text-sm text-brownDark/40 font-semibold cursor-not-allowed select-none">
                   Forgot password?
-                </Link>
+                </span>
               </div>
 
               <button
@@ -278,13 +275,13 @@ export default function LoginPage() {
               </p>
               <div className="grid grid-cols-2 gap-1.5 text-xs text-brownDark/70">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">🏪</span> Admin
+                  <span className="text-base"></span> Admin
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">🤝</span> Franchisee
+                  <span className="text-base"></span> Franchisee
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">👷</span> Crew
+                  <span className="text-base"></span> Crew
                 </div>
               </div>
             </div>

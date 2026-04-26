@@ -12,22 +12,93 @@ interface Props {
 
 type CopyState = 'idle' | 'copied';
 
+const C = {
+  skyDeep: '#2E7BAD',
+  skyMid: '#4A9ECA',
+  skyLight: '#87CEEB',
+  teal: '#3D8B6E',
+  tealLight: '#E0F5EE',
+  tealMid: '#A8D5C2',
+  mint: '#C8EEAA',
+  mintDark: '#7CB342',
+  offWhite: '#F7FDFB',
+  border: '#C4DDD5',
+  textDark: '#0F2A22',
+  textMid: '#3D6E58',
+  textMuted: '#7BA898',
+  yellow: '#F5C842',
+  orange: '#FF8C00',
+};
+
 const ROLE_LABEL: Record<string, string> = {
   franchise_owner: 'Franchise Owner',
   franchisee: 'Franchisee',
   crew: 'Crew Member',
 };
 
-const ROLE_BADGE: Record<string, string> = {
-  franchise_owner: 'bg-gradient-to-r from-purple-400 to-purple-600 text-white',
-  franchisee: 'bg-gradient-to-r from-blue-400 to-blue-600 text-white',
-  crew: 'bg-gradient-to-r from-green-400 to-green-600 text-white',
+const ROLE_BADGE_STYLE: Record<string, React.CSSProperties> = {
+  franchise_owner: {
+    background: 'linear-gradient(135deg,#2E7BAD,#1A5A8A)',
+    color: '#fff',
+  },
+  franchisee: {
+    background: 'linear-gradient(135deg,#3D8B6E,#266050)',
+    color: '#fff',
+  },
+  crew: {
+    background: 'linear-gradient(135deg,#7CB342,#558B2F)',
+    color: '#fff',
+  },
 };
 
 const ROLE_PERMS: Record<string, string> = {
-  franchise_owner: '🏪 Full branch access · Products, Orders & Analytics',
-  franchisee: '🤝 Can place ingredient orders · View products',
-  crew: '👷 View-only · Dashboard & Products',
+  franchise_owner: 'Full branch access — Products, Orders and Analytics',
+  franchisee: 'Can place ingredient orders — View products',
+  crew: 'View-only — Dashboard and Products',
+};
+
+const ROLE_ICON: Record<string, React.ReactNode> = {
+  franchise_owner: (
+    <svg
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      viewBox="0 0 24 24"
+    >
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  ),
+  franchisee: (
+    <svg
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      viewBox="0 0 24 24"
+    >
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  ),
+  crew: (
+    <svg
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      viewBox="0 0 24 24"
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
 };
 
 export default function SuccessCredentialModal({
@@ -63,7 +134,6 @@ export default function SuccessCredentialModal({
     setVisible(false);
     setTimeout(onClose, 260);
   }, [onClose]);
-
   const another = useCallback(() => {
     setVisible(false);
     setTimeout(onCreateAnother, 260);
@@ -108,17 +178,27 @@ export default function SuccessCredentialModal({
   }) => (
     <button
       onClick={onCopy}
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-bold flex-shrink-0 transition-all ${
-        state === 'copied'
-          ? 'border-primaryGreen bg-green-50 text-darkGreen'
-          : 'border-[#DDD0BC] bg-white text-brownDark hover:border-primaryYellow hover:bg-yellow-50'
-      }`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '7px 12px',
+        borderRadius: 8,
+        flexShrink: 0,
+        border: `1.5px solid ${state === 'copied' ? C.teal : C.border}`,
+        background: state === 'copied' ? C.tealLight : C.offWhite,
+        color: state === 'copied' ? C.teal : C.textMid,
+        fontSize: 11,
+        fontWeight: 700,
+        cursor: 'pointer',
+        transition: 'all .15s',
+      }}
     >
       {state === 'copied' ? (
         <>
           <svg
-            width="12"
-            height="12"
+            width="11"
+            height="11"
             fill="none"
             stroke="currentColor"
             strokeWidth="2.8"
@@ -131,8 +211,8 @@ export default function SuccessCredentialModal({
       ) : (
         <>
           <svg
-            width="12"
-            height="12"
+            width="11"
+            height="11"
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
@@ -149,46 +229,81 @@ export default function SuccessCredentialModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
-        background: visible ? 'rgba(30,10,0,0.55)' : 'rgba(30,10,0,0)',
-        backdropFilter: visible ? 'blur(3px)' : 'none',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        background: visible ? 'rgba(14,40,60,.55)' : 'rgba(14,40,60,0)',
+        backdropFilter: visible ? 'blur(5px)' : 'none',
         transition: 'all .25s',
       }}
       onClick={(e) => e.target === e.currentTarget && close()}
     >
       <div
-        className="w-full max-w-[480px] bg-white rounded-2xl overflow-hidden"
         style={{
+          width: '100%',
+          maxWidth: 480,
+          background:
+            'linear-gradient(160deg, #EAF7F2 0%, #F7FDFB 55%, #EDF6FF 100%)',
+          borderRadius: 22,
+          overflow: 'hidden',
+          border: `1.5px solid ${C.tealMid}`,
+          boxShadow:
+            '0 32px 90px rgba(14,80,60,.22), 0 0 0 4px rgba(168,213,194,.15)',
           transform: visible
             ? 'translateY(0) scale(1)'
             : 'translateY(28px) scale(0.96)',
           opacity: visible ? 1 : 0,
           transition: 'transform .3s cubic-bezier(.4,0,.2,1), opacity .25s',
-          boxShadow:
-            '0 40px 100px rgba(62,26,0,.32), 0 0 0 1.5px rgba(245,200,66,.35)',
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
         }}
       >
         {/* Header */}
         <div
-          className="px-7 py-6 border-b-[3px] border-primaryYellow flex items-center gap-4 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg,#3E1A00,#5A2800)' }}
+          style={{
+            padding: '22px 26px 20px',
+            background: `linear-gradient(135deg, ${C.skyDeep} 0%, ${C.teal} 100%)`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
         >
+          {/* Subtle radial glow */}
           <div
-            className="absolute inset-0 pointer-events-none"
             style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
               background:
-                'radial-gradient(ellipse at 20% 50%,rgba(245,200,66,.08),transparent 65%)',
+                'radial-gradient(ellipse at 20% 50%, rgba(135,206,235,.12), transparent 65%)',
             }}
           />
-          <div className="relative flex-shrink-0 w-16 h-16">
-            <svg className="w-16 h-16 absolute inset-0" viewBox="0 0 100 100">
+
+          {/* Animated ring + checkmark */}
+          <div
+            style={{
+              position: 'relative',
+              flexShrink: 0,
+              width: 64,
+              height: 64,
+            }}
+          >
+            <svg
+              style={{ position: 'absolute', inset: 0, width: 64, height: 64 }}
+              viewBox="0 0 100 100"
+            >
               <circle
                 cx="50"
                 cy="50"
                 r={r}
                 fill="none"
-                stroke="rgba(255,255,255,.1)"
+                stroke="rgba(255,255,255,.15)"
                 strokeWidth="5"
               />
               <circle
@@ -196,7 +311,7 @@ export default function SuccessCredentialModal({
                 cy="50"
                 r={r}
                 fill="none"
-                stroke="#F5C842"
+                stroke={C.skyLight}
                 strokeWidth="5"
                 strokeLinecap="round"
                 strokeDasharray={circ}
@@ -210,18 +325,23 @@ export default function SuccessCredentialModal({
               />
             </svg>
             <div
-              className="absolute inset-0 m-2.5 rounded-full flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg,#5A9E3A,#3D6E27)',
-                boxShadow: '0 4px 16px rgba(61,110,39,.4)',
+                position: 'absolute',
+                inset: 10,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.18)',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               <svg
-                width="28"
-                height="28"
+                width="26"
+                height="26"
                 fill="none"
                 stroke="white"
-                strokeWidth="3.2"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 viewBox="0 0 24 24"
@@ -235,87 +355,243 @@ export default function SuccessCredentialModal({
               </svg>
             </div>
           </div>
-          <div className="flex-1 min-w-0 relative z-10">
-            <h2 className="font-heading font-bold text-xl text-primaryYellow leading-tight">
+
+          <div
+            style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}
+          >
+            <div
+              style={{
+                fontWeight: 800,
+                fontSize: 20,
+                color: '#fff',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.2,
+              }}
+            >
               Account Created!
-            </h2>
-            <p className="text-xs text-primaryYellow/60 mt-1 font-body">
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.6)',
+                marginTop: 3,
+                fontWeight: 500,
+              }}
+            >
               New user added to the franchise system
-            </p>
+            </div>
           </div>
+
           <button
             onClick={close}
-            className="w-8 h-8 rounded-full border-2 border-primaryYellow/30 bg-primaryYellow/10 text-primaryYellow hover:bg-primaryYellow/20 flex items-center justify-center text-sm font-bold relative z-10"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: '1.5px solid rgba(255,255,255,0.28)',
+              background: 'rgba(255,255,255,0.12)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background .15s',
+              position: 'relative',
+              zIndex: 1,
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.24)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            }}
           >
-            ✕
+            X
           </button>
         </div>
 
+        {/* Accent stripe */}
+        <div
+          style={{
+            height: 3,
+            background: `linear-gradient(90deg, ${C.skyLight}, ${C.mint}, ${C.mintDark})`,
+          }}
+        />
+
         {/* Body */}
-        <div className="px-7 py-5 flex flex-col gap-4">
+        <div
+          style={{
+            padding: '20px 26px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
           {/* User pill */}
           <div
-            className="flex items-center gap-3 p-4 rounded-2xl border"
             style={{
-              background:
-                'linear-gradient(90deg,rgba(245,200,66,.12),rgba(255,140,0,.08))',
-              borderColor: 'rgba(245,200,66,.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 16px',
+              borderRadius: 14,
+              border: `1px solid ${C.tealMid}`,
+              background: `linear-gradient(90deg, rgba(74,158,202,0.08), rgba(61,139,110,0.08))`,
             }}
           >
             <div
-              className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-heading font-bold text-lg text-primaryYellow border-2"
               style={{
-                background: 'linear-gradient(135deg,#6B3A2A,#3E1A00)',
-                borderColor: 'rgba(245,200,66,.35)',
+                width: 42,
+                height: 42,
+                borderRadius: '50%',
+                flexShrink: 0,
+                background: `linear-gradient(135deg, ${C.skyDeep}, ${C.teal})`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: 18,
+                color: '#fff',
+                border: `2px solid rgba(255,255,255,0.3)`,
               }}
             >
               {data.fullName.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-sm text-brownDarker truncate">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: C.textDark,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {data.fullName}
               </div>
-              <div className="text-xs text-brownDark/60 mt-0.5 truncate">
+              <div
+                style={{
+                  fontSize: 11,
+                  color: C.textMuted,
+                  marginTop: 2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {ROLE_LABEL[data.role]} · {data.branch}
               </div>
             </div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-heading font-bold flex-shrink-0 shadow-sm ${ROLE_BADGE[data.role]}`}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 20,
+                fontSize: 10,
+                fontWeight: 700,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                ...ROLE_BADGE_STYLE[data.role],
+              }}
             >
+              <span style={{ color: 'rgba(255,255,255,0.8)' }}>
+                {ROLE_ICON[data.role]}
+              </span>
               {ROLE_LABEL[data.role]}
             </span>
           </div>
 
-          {/* Permissions preview */}
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-[#FDFAF4] border border-[#E5D9C8]">
-            <span className="text-sm">
-              {ROLE_PERMS[data.role]?.split(' ')[0]}
-            </span>
-            <p className="text-[11px] font-semibold text-brownDark">
-              {ROLE_PERMS[data.role]?.slice(2)}
+          {/* Permissions */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 14px',
+              borderRadius: 10,
+              background: C.tealLight,
+              border: `1px solid ${C.tealMid}`,
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              fill="none"
+              stroke={C.teal}
+              strokeWidth="2.5"
+              viewBox="0 0 24 24"
+              style={{ flexShrink: 0 }}
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <p style={{ fontSize: 11, color: C.teal, fontWeight: 600 }}>
+              {ROLE_PERMS[data.role]}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brownDark/50">
+          {/* Section label */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg
-              width="12"
-              height="12"
+              width="11"
+              height="11"
               fill="none"
-              stroke="currentColor"
+              stroke={C.textMuted}
               strokeWidth="2.5"
               viewBox="0 0 24 24"
             >
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-            Login Credentials
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '.09em',
+                color: C.textMuted,
+              }}
+            >
+              Login Credentials
+            </span>
           </div>
 
           {/* Email row */}
-          <div className="flex items-center gap-3 p-4 rounded-xl border border-[#EAE0CC] bg-[#FDFAF4] hover:border-primaryYellow transition-colors">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 16px',
+              borderRadius: 12,
+              border: `1.5px solid ${C.border}`,
+              background: C.offWhite,
+              transition: 'border-color .15s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = C.skyMid;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = C.border;
+            }}
+          >
             <div
-              className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center text-[#2E7BAD]"
-              style={{ background: 'linear-gradient(135deg,#E0F2FA,#B3DDF0)' }}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                flexShrink: 0,
+                background: `linear-gradient(135deg, rgba(74,158,202,0.15), rgba(46,123,173,0.12))`,
+                border: `1px solid rgba(74,158,202,0.25)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: C.skyDeep,
+              }}
             >
               <svg
                 width="15"
@@ -329,11 +605,30 @@ export default function SuccessCredentialModal({
                 <polyline points="22,6 12,13 2,6" />
               </svg>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-brownDark/55">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.08em',
+                  color: C.textMuted,
+                }}
+              >
                 Email (Login)
               </div>
-              <div className="font-mono font-bold text-sm text-brownDarker mt-0.5 truncate">
+              <div
+                style={{
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: C.textDark,
+                  marginTop: 2,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {data.email}
               </div>
             </div>
@@ -344,10 +639,37 @@ export default function SuccessCredentialModal({
           </div>
 
           {/* Password row */}
-          <div className="flex items-center gap-3 p-4 rounded-xl border border-[#EAE0CC] bg-[#FDFAF4] hover:border-primaryYellow transition-colors">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '14px 16px',
+              borderRadius: 12,
+              border: `1.5px solid ${C.border}`,
+              background: C.offWhite,
+              transition: 'border-color .15s',
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = C.skyMid;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = C.border;
+            }}
+          >
             <div
-              className="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center text-[#7B3FA0]"
-              style={{ background: 'linear-gradient(135deg,#F5E6FF,#E0C4FF)' }}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                flexShrink: 0,
+                background: `linear-gradient(135deg, rgba(61,139,110,0.15), rgba(124,179,66,0.12))`,
+                border: `1px solid rgba(61,139,110,0.25)`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: C.teal,
+              }}
             >
               <svg
                 width="15"
@@ -361,23 +683,60 @@ export default function SuccessCredentialModal({
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-brownDark/55">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '.08em',
+                  color: C.textMuted,
+                }}
+              >
                 Temporary Password
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  marginTop: 3,
+                }}
+              >
                 {showPw ? (
-                  <span className="font-mono font-bold text-sm text-brownDarker tracking-wider">
+                  <span
+                    style={{
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: C.textDark,
+                      letterSpacing: '.05em',
+                    }}
+                  >
                     {data.tempPassword}
                   </span>
                 ) : (
-                  <span className="text-[#BBA98A] tracking-[.2em] text-base">
+                  <span
+                    style={{
+                      color: C.tealMid,
+                      letterSpacing: '.2em',
+                      fontSize: 15,
+                    }}
+                  >
                     ••••••••
                   </span>
                 )}
                 <button
                   onClick={() => setShowPw((v) => !v)}
-                  className="text-brownDark/40 hover:text-brownDark transition-colors flex-shrink-0"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: C.textMuted,
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                  }}
                 >
                   {showPw ? (
                     <svg
@@ -414,11 +773,33 @@ export default function SuccessCredentialModal({
           </div>
 
           {/* Notice */}
-          <div className="flex items-start gap-3 p-3.5 rounded-xl border border-primaryOrange/25 bg-orange-50/60">
-            <div className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center text-primaryOrange bg-primaryOrange/15">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 10,
+              padding: '11px 14px',
+              borderRadius: 10,
+              background: 'rgba(255,248,220,0.7)',
+              border: `1px solid rgba(255,140,0,0.22)`,
+            }}
+          >
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 8,
+                flexShrink: 0,
+                background: 'rgba(255,140,0,0.12)',
+                color: C.orange,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <svg
-                width="14"
-                height="14"
+                width="13"
+                height="13"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.5"
@@ -429,9 +810,9 @@ export default function SuccessCredentialModal({
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <p className="text-xs text-brownDark leading-relaxed">
+            <p style={{ fontSize: 11, color: C.textMid, lineHeight: 1.6 }}>
               Share credentials securely. The user will be prompted to{' '}
-              <strong className="text-brownDarker">
+              <strong style={{ color: C.textDark }}>
                 change their password on first login.
               </strong>
             </p>
@@ -439,17 +820,48 @@ export default function SuccessCredentialModal({
         </div>
 
         {/* Footer */}
-        <div className="px-7 pb-7 flex items-center justify-between gap-3">
+        <div
+          style={{
+            padding: '14px 26px 22px',
+            borderTop: `1px solid ${C.border}`,
+            background: 'rgba(240,250,246,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+          }}
+        >
           <button
             onClick={another}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-[#D8C8B0] text-brownDark font-bold text-sm hover:border-brownDark hover:bg-[#F5EDE3] transition-all"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '9px 18px',
+              borderRadius: 10,
+              border: `1.5px solid ${C.border}`,
+              background: 'transparent',
+              color: C.teal,
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              transition: 'all .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = C.tealLight;
+              e.currentTarget.style.borderColor = C.teal;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.borderColor = C.border;
+            }}
           >
             <svg
-              width="14"
-              height="14"
+              width="13"
+              height="13"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.5"
+              strokeWidth="2.8"
               viewBox="0 0 24 24"
             >
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -459,13 +871,33 @@ export default function SuccessCredentialModal({
           </button>
           <button
             onClick={close}
-            className="flex items-center gap-2 px-7 py-2.5 rounded-xl bg-gradient-to-r from-primaryYellow to-primaryOrange text-brownDarker font-heading font-bold text-sm shadow-lg hover:opacity-90 hover:-translate-y-px transition-all"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '9px 26px',
+              borderRadius: 10,
+              border: 'none',
+              background: `linear-gradient(135deg, ${C.skyDeep}, ${C.teal})`,
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: 13,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(46,123,173,.3)',
+              transition: 'all .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.9';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
           >
             <svg
-              width="14"
-              height="14"
+              width="13"
+              height="13"
               fill="none"
-              stroke="currentColor"
+              stroke="white"
               strokeWidth="2.8"
               viewBox="0 0 24 24"
             >
