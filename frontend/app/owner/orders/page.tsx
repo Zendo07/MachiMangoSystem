@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -197,7 +198,7 @@ export default function OrdersPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/orders/my-orders', {
+      const res = await fetch(`${API_BASE}/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as { success: boolean; data: Order[] };

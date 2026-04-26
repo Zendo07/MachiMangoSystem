@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useState, useEffect, useCallback } from 'react';
 import { getStoredToken } from '@/lib/auth';
 
@@ -205,7 +206,7 @@ export default function CreateAccountModal({
     setServerErr('');
     try {
       const token = getStoredToken();
-      const res = await fetch('http://localhost:3000/api/auth/create-account', {
+      const res = await fetch(`${API_BASE}/auth/create-account`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

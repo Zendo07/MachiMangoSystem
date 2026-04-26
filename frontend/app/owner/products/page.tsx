@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -338,7 +339,7 @@ export default function ProductsPage() {
     setLoadingProducts(true);
     setProductError('');
     try {
-      const res = await fetch('http://localhost:3000/api/products', {
+      const res = await fetch(`${API_BASE}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as { success: boolean; data: Product[] };
@@ -356,7 +357,7 @@ export default function ProductsPage() {
     if (!token) return;
     setLoadingOrders(true);
     try {
-      const res = await fetch('http://localhost:3000/api/orders/my-orders', {
+      const res = await fetch(`${API_BASE}/orders/my-orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as { success: boolean; data: Order[] };
@@ -450,7 +451,7 @@ export default function ProductsPage() {
         })),
         totalAmount: cartTotal,
       };
-      const res = await fetch('http://localhost:3000/api/orders', {
+      const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

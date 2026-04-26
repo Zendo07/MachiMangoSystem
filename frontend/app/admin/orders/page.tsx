@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getStoredToken, clearAuth } from '@/lib/auth';
@@ -154,17 +155,14 @@ function UpdateStatusModal({
         setSaving(false);
         return;
       }
-      const res = await fetch(
-        `http://localhost:3000/api/orders/${order.id}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status, adminNote: note }),
+      const res = await fetch(`${API_BASE}/orders/${order.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ status, adminNote: note }),
+      });
       const data = (await res.json()) as {
         success: boolean;
         data: Order;
@@ -647,7 +645,7 @@ export default function AdminOrdersPage() {
     setLoading(true);
     setFetchError('');
     try {
-      const res = await fetch('http://localhost:3000/api/orders', {
+      const res = await fetch(`${API_BASE}/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {

@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredToken } from '@/lib/auth';
@@ -1570,7 +1571,7 @@ export default function AdminProductsPage() {
     setLoading(true);
     setFetchError('');
     try {
-      const res = await fetch('http://localhost:3000/api/products', {
+      const res = await fetch(`${API_BASE}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as { success: boolean; data: Product[] };
@@ -1597,25 +1598,20 @@ export default function AdminProductsPage() {
   const apiSaveProduct = async (data: Partial<Product>) => {
     const token = getStoredToken();
     const isNew = !data.id;
-    const res = await fetch(
-      isNew
-        ? 'http://localhost:3000/api/products'
-        : `http://localhost:3000/api/products/${data.id}`,
-      {
-        method: isNew ? 'POST' : 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: data.name,
-          category: data.category,
-          price: data.price,
-          stock: data.stock,
-          image: data.image,
-        }),
+    const res = await fetch(`${API_BASE}/products/${data.id}`, {
+      method: isNew ? 'POST' : 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-    );
+      body: JSON.stringify({
+        name: data.name,
+        category: data.category,
+        price: data.price,
+        stock: data.stock,
+        image: data.image,
+      }),
+    });
     const json = (await res.json()) as {
       success: boolean;
       data: Product;
@@ -1628,7 +1624,7 @@ export default function AdminProductsPage() {
 
   const apiUpdateStock = async (id: string, stock: number) => {
     const token = getStoredToken();
-    const res = await fetch(`http://localhost:3000/api/products/${id}/stock`, {
+    await fetch(`${API_BASE}/products/${id}/stock`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -1643,7 +1639,7 @@ export default function AdminProductsPage() {
 
   const apiDeleteProduct = async (id: string) => {
     const token = getStoredToken();
-    await fetch(`http://localhost:3000/api/products/${id}`, {
+    await fetch(`${API_BASE}/products/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });

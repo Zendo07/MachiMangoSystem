@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/ui/Navbar';
+import { API_BASE } from '@/lib/config';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -74,7 +75,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/signup', {
+      const response = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

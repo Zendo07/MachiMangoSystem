@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getStoredToken, clearAuth } from '@/lib/auth';
@@ -585,7 +586,7 @@ export default function CrewStocksPage() {
     setLoading(true);
     setFetchError('');
     try {
-      const res = await fetch('http://localhost:3000/api/products', {
+      const res = await fetch(`${API_BASE}/products`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = (await res.json()) as {

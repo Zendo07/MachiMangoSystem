@@ -1,5 +1,5 @@
 // lib/auth.ts
-
+import { API_BASE } from './config';
 export type UserRole = 'hq_admin' | 'franchise_owner' | 'franchisee' | 'crew';
 
 export interface StoredUser {
@@ -132,7 +132,7 @@ export async function apiFetch(
   headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const res = await fetch(`http://localhost:3000/api${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
   });

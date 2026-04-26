@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE } from '@/lib/config';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Line, Bar } from 'react-chartjs-2';
@@ -100,7 +101,7 @@ export default function AdminDashboard() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/dashboard/stats', {
+      const res = await fetch(`${API_BASE}/dashboard/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
